@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /**
  * SVG 编辑器 — 容器层（Orchestrator）
  *
@@ -36,7 +36,8 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 // ── Vue 响应式状态 ──
-const canvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const canvasRef = ref<any>(null)
 const overlayRef = ref<HTMLDivElement | null>(null)
 const loading = ref(true)
 const saving = ref(false)
@@ -76,9 +77,9 @@ const themeMode = ref(
 // ── 核心管理器 ──
 const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
-let _keyHandlerFn: ((e: KeyboardEvent) => void) | null = null
-let _keyUpHandler: ((e: KeyboardEvent) => void) | null = null
-let _resizeObserver: ResizeObserver | null = null
+let _keyHandlerFn: any = null
+let _keyUpHandler: any = null
+let _resizeObserver: any = null
 
 canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
 canvasMgr.onGuideLinesChange((lines: any) => { guideLines.value = lines })
@@ -135,6 +136,7 @@ function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObjec
 function align(type: string) { withSave((fc: any) => (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)) }
 function applyFill(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('fill', hex) }) }
 function applyStroke(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('stroke', hex) }) }
+function applyTextFill(hex: string) { withSave((fc: any) => { TextFormatPlugin.applyTextFill(fc, hex); currentTextFill.value = hex }) }
 function applyStrokeWidth(w: number) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('strokeWidth', w); currentStrokeWidth.value = w }) }
 function toggleStrokeDash() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; const next = !currentStrokeDash.value; (a as any).set('strokeDashArray', next ? [6, 3] : null); currentStrokeDash.value = next; fc!.renderAll(); withSave(() => {}) }
 function applyFontSize(size: number) { withSave((fc: any) => TextFormatPlugin.applyFontSize(fc, size)); currentFontSize.value = size }
@@ -153,7 +155,7 @@ function applyShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; applySh
 function toggleTheme() {
   const fc = canvasMgr.canvas; if (!fc) return
   const from = themeMode.value, to = from === 'light' ? 'dark' : 'light'
-  const mapping: Record<string,string> = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
+const mapping: any = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
   if (!mapping || !Object.keys(mapping).length) return
   themeMode.value = to
   function swapColor(hex: any): string { if (!hex || typeof hex !== 'string') return hex; return mapping[hex.toUpperCase()] || hex }

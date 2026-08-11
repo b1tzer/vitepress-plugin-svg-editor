@@ -92,10 +92,8 @@ const emit = defineEmits<{
   <div class="editor-toolbar">
     <span class="title">✏️ {{ src }}</span>
     <div class="sep" />
-    <button v-if="canUndo" @click="emit('undo')" data-tip="撤销" aria-label="撤销 Ctrl+Z"><span v-html="ICONS.undo"></span></button>
-    <button v-else disabled data-tip="不可撤销"><span v-html="ICONS.undo"></span></button>
-    <button v-if="canRedo" @click="emit('redo')" data-tip="重做" aria-label="重做 Ctrl+Y"><span v-html="ICONS.redo"></span></button>
-    <button v-else disabled data-tip="不可重做"><span v-html="ICONS.redo"></span></button>
+<button :disabled="!canUndo" @click="emit('undo')" data-tip="撤销" aria-label="撤销 Ctrl+Z"><span v-html="ICONS.undo"></span></button>
+<button :disabled="!canRedo" @click="emit('redo')" data-tip="重做" aria-label="重做 Ctrl+Y"><span v-html="ICONS.redo"></span></button>
     <div class="sep" />
     <button @click="emit('copy')" data-tip="复制" aria-label="复制 Ctrl+C"><span v-html="ICONS.copy"></span></button>
     <button @click="emit('paste')" data-tip="粘贴" aria-label="粘贴 Ctrl+V"><span v-html="ICONS.paste"></span></button>
