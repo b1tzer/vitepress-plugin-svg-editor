@@ -1,0 +1,41 @@
+# 源码（只发布 dist/）
+src/
+client.ts
+*.config.ts
+*.config.js
+
+# 测试
+tests/
+test-results/
+playwright-report/
+
+# 设计文档
+design/
+
+# 开发配置
+.eslintrc.*
+.prettierrc*
+.husky/
+.lintstagedrc.*
+.editorconfig
+
+# 依赖
+node_modules/
+pnpm-lock.yaml
+
+# CI
+.github/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.log
+.turbo

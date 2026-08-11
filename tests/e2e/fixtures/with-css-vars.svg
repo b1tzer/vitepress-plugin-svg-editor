@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    :root {
+      --test-brand: #1565C0;
+      --test-bg: #E3F2FD;
+      --test-text: #333333;
+    }
+  </style>
+  <rect x="10" y="10" width="280" height="180" fill="var(--test-bg)" stroke="var(--test-brand)" stroke-width="2" rx="8"/>
+  <circle cx="150" cy="100" r="30" fill="var(--test-brand)"/>
+  <text x="150" y="180" text-anchor="middle" font-size="14" fill="var(--test-text)">CSS Var Test</text>
+</svg>

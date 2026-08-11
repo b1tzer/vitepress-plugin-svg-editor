@@ -1,4 +1,3 @@
-// @ts-nocheck — fabric@5.5.2 无官方类型声明，使用 window.fabric 全局对象
 /**
  * Fabric.js 渲染适配器
  *
@@ -6,6 +5,7 @@
  * 完成实际的 Fabric.js Canvas 渲染操作。
  */
 
+import * as fabric from 'fabric'
 import type { Canvas } from 'fabric'
 import type { SvgLoadResult } from '../../core/types'
 import type { RenderAdapter } from './RenderAdapter'
@@ -23,22 +23,15 @@ export class FabricRenderAdapter implements RenderAdapter {
   }
 
   async loadSvg(canvas: Canvas, svgResult: SvgLoadResult): Promise<void> {
-    return new Promise((resolve, reject) => {
-      window.fabric.loadSVGFromString(svgResult.svg, (objects: fabric.Object[], options: any) => {
-        try {
-          canvas.clear()
-          const group = new window.fabric.Group(objects, {
-            selectable: true,
-            evented: true,
-          })
-          canvas.add(group)
-          canvas.requestRenderAll()
-          resolve()
-        } catch (e) {
-          reject(e)
-        }
-      })
+    // Fabric 6: loadSVGFromString 返回 Promise，不再使用 callback
+    const result = await fabric.loadSVGFromString(svgResult.svg)
+    canvas.clear()
+    const group = new fabric.Group(result.objects.filter(Boolean) as fabric.FabricObject[], {
+      selectable: true,
+      evented: true,
     })
+    canvas.add(group)
+    canvas.requestRenderAll()
   }
 
   serialize(canvas: Canvas, originalViewBox?: string): string {
@@ -48,7 +41,7 @@ export class FabricRenderAdapter implements RenderAdapter {
     return serializer.serialize(canvas, { originalViewBox })
   }
 
-  dispose(canvas: Canvas): void {
+  dispose(_canvas: Canvas): void {
     this.canvasMgr.dispose()
   }
 }

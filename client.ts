@@ -1,9 +1,8 @@
 /**
- * vitepress-plugin-svg-editor — Client 端入口
+ * vitepress-plugin-svg-editor — Client 端入口（向后兼容）
  *
- * 导出 SvgDiagram / SvgEditor Vue 组件，供 VitePress theme 注册。
- * 注意：此文件从 src 源码直接导出，由消费方的 Vite 编译器处理 .vue 文件。
+ * 重新导出 src/client/index.ts 中的公共 API。
+ * 推荐直接使用 import { enhanceApp } from 'vitepress-plugin-svg-editor/client'
  */
 
-export { default as SvgDiagram } from './src/components/SvgDiagram.vue'
-export { default as SvgEditor } from './src/components/SvgEditor.vue'
+export { SvgDiagram, SvgEditor, enhanceAppWithSvgEditor, enhanceApp } from './src/client/index'

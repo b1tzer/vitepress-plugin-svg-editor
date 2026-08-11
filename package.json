@@ -13,21 +13,27 @@
   ],
   "license": "MIT",
   "author": "",
-  "main": "./dist/node/index.mjs",
-  "module": "./dist/node/index.mjs",
-  "types": "./dist/node/index.d.ts",
+  "main": "./src/node/index.ts",
+  "module": "./src/node/index.ts",
+  "types": "./src/node/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/node/index.d.ts",
-      "import": "./dist/node/index.mjs"
+      "types": "./src/node/index.ts",
+      "import": "./src/node/index.ts"
     },
     "./client": {
-      "types": "./client.ts",
-      "import": "./client.ts"
+      "types": "./src/client/index.ts",
+      "import": "./src/client/index.ts"
+    },
+    "./plugins": {
+      "types": "./src/plugins/index.ts",
+      "import": "./src/plugins/index.ts"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "client.ts",
+    "src"
   ],
   "scripts": {
     "build": "unbuild",
@@ -40,7 +46,7 @@
     "test:unit:watch": "vitest"
   },
   "peerDependencies": {
-    "fabric": ">=5.5.0 <7.0.0",
+    "fabric": ">=6.0.0 <7.0.0",
     "vitepress": ">=1.0.0 <2.0.0",
     "vue": ">=3.2.0 <4.0.0"
   },
@@ -52,13 +58,14 @@
   "devDependencies": {
     "@playwright/test": "^1.62.0",
     "@types/node": "^26.2.0",
+    "@vitejs/plugin-vue": "^5.2.4",
     "@vue/test-utils": "^2.4.0",
-    "fabric": "^5.5.2",
+    "fabric": "^6.5.3",
     "happy-dom": "^20.11.2",
     "typescript": "^5.0.0",
     "unbuild": "^2.0.0",
     "vitepress": "^1.6.3",
     "vitest": "^2.0.0",
-    "vue": "^3.2.0"
+    "vue": "^3.5.0"
   }
 }

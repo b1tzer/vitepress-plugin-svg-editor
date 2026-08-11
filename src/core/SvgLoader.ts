@@ -15,6 +15,30 @@
 import { preprocessSvg } from './preprocessor'
 import type { SvgLoadResult, ThemeMode } from './types'
 
+/** 安全配置 */
+const SECURITY = {
+  /** 最大 SVG 文件大小（字节），超过此大小的文件将被拒绝 */
+  maxFileSize: 10 * 1024 * 1024, // 10MB
+}
+
+/**
+ * 移除 SVG 中的危险内容：
+ *   - <script> 标签及其内容
+ *   - 事件处理器属性（onclick, onload 等）
+ *   - CSS @import url() 外部资源引用
+ */
+function sanitizeSvg(svg: string): string {
+  let s = svg
+  // 移除 <script>...</script> 标签
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, '')
+  // 移除内联事件处理器
+  s = s.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
+  s = s.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
+  // 移除 CSS @import 外部引用
+  s = s.replace(/@import\s+url\s*\([^)]*\)\s*;?/gi, '')
+  return s
+}
+
 export class SvgLoader {
   /**
    * 加载并预处理 SVG 文本
@@ -23,6 +47,15 @@ export class SvgLoader {
    * @returns 标准化结果，包含预处理后的 SVG、原始 viewBox、宽高
    */
   load(rawSvg: string, theme: ThemeMode = 'light'): SvgLoadResult {
-    return preprocessSvg(rawSvg, theme)
+    // 🔒 安全校验：拒绝超大文件
+    if (rawSvg.length > SECURITY.maxFileSize) {
+      throw new Error(
+        `SVG 文件过大（${(rawSvg.length / 1024 / 1024).toFixed(1)}MB），超过上限 ` +
+        `${SECURITY.maxFileSize / 1024 / 1024}MB。请检查文件是否包含过多数据。`
+      )
+    }
+    // 🔒 安全清洗：移除 XSS / CSS 注入向量
+    const cleaned = sanitizeSvg(rawSvg)
+    return preprocessSvg(cleaned, theme)
   }
 }

@@ -1,10 +1,12 @@
 // @ts-nocheck — fabric@5.5.2 无官方类型声明
 /**
  * 渐变填充插件 — 纯色/线性/径向
- * 依赖：全局 fabric（由 CanvasManager 保证可用）
  */
 
-export function applyGradient(canvas, { type, angle, color1, color2 }) {
+import * as fabric from 'fabric'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function applyGradient(canvas: any, { type, angle, color1, color2 }: any) {
   const a = canvas.getActiveObject()
   if (!a) return
   if (type === 'none') {
@@ -12,7 +14,7 @@ export function applyGradient(canvas, { type, angle, color1, color2 }) {
   } else {
     const radAngle = angle * Math.PI / 180
     const len = Math.max(a.width || 100, a.height || 100) / 2
-    const grad = new window.fabric.Gradient({
+    const grad = new fabric.Gradient({
       type,
       coords: type === 'linear' ? {
         x1: a.width / 2 - len * Math.cos(radAngle),

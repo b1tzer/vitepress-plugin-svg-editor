@@ -6,7 +6,7 @@
  * 模板委托给 EditorToolbar / EditorCanvas 子组件
  */
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { fabric } from 'fabric'
+import * as fabric from 'fabric'
 import EditorToolbar from './sub/EditorToolbar.vue'
 import EditorCanvas from './sub/EditorCanvas.vue'
 import { ICONS, LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/constants.ts'
@@ -22,9 +22,6 @@ import * as TextFormatPlugin from '../plugins/text-format.ts'
 import * as DistributePlugin from '../plugins/distribute.ts'
 import { applyGradient } from '../plugins/gradient.ts'
 import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
-
-// 确保 fabric 全局可用
-window.fabric = fabric
 
 // ── 存储适配器 ──
 const storageAdapter = new VitePressSaveAdapter()
@@ -211,7 +208,7 @@ async function loadAndInit() {
   await new Promise(r => requestAnimationFrame(r))
   const w = container.clientWidth || 800, h = container.clientHeight || 500
   const fc = canvasMgr.init(container.querySelector('canvas')!, w, h)
-  fabric.loadSVGFromString(svg, (objects: any[]) => {
+  fabric.loadSVGFromString(svg).then(({ objects }: any) => {
     try {
       const merged = mergeArrows(objects)
       const converted = merged.map(convertToTextbox)

@@ -3,7 +3,10 @@
  * 阴影效果插件 — 开/关 + 参数调整
  */
 
-export function toggleShadow(canvas) {
+import * as fabric from 'fabric'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function toggleShadow(canvas: any) {
   const a = canvas.getActiveObject()
   if (!a) return false
   if (a.shadow) {
@@ -11,16 +14,17 @@ export function toggleShadow(canvas) {
     canvas.renderAll()
     return false
   }
-  a.set('shadow', new window.fabric.Shadow({
+  a.set('shadow', new fabric.Shadow({
     color: '#000000', blur: 5, offsetX: 3, offsetY: 3,
   }))
   canvas.renderAll()
   return true
 }
 
-export function applyShadow(canvas, { color, blur, offsetX, offsetY }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function applyShadow(canvas: any, { color, blur, offsetX, offsetY }: any) {
   const a = canvas.getActiveObject()
   if (!a || !a.shadow) return
-  a.set('shadow', new window.fabric.Shadow({ color, blur, offsetX, offsetY }))
+  a.set('shadow', new fabric.Shadow({ color, blur, offsetX, offsetY }))
   canvas.renderAll()
 }

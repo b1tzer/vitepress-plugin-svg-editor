@@ -7,12 +7,9 @@
  *   - 画布平移（空格+拖拽）
  *   - 对齐辅助线（移动时参考线 + 松手吸附）
  *   - 对象交互配置（控制点、悬停、选择事件）
- *
- * 依赖：全局 fabric（由 loadFabric 保证可用）
  */
 
-// @ts-nocheck — fabric@5.5.2 无官方类型声明，其事件回调参数无法类型化。
-// 待升级 fabric 6.x 后可移除此指令。
+import * as fabric from 'fabric'
 import type { Canvas } from 'fabric'
 import { EventBus } from './EventBus'
 import { getObjBounds } from '../plugins/selection'
@@ -38,7 +35,8 @@ export class CanvasManager {
    * 初始化画布
    */
   init(canvasEl: HTMLCanvasElement, containerW: number, containerH: number): Canvas {
-    const fc = new window.fabric.Canvas(canvasEl, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fc = new fabric.Canvas(canvasEl as any, {
       width: containerW,
       height: containerH,
       backgroundColor: '#ffffff',
@@ -56,17 +54,16 @@ export class CanvasManager {
 
     this.canvas = fc
     // 暴露实例到 window（便于测试和调试）
-    window.__fabricCanvas = fc
-    window.__canvasMgr = this
+    ;(window as any).__fabricCanvas = fc
+    ;(window as any).__canvasMgr = this
     return fc
   }
 
   /**
-   * 配置控制点样式
+   * 配置控制点样式 — 使用 Fabric 6 的 ownDefaults 静态属性
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupControls(): void {
-    window.fabric.Object.prototype.set({
+    Object.assign(fabric.Object.ownDefaults, {
       transparentCorners: false,
       cornerSize: 10,
       cornerStrokeColor: '#0078d4',
@@ -77,7 +74,7 @@ export class CanvasManager {
       borderDashArray: [4, 2],
       padding: 8,
       perPixelTargetFind: false,
-    })
+    } as any)
   }
 
   /**
@@ -86,7 +83,7 @@ export class CanvasManager {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupCanvasEvents(fc: any) {
     // 滚轮缩放（无需 Ctrl）
-    fc.on('mouse:wheel', (opt) => {
+    fc.on('mouse:wheel', (opt: any) => {
       opt.e.preventDefault()
       opt.e.stopPropagation()
       const delta = opt.e.deltaY
@@ -99,7 +96,7 @@ export class CanvasManager {
     })
 
     // 空格+拖拽平移
-    fc.on('mouse:down', (opt) => {
+    fc.on('mouse:down', (opt: any) => {
       if (!this._spacePressed) return
       this._isPanning = true
       this._lastPanPoint = { x: opt.e.clientX, y: opt.e.clientY }
@@ -107,7 +104,7 @@ export class CanvasManager {
       fc.setCursor('grabbing')
     })
 
-    fc.on('mouse:move', (opt) => {
+    fc.on('mouse:move', (opt: any) => {
       if (!this._isPanning) return
       const dx = opt.e.clientX - this._lastPanPoint.x
       const dy = opt.e.clientY - this._lastPanPoint.y
@@ -130,12 +127,12 @@ export class CanvasManager {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupGuideLines(fc: any) {
     // 移动时：显示参考线
-    fc.on('object:moving', (opt) => {
+    fc.on('object:moving', (opt: any) => {
       const obj = opt.target
       if (!obj) return
-      const lines = []
+      const lines: GuideLine[] = []
       const objBounds = getObjBounds(obj)
-      const objects = fc.getObjects().filter(o => o !== obj && o.visible)
+      const objects = fc.getObjects().filter((o: any) => o !== obj && o.visible)
 
       for (const other of objects) {
         const ob = getObjBounds(other)
@@ -166,7 +163,7 @@ export class CanvasManager {
     })
 
     // 松手时：吸附
-    fc.on('object:modified', (opt) => {
+    fc.on('object:modified', (opt: any) => {
       const obj = opt.target
       if (obj && this._guideLines.length) {
         const z = fc.getZoom()
@@ -198,7 +195,7 @@ export class CanvasManager {
       ctx.strokeStyle = GUIDE_LINE_STYLE
       ctx.lineWidth = 1
       ctx.setLineDash(GUIDE_LINE_DASH)
-      const vpt = fc.viewportTransform
+      const vpt = fc.viewportTransform!
       for (const line of this._guideLines) {
         ctx.beginPath()
         if (line.type === 'vertical') {
@@ -219,14 +216,14 @@ export class CanvasManager {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupInteractionEvents(fc: any) {
-    fc.on('object:added', (e) => {
+    fc.on('object:added', (e: any) => {
       if (e.target) {
         e.target.set({ selectable: true, evented: true })
-        if (e.target._objects) e.target._objects.forEach(o => o.set({ selectable: true, evented: true }))
+        if (e.target._objects) e.target._objects.forEach((o: any) => o.set({ selectable: true, evented: true }))
       }
     })
 
-    fc.on('mouse:over', (e) => {
+    fc.on('mouse:over', (e: any) => {
       if (e.target && e.target.selectable) {
         fc.setCursor('pointer')
         if (!fc.getActiveObject()) {
@@ -237,7 +234,7 @@ export class CanvasManager {
       }
     })
 
-    fc.on('mouse:out', (e) => {
+    fc.on('mouse:out', (e: any) => {
       fc.setCursor('default')
       if (e.target && !fc.getActiveObject()) {
         e.target.set({ borderColor: e.target._origBorderColor || '#0078d4' })
@@ -250,14 +247,14 @@ export class CanvasManager {
     fc.on('selection:cleared', () => this._notifySelection())
 
     // Textbox 缩放时保持字号不变（Office 行为）
-    fc.on('object:scaling', (e) => {
+    fc.on('object:scaling', (e: any) => {
       const obj = e.target
       if (!obj || (obj.type !== 'textbox' && obj.type !== 'i-text')) return
       if (obj.__scalingFontSize == null) obj.__scalingFontSize = obj.fontSize
       obj.set({ fontSize: obj.__scalingFontSize / Math.max(obj.scaleY, 0.1) })
     })
 
-    fc.on('object:modified', (e) => {
+    fc.on('object:modified', (e: any) => {
       const obj = e.target
       if (obj && (obj.type === 'textbox' || obj.type === 'i-text')) {
         if (obj.__scalingFontSize != null) {
@@ -295,11 +292,11 @@ export class CanvasManager {
   }
 
   zoomFit(): void {
-    const fc = this.canvas
+    const fc = this.canvas!
     const objects = fc.getObjects()
     if (!objects.length) return
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-    objects.forEach(o => {
+    objects.forEach((o: any) => {
       const b = o.getBoundingRect()
       minX = Math.min(minX, b.left); minY = Math.min(minY, b.top)
       maxX = Math.max(maxX, b.left + b.width); maxY = Math.max(maxY, b.top + b.height)
@@ -307,7 +304,7 @@ export class CanvasManager {
     const bw = maxX - minX, bh = maxY - minY
     const cw = fc.width, ch = fc.height
     const z = Math.min((cw - 60) / bw, (ch - 60) / bh, 2)
-    const vpt = [z, 0, 0, z, (cw - bw * z) / 2 - minX * z, (ch - bh * z) / 2 - minY * z]
+    const vpt = [z, 0, 0, z, (cw - bw * z) / 2 - minX * z, (ch - bh * z) / 2 - minY * z] as [number, number, number, number, number, number]
     fc.setViewportTransform(vpt)
     fc.requestRenderAll()
     this._zoomLevel = Math.round(z * 100)

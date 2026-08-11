@@ -1,5 +1,9 @@
-<script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, watch } from 'vue'
+import { defineClientComponent } from 'vitepress'
+
+// SvgEditor 依赖 Fabric.js（Canvas API），必须 defineClientComponent 包裹确保 SSR 安全
+const SvgEditor = defineClientComponent(() => import('./SvgEditor.vue'))
 
 const props = defineProps({
   src: { type: String, required: true }
@@ -9,6 +13,7 @@ const svgContent = ref('')
 const isDev = import.meta.env.DEV
 const showEditor = ref(false)
 const hovered = ref(false)
+const editBtnRef = ref<HTMLButtonElement | null>(null)
 
 async function loadSvg() {
   try {
@@ -38,19 +43,20 @@ watch(() => props.src, loadSvg)
     <!-- Dev 模式：悬浮编辑按钮 -->
     <button
       v-if="isDev && hovered"
+      ref="editBtnRef"
       class="svg-edit-btn"
       @click="showEditor = true"
     >
       ✏️ 编辑 SVG
     </button>
 
-    <!-- 编辑器弹窗 -->
+    <!-- 编辑器弹窗 — SvgEditor 通过 defineClientComponent 仅在客户端加载 -->
     <Teleport to="body">
       <SvgEditor
         v-if="showEditor"
         :src="src"
-        @close="showEditor = false"
-        @saved="loadSvg()"
+        @close="showEditor = false; editBtnRef?.focus()"
+        @saved="loadSvg(); editBtnRef?.focus()"
       />
     </Teleport>
   </div>
