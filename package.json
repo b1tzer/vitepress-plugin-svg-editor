@@ -1,0 +1,45 @@
+{
+  "name": "vitepress-plugin-svg-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A VitePress plugin that provides interactive SVG editing capabilities directly in Markdown",
+  "keywords": ["vitepress", "plugin", "svg", "editor", "fabricjs"],
+  "license": "MIT",
+  "author": "",
+  "main": "./dist/node/index.mjs",
+  "module": "./dist/node/index.mjs",
+  "types": "./dist/node/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.mjs"
+    },
+    "./client": {
+      "types": "./client.ts",
+      "import": "./client.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vitepress": ">=1.0.0 <2.0.0",
+    "vue": ">=3.2.0 <4.0.0",
+    "fabric": ">=5.5.0 <7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "fabric": { "optional": true }
+  },
+  "devDependencies": {
+    "unbuild": "^2.0.0",
+    "typescript": "^5.0.0",
+    "vitepress": "^1.6.3",
+    "vue": "^3.2.0",
+    "fabric": "^5.5.2"
+  }
+}
