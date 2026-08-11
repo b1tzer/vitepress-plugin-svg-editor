@@ -4,7 +4,13 @@
   "private": true,
   "type": "module",
   "description": "A VitePress plugin that provides interactive SVG editing capabilities directly in Markdown",
-  "keywords": ["vitepress", "plugin", "svg", "editor", "fabricjs"],
+  "keywords": [
+    "vitepress",
+    "plugin",
+    "svg",
+    "editor",
+    "fabricjs"
+  ],
   "license": "MIT",
   "author": "",
   "main": "./dist/node/index.mjs",
@@ -20,12 +26,18 @@
       "import": "./client.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "peerDependencies": {
     "vitepress": ">=1.0.0 <2.0.0",
@@ -33,13 +45,18 @@
     "fabric": ">=5.5.0 <7.0.0"
   },
   "peerDependenciesMeta": {
-    "fabric": { "optional": true }
+    "fabric": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "unbuild": "^2.0.0",
     "typescript": "^5.0.0",
     "vitepress": "^1.6.3",
     "vue": "^3.2.0",
-    "fabric": "^5.5.2"
+    "fabric": "^5.5.2",
+    "@playwright/test": "^1.62.0",
+    "vitest": "^2.0.0",
+    "@vue/test-utils": "^2.4.0"
   }
 }
