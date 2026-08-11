@@ -42,7 +42,7 @@ export const ICONS = {
 }
 
 // ── 亮色主题 hex 值（与 custom.css :root 保持一致）──
-const LIGHT_HEX = {
+const LIGHT_HEX: Record<string, string> = {
   '--diagram-surface-1': '#FFFFFF', '--diagram-surface-2': '#F8F9FA', '--diagram-surface-3': '#ECEFF1',
   '--diagram-stroke-1': '#BDBDBD', '--diagram-stroke-2': '#E0E0E0',
   '--diagram-text-1': '#333333', '--diagram-text-2': '#666666', '--diagram-text-3': '#888888',
@@ -56,7 +56,7 @@ const LIGHT_HEX = {
 }
 
 // ── 暗色主题 hex 值（与 custom.css .dark 保持一致）──
-const DARK_HEX = {
+const DARK_HEX: Record<string, string> = {
   '--diagram-surface-1': '#1a1a1a', '--diagram-surface-2': '#222222', '--diagram-surface-3': '#2a2a2a',
   '--diagram-stroke-1': '#444444', '--diagram-stroke-2': '#333333',
   '--diagram-text-1': '#e0e0e0', '--diagram-text-2': '#b0b0b0', '--diagram-text-3': '#808080',
@@ -70,15 +70,15 @@ const DARK_HEX = {
 }
 
 // ── 按主题导出 VAR→HEX 映射（用于 preprocessor：CSS 变量 → hex 色值）──
-export const THEME_VAR_TO_HEX = {
+export const THEME_VAR_TO_HEX: Record<'light' | 'dark', Record<string, string>> = {
   light: LIGHT_HEX,
   dark: DARK_HEX,
 }
 
 // ── 亮↔暗 双向 hex 映射（用于编辑器内主题切换：遍历 canvas 对象替换颜色）──
 // 所有键值统一大写，确保 swapColor 的 .toUpperCase() 能正确匹配
-export const LIGHT_TO_DARK = {}
-export const DARK_TO_LIGHT = {}
+export const LIGHT_TO_DARK: Record<string, string> = {}
+export const DARK_TO_LIGHT: Record<string, string> = {}
 for (const v of Object.keys(LIGHT_HEX)) {
   LIGHT_TO_DARK[LIGHT_HEX[v].toUpperCase()] = DARK_HEX[v].toUpperCase()
   DARK_TO_LIGHT[DARK_HEX[v].toUpperCase()] = LIGHT_HEX[v].toUpperCase()
@@ -86,14 +86,14 @@ for (const v of Object.keys(LIGHT_HEX)) {
 
 // ── 合并映射 hex→CSS 变量（用于 postprocessor：保存时 hex→var(--xxx) 还原）──
 // 同一个 CSS 变量在亮/暗下有不同的 hex 值，还原时都映射到同一个变量名
-export const ALL_HEX_TO_VAR = {}
+export const ALL_HEX_TO_VAR: Record<string, string> = {}
 for (const v of Object.keys(LIGHT_HEX)) {
   ALL_HEX_TO_VAR[LIGHT_HEX[v]] = v
   ALL_HEX_TO_VAR[DARK_HEX[v]] = v
 }
 
 // 兼容旧代码：保持 CSS_COLORS 导出（用于 postprocessor.js 中的 hexToCssVars）
-export const CSS_COLORS = ALL_HEX_TO_VAR
+export const CSS_COLORS: Record<string, string> = ALL_HEX_TO_VAR
 
 // 兼容旧代码：保持 VAR_TO_HEX 导出（用于 preprocessor.js 中的 replaceCssVars）
-export const VAR_TO_HEX = LIGHT_HEX
+export const VAR_TO_HEX: Record<string, string> = LIGHT_HEX

@@ -1,7 +1,7 @@
 {
   "name": "vitepress-plugin-svg-editor",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "private": false,
   "type": "module",
   "description": "A VitePress plugin that provides interactive SVG editing capabilities directly in Markdown",
   "keywords": [
@@ -40,9 +40,9 @@
     "test:unit:watch": "vitest"
   },
   "peerDependencies": {
+    "fabric": ">=5.5.0 <7.0.0",
     "vitepress": ">=1.0.0 <2.0.0",
-    "vue": ">=3.2.0 <4.0.0",
-    "fabric": ">=5.5.0 <7.0.0"
+    "vue": ">=3.2.0 <4.0.0"
   },
   "peerDependenciesMeta": {
     "fabric": {
@@ -50,13 +50,15 @@
     }
   },
   "devDependencies": {
-    "unbuild": "^2.0.0",
-    "typescript": "^5.0.0",
-    "vitepress": "^1.6.3",
-    "vue": "^3.2.0",
-    "fabric": "^5.5.2",
     "@playwright/test": "^1.62.0",
+    "@types/node": "^26.2.0",
+    "@vue/test-utils": "^2.4.0",
+    "fabric": "^5.5.2",
+    "happy-dom": "^20.11.2",
+    "typescript": "^5.0.0",
+    "unbuild": "^2.0.0",
+    "vitepress": "^1.6.3",
     "vitest": "^2.0.0",
-    "@vue/test-utils": "^2.4.0"
+    "vue": "^3.2.0"
   }
 }

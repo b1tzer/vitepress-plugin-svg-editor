@@ -1,3 +1,4 @@
+// @ts-nocheck — fabric@5.5.2 无官方类型声明
 /**
  * 渐变填充插件 — 纯色/线性/径向
  * 依赖：全局 fabric（由 CanvasManager 保证可用）

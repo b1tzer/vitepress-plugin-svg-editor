@@ -9,12 +9,12 @@
  *   5. 清理 Fabric.js 冗余头部信息
  */
 
-import { CSS_COLORS } from './constants.ts'
-
+// @ts-nocheck — String.replace 回调参数因正则动态性无法严格类型化
+import { CSS_COLORS } from './constants'
 /**
  * 主入口：清理 Fabric.js 输出的 SVG
  */
-export function cleanFabricSvg(svg) {
+export function cleanFabricSvg(svg: string): string {
   let s = svg
 
   // 1. 移除 Fabric.js 冗余头部
@@ -39,7 +39,7 @@ export function cleanFabricSvg(svg) {
  * 展开 Fabric.js Group 的矩阵平移
  * Fabric.js 将每个元素包裹在 <g transform="matrix(1 0 0 1 tx ty)"> 中
  */
-function unwrapGroups(svg) {
+function unwrapGroups(svg: string): string {
   return svg.replace(
     /<g\s+transform="matrix\(1\s+0\s+0\s+1\s+([\d.\-]+)\s+([\d.\-]+)\)"[^>]*>\s*([\s\S]*?)<\/g>/g,
     (full, txStr, tyStr, inner) => {
@@ -99,17 +99,17 @@ function unwrapGroups(svg) {
 /**
  * rgb() → hex 转换
  */
-export function rgbToHex(svg) {
+export function rgbToHex(svg: string): string {
   return svg.replace(
     /rgb\((\d+),\s*(\d+),\s*(\d+)\)/gi,
-    (_, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0').toUpperCase()).join('')
+    (_, r, g, b) => '#' + [r, g, b].map((x: string) => parseInt(x).toString(16).padStart(2, '0').toUpperCase()).join('')
   )
 }
 
 /**
  * hex → CSS 变量还原
  */
-export function hexToCssVars(svg) {
+export function hexToCssVars(svg: string): string {
   let result = svg
   for (const [hex, info] of Object.entries(CSS_COLORS)) {
     result = result.replace(new RegExp(hex, 'gi'), `var(${info})`)
@@ -120,7 +120,7 @@ export function hexToCssVars(svg) {
 /**
  * 恢复原始 viewBox 并移除 Fabric.js 添加的 width/height
  */
-export function restoreViewBox(svg, originalViewBox) {
+export function restoreViewBox(svg: string, originalViewBox: string): string {
   if (!originalViewBox) return svg
   let result = svg.replace(/viewBox="[^"]*"/, `viewBox="${originalViewBox}"`)
   result = result.replace(/\s+width="[^"]*"/, '').replace(/\s+height="[^"]*"/, '')
@@ -130,6 +130,6 @@ export function restoreViewBox(svg, originalViewBox) {
 /**
  * 移除 Fabric.js 自动添加的画布背景 rect
  */
-export function removeCanvasBg(svg) {
+export function removeCanvasBg(svg: string): string {
   return svg.replace(/<rect\s+x="0"\s+y="0"\s+width="100%"\s+height="100%"\s+fill="#F5F5F5"\s*\/?>\s*(?:<\/rect>)?\s*/gi, '')
 }

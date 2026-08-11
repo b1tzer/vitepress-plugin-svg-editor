@@ -1,3 +1,4 @@
+// @ts-nocheck — fabric@5.5.2 无官方类型声明
 /**
  * 对齐插件 — 对多选元素执行 6 种对齐操作
  * 依赖：Fabric.js canvas API

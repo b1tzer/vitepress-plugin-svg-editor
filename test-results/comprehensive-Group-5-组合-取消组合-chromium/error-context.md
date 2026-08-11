@@ -1,0 +1,1770 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: comprehensive.spec.ts >> Group 5: 组合/取消组合
+- Location: tests/comprehensive.spec.ts:153:1
+
+# Error details
+
+```
+Test timeout of 30000ms exceeded while running "beforeEach" hook.
+```
+
+```
+Error: locator.click: Test timeout of 30000ms exceeded.
+Call log:
+  - waiting for locator('.svg-container').nth(1).locator('.svg-edit-btn')
+
+```
+
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - link "Skip to content" [ref=e4] [cursor=pointer]:
+    - /url: "#VPContent"
+  - banner:
+    - generic:
+      - generic:
+        - generic:
+          - link "Java World" [ref=e6] [cursor=pointer]:
+            - /url: /java-world/
+          - generic [ref=e8]:
+            - button "搜索" [ref=e11] [cursor=pointer]:
+              - generic [ref=e12]: 搜索文档
+              - generic [ref=e15]:
+                - generic [ref=e16]: Ctrl
+                - generic [ref=e17]: K
+            - navigation "Main Navigation" [ref=e18]:
+              - link "首页" [ref=e20] [cursor=pointer]:
+                - /url: /java-world/
+              - button "目录" [ref=e23] [cursor=pointer]
+              - link "GitHub" [ref=e27] [cursor=pointer]:
+                - /url: https://github.com/b1tzer/java-world
+            - switch "Switch to dark theme" [ref=e30] [cursor=pointer]
+            - link "github" [ref=e36] [cursor=pointer]:
+              - /url: https://github.com/b1tzer/java-world
+  - complementary [ref=e38]:
+    - navigation "Sidebar Navigation" [ref=e40]:
+      - generic [ref=e43]:
+        - button [ref=e44] [cursor=pointer]:
+          - heading "第一卷 Java 语言" [level=2] [ref=e46]
+          - button "toggle section" [ref=e47]
+        - generic [ref=e49]:
+          - link [ref=e53] [cursor=pointer]:
+            - /url: /java-world/01-java-language/chapter-01-type-system.html
+            - paragraph [ref=e54]: 类型系统
+          - link [ref=e58] [cursor=pointer]:
+            - /url: /java-world/01-java-language/chapter-02-oop.html
+            - paragraph [ref=e59]: 面向对象
+          - link [ref=e63] [cursor=pointer]:
+            - /url: /java-world/01-java-language/chapter-03-generics.html
+            - paragraph [ref=e64]: 泛型
+          - link [ref=e68] [cursor=pointer]:
+            - /url: /java-world/01-java-language/chapter-04-annotation-lambda.html
+            - paragraph [ref=e69]: 注解与 Lambda
+      - generic [ref=e71]:
+        - button [ref=e72] [cursor=pointer]:
+          - heading "第二卷 JVM Runtime" [level=2] [ref=e74]
+          - button "toggle section" [ref=e75]
+        - generic [ref=e77]:
+          - link [ref=e81] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-01-bytecode-classloading.html
+            - paragraph [ref=e82]: 字节码与类加载
+          - link [ref=e86] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-02-memory-model.html
+            - paragraph [ref=e87]: JVM 运行时数据区
+          - link [ref=e91] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-03-object-model.html
+            - paragraph [ref=e92]: 对象模型
+          - link [ref=e96] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-04-gc.html
+            - paragraph [ref=e97]: 垃圾回收
+          - link [ref=e101] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-05-jit.html
+            - paragraph [ref=e102]: JIT 编译
+          - link [ref=e106] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-06-diagnostics.html
+            - paragraph [ref=e107]: 线上排查与诊断
+          - link [ref=e111] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-06-diagnostics-cases-part1.html
+            - paragraph [ref=e112]: 案例集（一）：CPU 飙升与内存泄漏
+          - link [ref=e116] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-06-diagnostics-cases-part2.html
+            - paragraph [ref=e117]: 案例集（二）：GC 调优与综合诊断
+          - link [ref=e121] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-06-diagnostics-cases-part3.html
+            - paragraph [ref=e122]: 案例集（三）：低内存低 CPU 下的 GC 疑难杂症
+          - link [ref=e126] [cursor=pointer]:
+            - /url: /java-world/02-jvm-runtime/chapter-06-diagnostics-cases-part4.html
+            - paragraph [ref=e127]: 案例集（四）：堆正常但服务崩了——TCP 层与堆外内存
+      - generic [ref=e129]:
+        - button [ref=e130] [cursor=pointer]:
+          - heading "第三卷 Java 并发" [level=2] [ref=e132]
+          - button "toggle section" [ref=e133]
+        - generic [ref=e135]:
+          - link [ref=e139] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-01-why-concurrency.html
+            - paragraph [ref=e140]: 并发的本质
+          - link [ref=e144] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-02-thread-model.html
+            - paragraph [ref=e145]: 线程：Java 的执行单元
+          - link [ref=e149] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-03-threadlocal.html
+            - paragraph [ref=e150]: 线程封闭：ThreadLocal
+          - link [ref=e154] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-04-jmm.html
+            - paragraph [ref=e155]: Java 内存模型（JMM）
+          - link [ref=e159] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-05-volatile.html
+            - paragraph [ref=e160]: volatile
+          - link [ref=e164] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-06-synchronized.html
+            - paragraph [ref=e165]: synchronized
+          - link [ref=e169] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-07-cas-atomic.html
+            - paragraph [ref=e170]: CAS 与原子类
+          - link [ref=e174] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-08-locksupport-aqs.html
+            - paragraph [ref=e175]: LockSupport 与 AQS
+          - link [ref=e179] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-09-concurrent-collections.html
+            - paragraph [ref=e180]: 并发集合
+          - link [ref=e184] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-10-thread-pool.html
+            - paragraph [ref=e185]: 线程池
+          - link [ref=e189] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-11-async-model.html
+            - paragraph [ref=e190]: 异步编程
+          - link [ref=e194] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-12-virtual-thread.html
+            - paragraph [ref=e195]: 虚拟线程与结构化并发
+          - link [ref=e199] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-13-diagnostics.html
+            - paragraph [ref=e200]: 诊断与优化
+          - link [ref=e204] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-13-diagnostics-cases-part1.html
+            - paragraph [ref=e205]: 案例集（一）：死锁、线程池与并发集合
+          - link [ref=e209] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-13-diagnostics-cases-part2.html
+            - paragraph [ref=e210]: 案例集（二）：虚拟线程与综合诊断
+          - link [ref=e214] [cursor=pointer]:
+            - /url: /java-world/03-java-concurrency/chapter-13-diagnostics-cases-part3.html
+            - paragraph [ref=e215]: 案例集（三）：静默死锁与无超时雪崩
+      - generic [ref=e217]:
+        - button [ref=e218] [cursor=pointer]:
+          - heading "第四卷 网络与通信" [level=2] [ref=e220]
+          - button "toggle section" [ref=e221]
+        - generic [ref=e223]:
+          - link [ref=e227] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-01-network-basics.html
+            - paragraph [ref=e228]: 网络通信基础
+          - link [ref=e232] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-02-tcp-ip.html
+            - paragraph [ref=e233]: TCP/IP
+          - link [ref=e237] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-03-socket.html
+            - paragraph [ref=e238]: Socket 编程
+          - link [ref=e242] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-04-nio.html
+            - paragraph [ref=e243]: Java NIO
+          - link [ref=e247] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-05-netty.html
+            - paragraph [ref=e248]: Netty
+          - link [ref=e252] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-06-http.html
+            - paragraph [ref=e253]: HTTP 协议
+          - link [ref=e257] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-07-servlet-springmvc.html
+            - paragraph [ref=e258]: Servlet 到 Spring MVC
+          - link [ref=e262] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-08-rpc.html
+            - paragraph [ref=e263]: RPC 与微服务
+          - link [ref=e267] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-09-long-connection.html
+            - paragraph [ref=e268]: 长连接与实时通信
+          - link [ref=e272] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-10-network-diagnostics.html
+            - paragraph [ref=e273]: 网络诊断
+      - generic [ref=e275]:
+        - button [ref=e276] [cursor=pointer]:
+          - heading "第五卷 数据访问与持久化" [level=2] [ref=e278]
+          - button "toggle section" [ref=e279]
+        - generic [ref=e281]:
+          - link [ref=e285] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-01-persistence-thought.html
+            - paragraph [ref=e286]: 持久化思想
+          - link [ref=e290] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-02-jdbc.html
+            - paragraph [ref=e291]: JDBC
+          - link [ref=e295] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-03-mybatis.html
+            - paragraph [ref=e296]: MyBatis
+          - link [ref=e300] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-04-orm-deep.html
+            - paragraph [ref=e301]: ORM 深入
+          - link [ref=e305] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-05-db-principles.html
+            - paragraph [ref=e306]: 数据库核心原理
+          - link [ref=e310] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-06-spring-transaction.html
+            - paragraph [ref=e311]: Spring 事务
+          - link [ref=e315] [cursor=pointer]:
+            - /url: /java-world/05-java-data-access/chapter-07-performance.html
+            - paragraph [ref=e316]: 性能优化
+      - generic [ref=e318]:
+        - button [ref=e319] [cursor=pointer]:
+          - heading "第六卷 企业架构" [level=2] [ref=e321]
+          - button "toggle section" [ref=e322]
+        - generic [ref=e324]:
+          - link [ref=e328] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-01-spring-core.html
+            - paragraph [ref=e329]: Spring 核心思想
+          - link [ref=e333] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-02-container-aop.html
+            - paragraph [ref=e334]: 容器与 AOP
+          - link [ref=e338] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-03-spring-mvc.html
+            - paragraph [ref=e339]: Spring MVC
+          - link [ref=e343] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-04-spring-boot.html
+            - paragraph [ref=e344]: Spring Boot
+          - link [ref=e348] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-05-data-integration.html
+            - paragraph [ref=e349]: 数据访问整合
+          - link [ref=e353] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-06-microservices.html
+            - paragraph [ref=e354]: 微服务架构
+          - link [ref=e358] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-07-governance.html
+            - paragraph [ref=e359]: 分布式治理
+          - link [ref=e363] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-08-security-deploy.html
+            - paragraph [ref=e364]: 安全与部署
+          - link [ref=e368] [cursor=pointer]:
+            - /url: /java-world/06-java-enterprise/chapter-09-observability.html
+            - paragraph [ref=e369]: 可观测性
+      - generic [ref=e371]:
+        - button [ref=e372] [cursor=pointer]:
+          - heading "第七卷 性能与架构" [level=2] [ref=e374]
+          - button "toggle section" [ref=e375]
+        - generic [ref=e377]:
+          - link [ref=e381] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-01-architecture.html
+            - paragraph [ref=e382]: 架构思想
+          - link [ref=e386] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-02-ddd.html
+            - paragraph [ref=e387]: 领域驱动设计
+          - link [ref=e391] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-03-high-concurrency.html
+            - paragraph [ref=e392]: 高并发设计
+          - link [ref=e396] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-04-high-availability.html
+            - paragraph [ref=e397]: 高可用设计
+          - link [ref=e401] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-05-distributed.html
+            - paragraph [ref=e402]: 分布式系统
+          - link [ref=e406] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-06-data-architecture.html
+            - paragraph [ref=e407]: 数据架构
+          - link [ref=e411] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-07-messaging.html
+            - paragraph [ref=e412]: 消息驱动
+          - link [ref=e416] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-08-performance.html
+            - paragraph [ref=e417]: 性能工程
+          - link [ref=e421] [cursor=pointer]:
+            - /url: /java-world/07-performance-architecture/chapter-09-case-studies.html
+            - paragraph [ref=e422]: 架构案例
+  - generic [ref=e425]:
+    - navigation [ref=e431]:
+      - generic [ref=e432]:
+        - heading "本章目录" [level=2] [ref=e434]
+        - list [ref=e435]:
+          - listitem [ref=e436]:
+            - link "3.1 Socket 的本质：OS 如何抽象网络通信" [ref=e437] [cursor=pointer]:
+              - /url: "#_3-1-socket-的本质-os-如何抽象网络通信"
+            - list [ref=e438]:
+              - listitem [ref=e439]:
+                - link "3.1.1 从网卡到进程：数据的旅程" [ref=e440] [cursor=pointer]:
+                  - /url: "#_3-1-1-从网卡到进程-数据的旅程"
+              - listitem [ref=e441]:
+                - link "3.1.2 Socket = 文件描述符 + 协议栈" [ref=e442] [cursor=pointer]:
+                  - /url: "#_3-1-2-socket-文件描述符-协议栈"
+              - listitem [ref=e443]:
+                - link "3.1.3 五元组与连接标识" [ref=e444] [cursor=pointer]:
+                  - /url: "#_3-1-3-五元组与连接标识"
+              - listitem [ref=e445]:
+                - link "3.1.4 Socket 的两种类型" [ref=e446] [cursor=pointer]:
+                  - /url: "#_3-1-4-socket-的两种类型"
+          - listitem [ref=e447]:
+            - link "3.2 Socket 系统调用与 Java 映射" [ref=e448] [cursor=pointer]:
+              - /url: "#_3-2-socket-系统调用与-java-映射"
+            - list [ref=e449]:
+              - listitem [ref=e450]:
+                - link "3.2.1 socket()：创建端点" [ref=e451] [cursor=pointer]:
+                  - /url: "#_3-2-1-socket-创建端点"
+              - listitem [ref=e452]:
+                - link "3.2.2 bind() + listen()：绑定端口、开始监听" [ref=e453] [cursor=pointer]:
+                  - /url: "#_3-2-2-bind-listen-绑定端口、开始监听"
+              - listitem [ref=e454]:
+                - link "3.2.3 accept()：从全连接队列取出连接" [ref=e455] [cursor=pointer]:
+                  - /url: "#_3-2-3-accept-从全连接队列取出连接"
+              - listitem [ref=e456]:
+                - link "3.2.4 connect()：客户端发起三次握手" [ref=e457] [cursor=pointer]:
+                  - /url: "#_3-2-4-connect-客户端发起三次握手"
+              - listitem [ref=e458]:
+                - link "3.2.5 read() / write()：数据在内核缓冲区的流转" [ref=e459] [cursor=pointer]:
+                  - /url: "#_3-2-5-read-write-数据在内核缓冲区的流转"
+              - listitem [ref=e460]:
+                - link "3.2.6 close()：四次挥手与 fd 释放" [ref=e461] [cursor=pointer]:
+                  - /url: "#_3-2-6-close-四次挥手与-fd-释放"
+          - listitem [ref=e462]:
+            - link "3.3 内核视角：Socket 背后的数据结构" [ref=e463] [cursor=pointer]:
+              - /url: "#_3-3-内核视角-socket-背后的数据结构"
+            - list [ref=e464]:
+              - listitem [ref=e465]:
+                - link "3.3.1 发送缓冲区与接收缓冲区" [ref=e466] [cursor=pointer]:
+                  - /url: "#_3-3-1-发送缓冲区与接收缓冲区"
+              - listitem [ref=e467]:
+                - link "3.3.2 全连接队列与半连接队列" [ref=e468] [cursor=pointer]:
+                  - /url: "#_3-3-2-全连接队列与半连接队列"
+              - listitem [ref=e469]:
+                - link "3.3.3 阻塞的本质：线程在内核的哪里等" [ref=e470] [cursor=pointer]:
+                  - /url: "#_3-3-3-阻塞的本质-线程在内核的哪里等"
+              - listitem [ref=e471]:
+                - link "3.3.4 一台机器能承载多少 Socket" [ref=e472] [cursor=pointer]:
+                  - /url: "#_3-3-4-一台机器能承载多少-socket"
+          - listitem [ref=e473]:
+            - link "3.4 Socket 选项：生产中真正要调的参数" [ref=e474] [cursor=pointer]:
+              - /url: "#_3-4-socket-选项-生产中真正要调的参数"
+            - list [ref=e475]:
+              - listitem [ref=e476]:
+                - link "3.4.1 SO_REUSEADDR 与 SO_REUSEPORT" [ref=e477] [cursor=pointer]:
+                  - /url: "#_3-4-1-so-reuseaddr-与-so-reuseport"
+              - listitem [ref=e478]:
+                - link "3.4.2 TCP_NODELAY：禁用 Nagle 算法" [ref=e479] [cursor=pointer]:
+                  - /url: "#_3-4-2-tcp-nodelay-禁用-nagle-算法"
+              - listitem [ref=e480]:
+                - link "3.4.3 SO_KEEPALIVE：TCP 层保活" [ref=e481] [cursor=pointer]:
+                  - /url: "#_3-4-3-so-keepalive-tcp-层保活"
+              - listitem [ref=e482]:
+                - link "3.4.4 SO_RCVBUF / SO_SNDBUF：缓冲区大小" [ref=e483] [cursor=pointer]:
+                  - /url: "#_3-4-4-so-rcvbuf-so-sndbuf-缓冲区大小"
+              - listitem [ref=e484]:
+                - link "3.4.5 在 Java 中设置 Socket 选项" [ref=e485] [cursor=pointer]:
+                  - /url: "#_3-4-5-在-java-中设置-socket-选项"
+          - listitem [ref=e486]:
+            - link "3.5 动手：用 Java Socket 跑通一个 Echo" [ref=e487] [cursor=pointer]:
+              - /url: "#_3-5-动手-用-java-socket-跑通一个-echo"
+            - list [ref=e488]:
+              - listitem [ref=e489]:
+                - link "3.5.1 Echo Server" [ref=e490] [cursor=pointer]:
+                  - /url: "#_3-5-1-echo-server"
+              - listitem [ref=e491]:
+                - link "3.5.2 Echo Client" [ref=e492] [cursor=pointer]:
+                  - /url: "#_3-5-2-echo-client"
+              - listitem [ref=e493]:
+                - link "3.5.3 代码剖析" [ref=e494] [cursor=pointer]:
+                  - /url: "#_3-5-3-代码剖析"
+              - listitem [ref=e495]:
+                - link "3.5.4 一连接一线程的局限" [ref=e496] [cursor=pointer]:
+                  - /url: "#_3-5-4-一连接一线程的局限"
+          - listitem [ref=e497]:
+            - link "本章小结" [ref=e498] [cursor=pointer]:
+              - /url: "#本章小结"
+    - generic [ref=e500]:
+      - main [ref=e501]:
+        - generic [ref=e503]:
+          - heading [level=1] [ref=e504]:
+            - text: 第3章 Java Socket 编程：网络抽象的起点
+            - link "Permalink to \"第3章 Java Socket 编程：网络抽象的起点\"" [ref=e505] [cursor=pointer]:
+              - /url: "#第3章-java-socket-编程-网络抽象的起点"
+              - text: "#"
+          - blockquote [ref=e506]:
+            - paragraph [ref=e507]:
+              - strong [ref=e508]: 核心问题：
+              - text: 你线上报过
+              - code [ref=e509]: Too many open files
+              - text: ，调过
+              - code [ref=e510]: ulimit -n 65535
+              - text: ，配过连接池的
+              - code [ref=e511]: maxConnections
+              - text: ——但你有没有想过，fd 到底是什么？一个
+              - code [ref=e512]: new Socket()
+              - text: 在内核里到底分配了什么？
+              - code [ref=e513]: read()
+              - text: 卡住的时候，线程去哪了？一台机器到底能撑多少连接？本章从 OS 内核视角出发，把 Socket 从"一个 Java 对象"拆回它的本质：一个文件描述符、两块内核缓冲区、两对队列。
+          - separator [ref=e514]
+          - heading [level=2] [ref=e515]:
+            - text: 3.1 Socket 的本质：OS 如何抽象网络通信
+            - link "Permalink to \"3.1 Socket 的本质：OS 如何抽象网络通信\"" [ref=e516] [cursor=pointer]:
+              - /url: "#_3-1-socket-的本质-os-如何抽象网络通信"
+              - text: "#"
+          - heading [level=3] [ref=e517]:
+            - text: 3.1.1 从网卡到进程：数据的旅程
+            - link "Permalink to \"3.1.1 从网卡到进程：数据的旅程\"" [ref=e518] [cursor=pointer]:
+              - /url: "#_3-1-1-从网卡到进程-数据的旅程"
+              - text: "#"
+          - paragraph [ref=e519]: 当一台机器的网线收到一个 TCP 包，数据要经过层层处理才能到达应用程序：
+          - img [ref=e521]:
+            - generic [ref=e522]: 从网卡到进程：数据的旅程
+            - generic [ref=e524]: 网卡（硬件）
+            - generic [ref=e525]: DMA 到内核内存
+            - generic [ref=e527]: 链路层
+            - generic [ref=e528]: 校验 MAC 地址，剥离帧头
+            - generic [ref=e530]: 网络层
+            - generic [ref=e531]: 校验 IP 地址，路由判断
+            - generic [ref=e533]: 传输层
+            - generic [ref=e534]: 根据端口号找到对应的 Socket
+            - generic [ref=e535]: 数据写入 Socket 的接收缓冲区
+            - generic [ref=e537]: 应用程序
+            - generic [ref=e538]: read() 从缓冲区取出数据
+            - generic [ref=e540]: 关键一步
+            - generic [ref=e541]: 根据五元组
+            - generic [ref=e542]: 找到 Socket
+            - generic [ref=e543]: Socket 的价值：把复杂的协议栈封装成"读写缓冲区"
+            - generic [ref=e544]: 对应用而言，网络通信和读写文件几乎没有区别
+          - paragraph [ref=e545]:
+            - text: 关键一步在
+            - strong [ref=e546]: 传输层
+            - text: ：内核根据报文的
+            - strong [ref=e547]: 目标 IP + 目标端口
+            - text: （以及源 IP + 源端口）找到对应的 Socket，把数据塞进它的
+            - strong [ref=e548]: 接收缓冲区
+            - text: 。应用程序调用
+            - code [ref=e549]: read()
+            - text: 时，读的就是这个缓冲区——它不需要知道网卡型号、TCP 校验和、路由表，内核把这些全部处理好了。
+          - paragraph [ref=e550]:
+            - text: Socket 的价值就在这里：
+            - strong [ref=e551]: 它把复杂的网络协议栈封装成了一个"读写缓冲区"
+            - text: 。对应用程序而言，网络通信和读写文件在接口层面几乎没有区别。
+          - heading [level=3] [ref=e552]:
+            - text: 3.1.2 Socket = 文件描述符 + 协议栈
+            - link "Permalink to \"3.1.2 Socket = 文件描述符 + 协议栈\"" [ref=e553] [cursor=pointer]:
+              - /url: "#_3-1-2-socket-文件描述符-协议栈"
+              - text: "#"
+          - paragraph [ref=e554]:
+            - text: 在 Unix/Linux 中，Socket 本质上是一个
+            - strong [ref=e555]: 文件描述符（File Descriptor, fd）
+            - text: 。操作系统把一切 I/O 资源都抽象为 fd——普通文件、管道、设备、网络连接，对应用来说都是一个
+            - code [ref=e556]: int
+            - text: 数字。
+          - img [ref=e558]:
+            - generic [ref=e559]: 进程的文件描述符表
+            - generic [ref=e561]: fd
+            - generic [ref=e563]: 指向的内核对象
+            - generic [ref=e565]: "0"
+            - generic [ref=e567]: stdin（标准输入）
+            - generic [ref=e569]: "1"
+            - generic [ref=e571]: stdout（标准输出）
+            - generic [ref=e573]: "2"
+            - generic [ref=e575]: stderr（标准错误）
+            - generic [ref=e577]: "3"
+            - generic [ref=e579]: /var/log/app.log
+            - generic [ref=e581]: "4"
+            - generic [ref=e583]: Socket（TCP）
+            - generic [ref=e584]: 192.168.1.1:8080 → 10.0.0.5:43210
+            - generic [ref=e586]: "5"
+            - generic [ref=e588]: Socket（TCP）
+            - generic [ref=e589]: 192.168.1.1:8080 → 10.0.0.6:51782
+            - generic [ref=e591]: 每
+            - generic [ref=e592]: 个
+            - generic [ref=e593]: Socket
+            - generic [ref=e594]: 占 1
+            - generic [ref=e595]: 个 fd
+            - generic [ref=e596]: Socket 本质是 fd + 协议栈，close(fd) 同时释放两者
+          - paragraph [ref=e597]: 创建一个 Socket 时，内核做的事情：
+          - list [ref=e598]:
+            - listitem [ref=e599]:
+              - text: 分配一个
+              - strong [ref=e600]:
+                - code [ref=e601]: struct socket
+              - text: （内核中的 Socket 对象）
+            - listitem [ref=e602]:
+              - text: 在进程的
+              - strong [ref=e603]: 文件描述符表
+              - text: 中找一个空位，填入指向该 Socket 的指针
+            - listitem [ref=e604]: 返回这个 fd 的编号给应用
+          - paragraph [ref=e605]:
+            - text: 后续所有操作——
+            - code [ref=e606]: read
+            - text: 、
+            - code [ref=e607]: write
+            - text: 、
+            - code [ref=e608]: close
+            - text: ——都通过这个 fd 编号进行。这就是为什么
+            - code [ref=e609]: socket()
+            - text: 系统调用的返回值是一个
+            - code [ref=e610]: int
+            - text: ，而不是一个"连接对象"。
+          - blockquote [ref=e611]:
+            - paragraph [ref=e612]:
+              - strong [ref=e613]: Java 层面的映射
+              - text: ：Java 的
+              - code [ref=e614]: Socket
+              - text: 和
+              - code [ref=e615]: ServerSocket
+              - text: 对象内部持有一个 OS fd。
+              - code [ref=e616]: socket.close()
+              - text: 最终调用的就是 OS 的
+              - code [ref=e617]: close(fd)
+              - text: 。如果 Java 对象被 GC 回收但没有显式
+              - code [ref=e618]: close()
+              - text: ，fd 的释放要等
+              - code [ref=e619]: finalize()
+              - text: （JDK 9+ 改为
+              - code [ref=e620]: Cleaner
+              - text: ），期间 fd 一直被占着——这就是为什么必须用 try-with-resources 显式关闭 Socket。
+          - heading [level=3] [ref=e621]:
+            - text: 3.1.3 五元组与连接标识
+            - link "Permalink to \"3.1.3 五元组与连接标识\"" [ref=e622] [cursor=pointer]:
+              - /url: "#_3-1-3-五元组与连接标识"
+              - text: "#"
+          - paragraph [ref=e623]:
+            - text: 一个 TCP 连接由
+            - strong [ref=e624]: 五元组
+            - text: 唯一标识：
+          - table [ref=e625]:
+            - rowgroup [ref=e626]:
+              - row [ref=e627]:
+                - columnheader "字段" [ref=e628]
+                - columnheader "含义" [ref=e629]
+                - columnheader "示例" [ref=e630]
+            - rowgroup [ref=e631]:
+              - row [ref=e632]:
+                - cell "源 IP" [ref=e633]
+                - cell "发送方的 IP 地址" [ref=e634]
+                - cell [ref=e635]:
+                  - code [ref=e636]: 10.0.0.5
+              - row [ref=e637]:
+                - cell "源端口" [ref=e638]
+                - cell "发送方的临时端口" [ref=e639]
+                - cell [ref=e640]:
+                  - code [ref=e641]: "43210"
+              - row [ref=e642]:
+                - cell "目标 IP" [ref=e643]
+                - cell "接收方的 IP 地址" [ref=e644]
+                - cell [ref=e645]:
+                  - code [ref=e646]: 192.168.1.1
+              - row [ref=e647]:
+                - cell "目标端口" [ref=e648]
+                - cell "接收方的监听端口" [ref=e649]
+                - cell [ref=e650]:
+                  - code [ref=e651]: "8080"
+              - row [ref=e652]:
+                - cell "协议" [ref=e653]
+                - cell "TCP 或 UDP" [ref=e654]
+                - cell [ref=e655]:
+                  - code [ref=e656]: TCP
+          - paragraph [ref=e657]: 五元组相同的两个包属于同一条连接，五元组不同则属于不同连接。
+          - paragraph [ref=e658]:
+            - strong [ref=e659]: 服务端一个监听端口能接受多少连接？
+          - paragraph [ref=e660]:
+            - text: 很多初学者以为"一个端口只能一个连接"，这是误解。服务端监听
+            - code [ref=e661]: "8080"
+            - text: 端口后，每
+            - code [ref=e662]: accept()
+            - text: 一个新连接，内核就创建一个新的 Socket（新的 fd），这个 Socket 的五元组中
+            - strong [ref=e663]: 目标 IP:端口
+            - text: 相同（都是
+            - code [ref=e664]: 192.168.1.1:8080
+            - text: ），但
+            - strong [ref=e665]: 源 IP:端口
+            - text: 不同。只要来源不同，就是不同的连接。
+          - generic [ref=e666]:
+            - button "Copy Code" [ref=e667] [cursor=pointer]
+            - generic [ref=e668]: text
+            - code [ref=e670]:
+              - generic [ref=e671]: "Server: listen(:8080)"
+              - generic [ref=e672]: Client A (10.0.0.5:43210) ──连接──► Server:8080 → accept() → fd=4
+              - generic [ref=e673]: Client B (10.0.0.5:43211) ──连接──► Server:8080 → accept() → fd=5
+              - generic [ref=e674]: Client C (10.0.0.6:51782) ──连接──► Server:8080 → accept() → fd=6
+            - generic [ref=e675]: 1 2 3 4 5
+          - paragraph [ref=e676]: 三个连接共享同一个监听端口，但五元组各不相同。
+          - paragraph [ref=e677]:
+            - strong [ref=e678]: 理论容量分析：
+          - table [ref=e679]:
+            - rowgroup [ref=e680]:
+              - row [ref=e681]:
+                - columnheader "维度" [ref=e682]
+                - columnheader "上限" [ref=e683]
+                - columnheader "制约因素" [ref=e684]
+            - rowgroup [ref=e685]:
+              - row [ref=e686]:
+                - cell "单个客户端 → 单个服务端端口" [ref=e687]
+                - cell "~65,535 条" [ref=e688]
+                - cell [ref=e689]:
+                  - text: 客户端临时端口范围（
+                  - code [ref=e690]: /proc/sys/net/ipv4/ip_local_port_range
+                  - text: ，默认 32768~60999）
+              - row [ref=e691]:
+                - cell "单个服务端 IP 的所有端口" [ref=e692]
+                - cell "~65,535 × 65,535 条（理论）" [ref=e693]
+                - cell "实际受 fd 限制和内存限制" [ref=e694]
+              - row [ref=e695]:
+                - cell "多网卡多 IP 的服务端" [ref=e696]
+                - cell "IP 数 × 65,535 × 客户端数" [ref=e697]
+                - cell "网卡带宽、内存、fd 上限" [ref=e698]
+          - paragraph [ref=e699]:
+            - text: 实际生产中，连接数的瓶颈
+            - strong [ref=e700]: 从来不是端口数
+            - text: ，而是下一节要讲的 fd 限制和内核资源。
+          - heading [level=3] [ref=e701]:
+            - text: 3.1.4 Socket 的两种类型
+            - link "Permalink to \"3.1.4 Socket 的两种类型\"" [ref=e702] [cursor=pointer]:
+              - /url: "#_3-1-4-socket-的两种类型"
+              - text: "#"
+          - table [ref=e703]:
+            - rowgroup [ref=e704]:
+              - row [ref=e705]:
+                - columnheader "类型" [ref=e706]
+                - columnheader "协议" [ref=e707]
+                - columnheader "特点" [ref=e708]
+                - columnheader "典型场景" [ref=e709]
+            - rowgroup [ref=e710]:
+              - row [ref=e711]:
+                - cell [ref=e712]:
+                  - strong [ref=e713]: Stream Socket
+                - cell "TCP" [ref=e714]
+                - cell "面向连接、可靠、有序、字节流" [ref=e715]
+                - cell "HTTP、数据库连接、RPC" [ref=e716]
+              - row [ref=e717]:
+                - cell [ref=e718]:
+                  - strong [ref=e719]: Datagram Socket
+                - cell "UDP" [ref=e720]
+                - cell "无连接、不可靠、低延迟、数据报" [ref=e721]
+                - cell "DNS、视频流、游戏状态同步" [ref=e722]
+          - paragraph [ref=e723]: 本书以 TCP Stream Socket 为主线，因为 Java 企业级开发中绝大多数网络通信基于 TCP。
+          - separator [ref=e724]
+          - heading [level=2] [ref=e725]:
+            - text: 3.2 Socket 系统调用与 Java 映射
+            - link "Permalink to \"3.2 Socket 系统调用与 Java 映射\"" [ref=e726] [cursor=pointer]:
+              - /url: "#_3-2-socket-系统调用与-java-映射"
+              - text: "#"
+          - paragraph [ref=e727]:
+            - text: Socket 编程的本质就是按顺序调用一组
+            - strong [ref=e728]: 系统调用
+            - text: 。每一步都对应一个 OS 内核操作，Java 对这些操作做了面向对象封装。
+          - heading [level=3] [ref=e729]:
+            - text: 3.2.1
+            - code [ref=e730]: socket()
+            - text: ：创建端点
+            - 'link "Permalink to \"3.2.1 `socket()`：创建端点\"" [ref=e731] [cursor=pointer]':
+              - /url: "#_3-2-1-socket-创建端点"
+              - text: "#"
+          - generic [ref=e732]:
+            - button "Copy Code" [ref=e733] [cursor=pointer]
+            - generic [ref=e734]: c
+            - code [ref=e736]:
+              - generic [ref=e737]: // OS 层
+              - generic [ref=e738]: int fd = socket(AF_INET, SOCK_STREAM, 0);
+            - generic [ref=e739]: 1 2
+          - paragraph [ref=e740]:
+            - text: 内核分配一个
+            - code [ref=e741]: struct socket
+            - text: 对象，绑定到进程的 fd 表中。此时还没有连接，只是一个"插座"。
+          - generic [ref=e742]:
+            - button "Copy Code" [ref=e743] [cursor=pointer]
+            - generic [ref=e744]: java
+            - code [ref=e746]:
+              - generic [ref=e747]: // Java 层
+              - generic [ref=e748]: ServerSocket serverSocket = new ServerSocket(); // 内部调用 socket()
+              - generic [ref=e749]: Socket clientSocket = new Socket(); // 内部调用 socket()
+            - generic [ref=e750]: 1 2 3
+          - paragraph [ref=e751]:
+            - text: Java 的
+            - code [ref=e752]: new ServerSocket()
+            - text: 在构造时就调用了 OS 的
+            - code [ref=e753]: socket()
+            - text: ，拿到一个 fd。
+          - heading [level=3] [ref=e754]:
+            - text: 3.2.2
+            - code [ref=e755]: bind()
+            - text: +
+            - code [ref=e756]: listen()
+            - text: ：绑定端口、开始监听
+            - 'link "Permalink to \"3.2.2 `bind()` + `listen()`：绑定端口、开始监听\"" [ref=e757] [cursor=pointer]':
+              - /url: "#_3-2-2-bind-listen-绑定端口、开始监听"
+              - text: "#"
+          - generic [ref=e758]:
+            - button "Copy Code" [ref=e759] [cursor=pointer]
+            - generic [ref=e760]: c
+            - code [ref=e762]:
+              - generic [ref=e763]: // OS 层
+              - generic [ref=e764]: "struct sockaddr_in addr = { .sin_port = htons(8080), .sin_addr.s_addr = INADDR_ANY };"
+              - generic [ref=e765]: bind(fd, (struct sockaddr*)&addr, sizeof(addr)); // 绑定 IP:Port
+              - generic [ref=e766]: listen(fd, 128); // 开始监听，backlog=128
+            - generic [ref=e767]: 1 2 3 4
+          - paragraph [ref=e768]:
+            - code [ref=e769]: bind()
+            - text: 把 Socket 和一个
+            - strong [ref=e770]: IP:Port
+            - text: 绑定。绑定后，操作系统知道"目标端口是 8080 的 TCP 包应该送给这个 Socket"。
+          - paragraph [ref=e771]:
+            - code [ref=e772]: listen()
+            - text: 把 Socket 从"主动连接"模式切换为"被动监听"模式，并告诉内核：
+            - strong [ref=e773]: 为这个 Socket 创建两个队列
+            - text: ——半连接队列（SYN queue）和全连接队列（accept queue）。
+            - code [ref=e774]: backlog
+            - text: 参数控制全连接队列的大小。
+          - generic [ref=e775]:
+            - button "Copy Code" [ref=e776] [cursor=pointer]
+            - generic [ref=e777]: java
+            - code [ref=e779]:
+              - generic [ref=e780]: // Java 层
+              - generic [ref=e781]: ServerSocket serverSocket = new ServerSocket();
+              - generic [ref=e782]: serverSocket.bind(new InetSocketAddress(8080), 128); // bind() + listen()
+              - generic [ref=e783]: // 或者一行搞定：
+              - generic [ref=e784]: ServerSocket serverSocket = new ServerSocket(8080); // 内部自动 bind + listen，backlog 默认 50
+            - generic [ref=e785]: 1 2 3 4 5
+          - heading [level=3] [ref=e786]:
+            - text: 3.2.3
+            - code [ref=e787]: accept()
+            - text: ：从全连接队列取出连接
+            - 'link "Permalink to \"3.2.3 `accept()`：从全连接队列取出连接\"" [ref=e788] [cursor=pointer]':
+              - /url: "#_3-2-3-accept-从全连接队列取出连接"
+              - text: "#"
+          - generic [ref=e789]:
+            - button "Copy Code" [ref=e790] [cursor=pointer]
+            - generic [ref=e791]: c
+            - code [ref=e793]:
+              - generic [ref=e794]: // OS 层（阻塞）
+              - generic [ref=e795]: int connFd = accept(fd, NULL, NULL);
+            - generic [ref=e796]: 1 2
+          - paragraph [ref=e797]:
+            - code [ref=e798]: accept()
+            - text: 从全连接队列中取出
+            - strong [ref=e799]: 一个已完成三次握手的连接
+            - text: ，为它创建一个新的 fd。原来的监听 fd 继续监听，不受影响。
+          - generic [ref=e800]:
+            - button "Copy Code" [ref=e801] [cursor=pointer]
+            - generic [ref=e802]: text
+            - code [ref=e804]:
+              - generic [ref=e805]: listen fd (fd=3, port 8080)
+              - generic [ref=e806]: │
+              - generic [ref=e807]: │ accept()
+              - generic [ref=e808]: │
+              - generic [ref=e809]: ▼
+              - generic [ref=e810]: conn fd (fd=4, 10.0.0.5:43210 → 192.168.1.1:8080) ← 新的 fd，独立的连接
+              - generic [ref=e811]: conn fd (fd=5, 10.0.0.6:51782 → 192.168.1.1:8080) ← 又一个
+            - generic [ref=e812]: 1 2 3 4 5 6 7
+          - generic [ref=e813]:
+            - button "Copy Code" [ref=e814] [cursor=pointer]
+            - generic [ref=e815]: java
+            - code [ref=e817]:
+              - generic [ref=e818]: // Java 层
+              - generic [ref=e819]: Socket client = serverSocket.accept(); // 阻塞，直到有新连接
+              - generic [ref=e820]: // client 内部持有一个新的 fd
+            - generic [ref=e821]: 1 2 3
+          - blockquote [ref=e822]:
+            - paragraph [ref=e823]:
+              - code [ref=e824]: accept()
+              - text: 返回的是一个
+              - strong [ref=e825]: 新的 Socket
+              - text: ，和原来的
+              - code [ref=e826]: ServerSocket
+              - text: 完全独立。
+              - code [ref=e827]: ServerSocket
+              - text: 只负责监听，不负责数据传输。数据传输由
+              - code [ref=e828]: accept()
+              - text: 返回的
+              - code [ref=e829]: Socket
+              - text: 完成。
+          - heading [level=3] [ref=e830]:
+            - text: 3.2.4
+            - code [ref=e831]: connect()
+            - text: ：客户端发起三次握手
+            - 'link "Permalink to \"3.2.4 `connect()`：客户端发起三次握手\"" [ref=e832] [cursor=pointer]':
+              - /url: "#_3-2-4-connect-客户端发起三次握手"
+              - text: "#"
+          - generic [ref=e833]:
+            - button "Copy Code" [ref=e834] [cursor=pointer]
+            - generic [ref=e835]: c
+            - code [ref=e837]:
+              - generic [ref=e838]: // OS 层
+              - generic [ref=e839]: "struct sockaddr_in serverAddr = { .sin_port = htons(8080), .sin_addr.s_addr = inet_addr(\"192.168.1.1\") };"
+              - generic [ref=e840]: connect(fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+            - generic [ref=e841]: 1 2 3
+          - paragraph [ref=e842]:
+            - code [ref=e843]: connect()
+            - text: 触发 TCP 三次握手。握手完成后，客户端的 Socket 进入
+            - code [ref=e844]: ESTABLISHED
+            - text: 状态，可以开始读写。
+          - generic [ref=e845]:
+            - button "Copy Code" [ref=e846] [cursor=pointer]
+            - generic [ref=e847]: java
+            - code [ref=e849]:
+              - generic [ref=e850]: // Java 层
+              - generic [ref=e851]: Socket socket = new Socket("192.168.1.1", 8080); // 内部调用 socket() + connect()
+            - generic [ref=e852]: 1 2
+          - heading [level=3] [ref=e853]:
+            - text: 3.2.5
+            - code [ref=e854]: read()
+            - text: /
+            - code [ref=e855]: write()
+            - text: ：数据在内核缓冲区的流转
+            - 'link "Permalink to \"3.2.5 `read()` / `write()`：数据在内核缓冲区的流转\"" [ref=e856] [cursor=pointer]':
+              - /url: "#_3-2-5-read-write-数据在内核缓冲区的流转"
+              - text: "#"
+          - paragraph [ref=e857]: 连接建立后，数据的读写路径：
+          - generic [ref=e858]:
+            - button "Copy Code" [ref=e859] [cursor=pointer]
+            - generic [ref=e860]: text
+            - code [ref=e862]:
+              - generic [ref=e863]: "发送方: 应用 write(buf) → 用户缓冲区 → 内核发送缓冲区 → TCP 分段 → 网卡发出"
+              - generic [ref=e864]: "接收方: 网卡收到 → 内核接收缓冲区 → 应用 read(buf) → 用户缓冲区"
+            - generic [ref=e865]: 1 2
+          - paragraph [ref=e866]:
+            - text: 关键理解：
+            - strong [ref=e867]:
+              - code [ref=e868]: write()
+              - text: 不等于"数据已发出"，
+              - code [ref=e869]: read()
+              - text: 不等于"数据来自网络"
+            - text: 。
+            - code [ref=e870]: write()
+            - text: 只是把数据从用户空间拷贝到内核的发送缓冲区，真正的发送由内核的 TCP 协议栈异步完成。
+            - code [ref=e871]: read()
+            - text: 只是从内核的接收缓冲区拷贝数据到用户空间。
+          - generic [ref=e872]:
+            - button "Copy Code" [ref=e873] [cursor=pointer]
+            - generic [ref=e874]: java
+            - code [ref=e876]:
+              - generic [ref=e877]: // Java 层
+              - generic [ref=e878]: OutputStream out = socket.getOutputStream();
+              - generic [ref=e879]: out.write("hello".getBytes()); // 数据进入内核发送缓冲区
+              - generic [ref=e880]: out.flush(); // 强制刷新（见 §3.4）
+              - generic [ref=e881]: InputStream in = socket.getInputStream();
+              - generic [ref=e882]: byte[] buf = new byte[1024];
+              - generic [ref=e883]: int len = in.read(buf); // 从内核接收缓冲区读取
+            - generic [ref=e884]: 1 2 3 4 5 6 7 8
+          - heading [level=3] [ref=e885]:
+            - text: 3.2.6
+            - code [ref=e886]: close()
+            - text: ：四次挥手与 fd 释放
+            - 'link "Permalink to \"3.2.6 `close()`：四次挥手与 fd 释放\"" [ref=e887] [cursor=pointer]':
+              - /url: "#_3-2-6-close-四次挥手与-fd-释放"
+              - text: "#"
+          - generic [ref=e888]:
+            - button "Copy Code" [ref=e889] [cursor=pointer]
+            - generic [ref=e890]: c
+            - code [ref=e892]:
+              - generic [ref=e893]: // OS 层
+              - generic [ref=e894]: close(fd);
+            - generic [ref=e895]: 1 2
+          - paragraph [ref=e896]:
+            - code [ref=e897]: close()
+            - text: 做两件事：
+          - list [ref=e898]:
+            - listitem [ref=e899]:
+              - strong [ref=e900]: TCP 层
+              - text: ：发起四次挥手，关闭连接（主动关闭方进入
+              - code [ref=e901]: FIN_WAIT
+              - text: 状态）
+            - listitem [ref=e902]:
+              - strong [ref=e903]: OS 层
+              - text: ：释放 fd 编号，回收内核中的 Socket 对象
+          - generic [ref=e904]:
+            - button "Copy Code" [ref=e905] [cursor=pointer]
+            - generic [ref=e906]: java
+            - code [ref=e908]:
+              - generic [ref=e909]: // Java 层
+              - generic [ref=e910]: socket.close(); // 内部调用 close(fd)
+            - generic [ref=e911]: 1 2
+          - blockquote [ref=e912]:
+            - paragraph [ref=e913]:
+              - text: 同一个服务跑到线上，偶尔看
+              - code [ref=e914]: netstat -ant | grep 8080
+              - text: 会发现十几个
+              - code [ref=e915]: CLOSE_WAIT
+              - text: 状态的连接越积越多。
+              - code [ref=e916]: CLOSE_WAIT
+              - text: 的意思是"对端发了 FIN，但本端还没调
+              - code [ref=e917]: close()
+              - text: "\"——大概率是你代码里某个异常分支没走到"
+              - code [ref=e918]: socket.close()
+              - text: ，或者连接池回收逻辑有漏，fd 一直被占着。不处理的话，CLOSE_WAIT 会一直积压到 fd 耗尽，新连接再也建不起来。
+          - blockquote [ref=e919]:
+            - paragraph [ref=e920]:
+              - strong [ref=e921]:
+                - code [ref=e922]: close()
+                - text: vs
+                - code [ref=e923]: shutdown()
+              - text: ：
+              - code [ref=e924]: close()
+              - text: 同时关闭读和写两个方向。
+              - code [ref=e925]: shutdown()
+              - text: 可以只关闭一个方向（
+              - code [ref=e926]: shutdownOutput()
+              - text: 关写，
+              - code [ref=e927]: shutdownInput()
+              - text: 关读），另一个方向继续使用。典型场景：客户端发完请求后
+              - code [ref=e928]: shutdownOutput()
+              - text: ，告诉服务端"我发完了"，但仍继续读取响应。
+          - paragraph [ref=e929]:
+            - strong [ref=e930]: 完整的系统调用链总结：
+          - generic [ref=e931]:
+            - button "Copy Code" [ref=e932] [cursor=pointer]
+            - generic [ref=e933]: text
+            - code [ref=e935]:
+              - generic [ref=e936]: 服务端 客户端
+              - generic [ref=e937]: ────── ──────
+              - generic [ref=e938]: socket() → fd socket() → fd
+              - generic [ref=e939]: bind(:8080) connect(192.168.1.1:8080)
+              - generic [ref=e940]: listen(128) │ 三次握手
+              - generic [ref=e941]: │ │
+              - generic [ref=e942]: accept() → connFd ◄───────────────┘
+              - generic [ref=e943]: │ │
+              - generic [ref=e944]: read(connFd) ◄──── write(fd) ────►│
+              - generic [ref=e945]: write(connFd) ────► read(fd) ────►│
+              - generic [ref=e946]: │ │
+              - generic [ref=e947]: close(connFd) ◄── 四次挥手 ──── close(fd)
+            - generic [ref=e948]: 1 2 3 4 5 6 7 8 9 10 11 12
+          - separator [ref=e949]
+          - heading [level=2] [ref=e950]:
+            - text: 3.3 内核视角：Socket 背后的数据结构
+            - link "Permalink to \"3.3 内核视角：Socket 背后的数据结构\"" [ref=e951] [cursor=pointer]:
+              - /url: "#_3-3-内核视角-socket-背后的数据结构"
+              - text: "#"
+          - heading [level=3] [ref=e952]:
+            - text: 3.3.1 发送缓冲区与接收缓冲区
+            - link "Permalink to \"3.3.1 发送缓冲区与接收缓冲区\"" [ref=e953] [cursor=pointer]:
+              - /url: "#_3-3-1-发送缓冲区与接收缓冲区"
+              - text: "#"
+          - paragraph [ref=e954]: 每个 TCP Socket 在内核中有两块缓冲区：
+          - generic [ref=e955]:
+            - button "Copy Code" [ref=e956] [cursor=pointer]
+            - generic [ref=e957]: text
+            - code [ref=e959]:
+              - generic [ref=e960]: ┌────────────────────────────────────────────────┐
+              - generic [ref=e961]: │ 进程用户空间 │
+              - generic [ref=e962]: │ │
+              - generic [ref=e963]: │ write(buf) ──► 用户数据 │
+              - generic [ref=e964]: │ │ │
+              - generic [ref=e965]: └───────────────────┼────────────────────────────┘
+              - generic [ref=e966]: │ 拷贝（CPU 参与）
+              - generic [ref=e967]: ┌───────────────────▼────────────────────────────┐
+              - generic [ref=e968]: │ 内核空间 │
+              - generic [ref=e969]: │ │
+              - generic [ref=e970]: │ ┌──────────────────────────┐ │
+              - generic [ref=e971]: │ │ 发送缓冲区（sndbuf） │ → TCP 协议栈 → 网卡 │
+              - generic [ref=e972]: │ └──────────────────────────┘ │
+              - generic [ref=e973]: │ │
+              - generic [ref=e974]: │ ┌──────────────────────────┐ │
+              - generic [ref=e975]: │ │ 接收缓冲区（rcvbuf） │ ← 网卡 ← TCP 协议栈│
+              - generic [ref=e976]: │ └──────────────────────────┘ │
+              - generic [ref=e977]: │ │ │
+              - generic [ref=e978]: └───────────────────┼────────────────────────────┘
+              - generic [ref=e979]: │ 拷贝（CPU 参与）
+              - generic [ref=e980]: ┌───────────────────▼────────────────────────────┐
+              - generic [ref=e981]: │ read(buf) ◀── 用户数据 │
+              - generic [ref=e982]: └────────────────────────────────────────────────┘
+            - generic [ref=e983]: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+          - paragraph [ref=e984]:
+            - text: 缓冲区大小由 Socket 选项
+            - code [ref=e985]: SO_SNDBUF
+            - text: 和
+            - code [ref=e986]: SO_RCVBUF
+            - text: 控制（详见 §3.4）。默认值因 OS 而异，Linux 通常为
+            - strong [ref=e987]: 128KB ~ 256KB
+            - text: ，并会根据内存压力自动调整（
+            - code [ref=e988]: tcp_rmem
+            - text: /
+            - code [ref=e989]: tcp_wmem
+            - text: 内核参数）。
+          - paragraph [ref=e990]:
+            - strong [ref=e991]: 发送缓冲区满会怎样？
+            - code [ref=e992]: write()
+            - text: 会
+            - strong [ref=e993]: 阻塞
+            - text: ，直到内核发出了一些数据腾出空间。这就是"写阻塞"——它不是因为网络慢，而是因为发送缓冲区满了。
+          - paragraph [ref=e994]:
+            - strong [ref=e995]: 接收缓冲区空会怎样？
+            - code [ref=e996]: read()
+            - text: 会
+            - strong [ref=e997]: 阻塞
+            - text: ，直到有数据到达。这就是"读阻塞"——它不是因为没有连接，而是因为对方还没发数据。
+          - heading [level=3] [ref=e998]:
+            - text: 3.3.2 全连接队列与半连接队列
+            - link "Permalink to \"3.3.2 全连接队列与半连接队列\"" [ref=e999] [cursor=pointer]:
+              - /url: "#_3-3-2-全连接队列与半连接队列"
+              - text: "#"
+          - blockquote [ref=e1000]:
+            - paragraph [ref=e1001]:
+              - strong [ref=e1002]: 活动期间，你发现新连接全部超时，但服务端 CPU 和内存都正常。
+              - text: 同事怀疑是网络设备问题，你用
+              - code [ref=e1003]: ss -tln | grep 8080
+              - text: 看了一眼——
+              - code [ref=e1004]: Recv-Q
+              - text: 已经超过了
+              - code [ref=e1005]: Send-Q
+              - text: 。请求不慢，是它们根本没进到应用层。accept queue 满了，内核已经在悄悄丢包了。
+          - paragraph [ref=e1006]:
+            - code [ref=e1007]: listen()
+            - text: 之后，内核为这个监听 Socket 维护两个队列：
+          - img [ref=e1009]:
+            - generic [ref=e1010]: 全连接队列与半连接队列
+            - generic [ref=e1011]: 半连接队列（SYN queue）
+            - generic [ref=e1013]: SYN_RECV 状态
+            - generic [ref=e1014]: 客户端发了 SYN，三次握手还没完成
+            - generic [ref=e1015]: tcp_max_syn_backlog
+            - generic [ref=e1016]: 三次握手完成（收到客户端 ACK）
+            - generic [ref=e1017]: 全连接队列（accept queue）
+            - generic [ref=e1019]: ESTABLISHED 状态
+            - generic [ref=e1020]: 连接已建立，等待 accept() 取走
+            - generic [ref=e1021]: listen(backlog) 参数
+            - generic [ref=e1022]: 应用调用 accept()
+            - generic [ref=e1024]: 进程拿到 connFd
+            - generic [ref=e1026]: 全连接队列满时
+            - generic [ref=e1027]: 默认（tcp_abort_on_overflow=0）
+            - generic [ref=e1028]: 内核丢弃新的 ACK
+            - generic [ref=e1029]: 客户端以为连接成功，实际服务端不知道
+            - generic [ref=e1030]: tcp_abort_on_overflow=1
+            - generic [ref=e1031]: 内核直接发 RST，客户端立刻收到 reset
+            - generic [ref=e1033]: 排查方法
+            - generic [ref=e1034]: ss -ltn | grep 8080
+            - generic [ref=e1035]: Recv-Q > Send-Q → 队列溢出
+            - generic [ref=e1036]: netstat -s | grep "listen queue"
+            - generic [ref=e1037]: overflowed 数字持续增长 → 加大 backlog
+            - generic [ref=e1038]: 客户端 SYN 到达 → 半连接队列 → 三次握手完成 → 全连接队列 → accept() 取走
+            - generic [ref=e1039]: 瓶颈不在端口数，而在队列大小和 fd 上限
+          - paragraph [ref=e1040]:
+            - strong [ref=e1041]: 全连接队列满（accept queue full）时：
+          - list [ref=e1042]:
+            - listitem [ref=e1043]:
+              - text: 默认行为（
+              - code [ref=e1044]: tcp_abort_on_overflow=0
+              - text: ）：内核
+              - strong [ref=e1045]: 丢弃
+              - text: 新的 ACK，客户端以为连接成功了，服务端却不知道——客户端发数据会超时重传，最终可能收到 RST
+            - listitem [ref=e1046]:
+              - text: 设置
+              - code [ref=e1047]: tcp_abort_on_overflow=1
+              - text: ：内核直接发 RST，客户端立刻收到
+              - code [ref=e1048]: Connection reset
+          - paragraph [ref=e1049]:
+            - strong [ref=e1050]: 如何判断队列溢出？
+          - generic [ref=e1051]:
+            - button "Copy Code" [ref=e1052] [cursor=pointer]
+            - generic [ref=e1053]: bash
+            - code [ref=e1055]:
+              - generic [ref=e1056]: "# 查看监听端口的队列状态"
+              - generic [ref=e1057]: $ ss -ltn | grep 8080
+              - generic [ref=e1058]: State Recv-Q Send-Q Local Address:Port
+              - generic [ref=e1059]: LISTEN 129 128 0.0.0.0:8080
+              - generic [ref=e1060]: "# ↑ ↑"
+              - generic [ref=e1061]: "# 当前排队数 backlog 上限"
+              - generic [ref=e1062]: "# Recv-Q > Send-Q 时，说明全连接队列溢出"
+            - generic [ref=e1063]: 1 2 3 4 5 6 7
+          - paragraph [ref=e1064]:
+            - strong [ref=e1065]: 排查时关注的内核计数器：
+          - generic [ref=e1066]:
+            - button "Copy Code" [ref=e1067] [cursor=pointer]
+            - generic [ref=e1068]: bash
+            - code [ref=e1070]:
+              - generic [ref=e1071]: $ netstat -s | grep "listen"
+              - generic [ref=e1072]: 12345 times the listen queue of a socket overflowed
+            - generic [ref=e1073]: 1 2
+          - paragraph [ref=e1074]:
+            - text: 这个数字持续增长，说明应用的
+            - code [ref=e1075]: accept()
+            - text: 速度跟不上连接到达速度——要么加快 accept（多线程 accept），要么增大 backlog。
+          - heading [level=3] [ref=e1076]:
+            - text: 3.3.3 阻塞的本质：线程在内核的哪里等
+            - link "Permalink to \"3.3.3 阻塞的本质：线程在内核的哪里等\"" [ref=e1077] [cursor=pointer]:
+              - /url: "#_3-3-3-阻塞的本质-线程在内核的哪里等"
+              - text: "#"
+          - paragraph [ref=e1078]:
+            - text: 当应用调用
+            - code [ref=e1079]: read()
+            - text: 但接收缓冲区为空时，线程到底发生了什么？
+          - generic [ref=e1080]:
+            - button "Copy Code" [ref=e1081] [cursor=pointer]
+            - generic [ref=e1082]: text
+            - code [ref=e1084]:
+              - generic [ref=e1085]: 线程调用 read(fd, buf, len)
+              - generic [ref=e1086]: │
+              - generic [ref=e1087]: ▼
+              - generic [ref=e1088]: 内核检查接收缓冲区 → 空
+              - generic [ref=e1089]: │
+              - generic [ref=e1090]: ▼
+              - generic [ref=e1091]: "线程状态: RUNNING → TASK_INTERRUPTIBLE（睡眠）"
+              - generic [ref=e1092]: 线程从 CPU 运行队列中移除
+              - generic [ref=e1093]: 线程被挂到 Socket 的"等待队列"上
+              - generic [ref=e1094]: │
+              - generic [ref=e1095]: │ ... 数据到达 ...
+              - generic [ref=e1096]: │
+              - generic [ref=e1097]: ▼
+              - generic [ref=e1098]: 内核中断处理 → 数据写入接收缓冲区 → 唤醒等待队列上的线程
+              - generic [ref=e1099]: "线程状态: TASK_INTERRUPTIBLE → RUNNING"
+              - generic [ref=e1100]: 线程从 read() 处返回
+            - generic [ref=e1101]: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+          - paragraph [ref=e1102]:
+            - strong [ref=e1103]: 阻塞不是"线程在忙等/自旋"
+            - text: ，而是
+            - strong [ref=e1104]: 线程被操作系统挂起了
+            - text: ——它不占 CPU 时间片，不消耗 CPU 资源。代价是占用了一块线程栈内存（~1MB）和一个内核调度实体。
+          - paragraph [ref=e1105]:
+            - text: 这就是 BIO 的核心代价：
+            - strong [ref=e1106]: 线程不消耗 CPU，但消耗内存和调度资源
+            - text: 。一个阻塞在
+            - code [ref=e1107]: read()
+            - text: 上的线程，CPU 利用率为 0，但内存和 fd 一直被占着。
+          - heading [level=3] [ref=e1108]:
+            - text: 3.3.4 一台机器能承载多少 Socket
+            - link "Permalink to \"3.3.4 一台机器能承载多少 Socket\"" [ref=e1109] [cursor=pointer]:
+              - /url: "#_3-3-4-一台机器能承载多少-socket"
+              - text: "#"
+          - paragraph [ref=e1110]: 这是一个工程问题，瓶颈在多个层次：
+          - table [ref=e1111]:
+            - rowgroup [ref=e1112]:
+              - row [ref=e1113]:
+                - columnheader "层次" [ref=e1114]
+                - columnheader "限制" [ref=e1115]
+                - columnheader "默认值" [ref=e1116]
+                - columnheader "调整方式" [ref=e1117]
+            - rowgroup [ref=e1118]:
+              - row [ref=e1119]:
+                - cell [ref=e1120]:
+                  - strong [ref=e1121]: fd 上限（单进程）
+                - cell "每个 Socket 占一个 fd" [ref=e1122]
+                - cell "1024" [ref=e1123]
+                - cell [ref=e1124]:
+                  - code [ref=e1125]: ulimit -n 65535
+              - row [ref=e1126]:
+                - cell [ref=e1127]:
+                  - strong [ref=e1128]: fd 上限（系统级）
+                - cell "所有进程的 fd 总和" [ref=e1129]
+                - cell "~100 万" [ref=e1130]
+                - cell [ref=e1131]:
+                  - code [ref=e1132]: /proc/sys/fs/file-max
+              - row [ref=e1133]:
+                - cell [ref=e1134]:
+                  - strong [ref=e1135]: 端口范围（客户端）
+                - cell "临时端口数量" [ref=e1136]
+                - cell "32768~60999（~28000）" [ref=e1137]
+                - cell [ref=e1138]:
+                  - code [ref=e1139]: /proc/sys/net/ipv4/ip_local_port_range
+              - row [ref=e1140]:
+                - cell [ref=e1141]:
+                  - strong [ref=e1142]: 内核内存
+                - cell "每个 Socket 约 3~10KB" [ref=e1143]
+                - cell "—" [ref=e1144]
+                - cell "取决于缓冲区配置" [ref=e1145]
+              - row [ref=e1146]:
+                - cell [ref=e1147]:
+                  - strong [ref=e1148]: 全连接队列
+                - cell "listen backlog" [ref=e1149]
+                - cell "128（取 min(backlog, somaxconn)）" [ref=e1150]
+                - cell [ref=e1151]:
+                  - code [ref=e1152]: listen(backlog)
+                  - text: +
+                  - code [ref=e1153]: /proc/sys/net/core/somaxconn
+              - row [ref=e1154]:
+                - cell [ref=e1155]:
+                  - strong [ref=e1156]: 半连接队列
+                - cell "SYN queue 大小" [ref=e1157]
+                - cell "256~1024" [ref=e1158]
+                - cell [ref=e1159]:
+                  - code [ref=e1160]: /proc/sys/net/ipv4/tcp_max_syn_backlog
+          - paragraph [ref=e1161]:
+            - strong [ref=e1162]: 实际瓶颈通常在 fd 和内存：
+          - generic [ref=e1163]:
+            - button "Copy Code" [ref=e1164] [cursor=pointer]
+            - generic [ref=e1165]: text
+            - code [ref=e1167]:
+              - generic [ref=e1168]: 一台 16GB 内存的服务器：
+              - generic [ref=e1169]: fd 上限设为 65535 → 理论最多 65535 个 Socket
+              - generic [ref=e1170]: 每个 Socket 内核开销 5KB → 65535 × 5KB ≈ 320MB（可接受）
+              - generic [ref=e1171]: 每个连接的业务线程栈 1MB → 65535 × 1MB ≈ 64GB（BIO 模型下不可能）
+              - generic [ref=e1172]: 如果用 NIO（无线程阻塞）：
+              - generic [ref=e1173]: 一个线程管理 10000 个连接 → 65535 个连接只需要 ~6 个线程
+              - generic [ref=e1174]: 内存开销 ≈ 320MB（Socket 内核对象） + 6MB（线程栈） → 完全可行
+            - generic [ref=e1175]: 1 2 3 4 5 6 7 8
+          - paragraph [ref=e1176]: 这就是为什么高并发场景必须用 NIO——不是因为 BIO "慢"，而是因为 BIO 用线程做等待，内存扛不住。
+          - separator [ref=e1177]
+          - heading [level=2] [ref=e1178]:
+            - text: 3.4 Socket 选项：生产中真正要调的参数
+            - link "Permalink to \"3.4 Socket 选项：生产中真正要调的参数\"" [ref=e1179] [cursor=pointer]:
+              - /url: "#_3-4-socket-选项-生产中真正要调的参数"
+              - text: "#"
+          - paragraph [ref=e1180]:
+            - text: Socket 选项通过
+            - code [ref=e1181]: setsockopt()
+            - text: 系统调用设置，Java 中通过
+            - code [ref=e1182]: ServerSocket.setOption()
+            - text: /
+            - code [ref=e1183]: Socket.setOption()
+            - text: 或
+            - code [ref=e1184]: ServerSocketChannel
+            - text: 设置。
+          - heading [level=3] [ref=e1185]:
+            - text: 3.4.1
+            - code [ref=e1186]: SO_REUSEADDR
+            - text: 与
+            - code [ref=e1187]: SO_REUSEPORT
+            - 'link "Permalink to \"3.4.1 `SO_REUSEADDR` 与 `SO_REUSEPORT`\"" [ref=e1188] [cursor=pointer]':
+              - /url: "#_3-4-1-so-reuseaddr-与-so-reuseport"
+              - text: "#"
+          - paragraph [ref=e1189]:
+            - strong [ref=e1190]:
+              - code [ref=e1191]: SO_REUSEADDR
+            - text: ：允许绑定处于
+            - code [ref=e1192]: TIME_WAIT
+            - text: 状态的地址。
+          - blockquote [ref=e1193]:
+            - paragraph [ref=e1194]:
+              - text: 你重启了服务，结果报了一个
+              - code [ref=e1195]: "BindException: Address already in use"
+              - text: 。端口还在用？明明上一个进程已经 kill 了。这是因为旧连接还卡在
+              - code [ref=e1196]: TIME_WAIT
+              - text: （见第 2 章四次挥手），要等 60 秒端口才能释放。
+              - code [ref=e1197]: SO_REUSEADDR
+              - text: 就是让你跳过这个等待。
+          - generic [ref=e1198]:
+            - button "Copy Code" [ref=e1199] [cursor=pointer]
+            - generic [ref=e1200]: java
+            - code [ref=e1202]:
+              - generic [ref=e1203]: ServerSocket ss = new ServerSocket();
+              - generic [ref=e1204]: ss.setReuseAddress(true); // SO_REUSEADDR
+              - generic [ref=e1205]: ss.bind(new InetSocketAddress(8080));
+            - generic [ref=e1206]: 1 2 3
+          - paragraph [ref=e1207]:
+            - strong [ref=e1208]:
+              - code [ref=e1209]: SO_REUSEPORT
+            - text: （Linux 3.9+）：允许多个进程/线程绑定同一个端口，内核在它们之间做负载均衡。适用于多线程 accept 的场景，避免单一 accept 线程成为瓶颈。
+          - generic [ref=e1210]:
+            - button "Copy Code" [ref=e1211] [cursor=pointer]
+            - generic [ref=e1212]: java
+            - code [ref=e1214]:
+              - generic [ref=e1215]: // Java 11+ 通过 ServerSocketChannel 设置
+              - generic [ref=e1216]: ServerSocketChannel ssc = ServerSocketChannel.open();
+              - generic [ref=e1217]: ssc.setOption(StandardSocketOptions.SO_REUSEPORT, true);
+              - generic [ref=e1218]: ssc.bind(new InetSocketAddress(8080));
+            - generic [ref=e1219]: 1 2 3 4
+          - heading [level=3] [ref=e1220]:
+            - text: 3.4.2
+            - code [ref=e1221]: TCP_NODELAY
+            - text: ：禁用 Nagle 算法
+            - 'link "Permalink to \"3.4.2 `TCP_NODELAY`：禁用 Nagle 算法\"" [ref=e1222] [cursor=pointer]':
+              - /url: "#_3-4-2-tcp-nodelay-禁用-nagle-算法"
+              - text: "#"
+          - paragraph [ref=e1223]: Nagle 算法会把小包合并后再发送，以提高网络利用率。但对延迟敏感的场景（游戏、实时通信、RPC），这个合并会引入额外延迟。
+          - generic [ref=e1224]:
+            - button "Copy Code" [ref=e1225] [cursor=pointer]
+            - generic [ref=e1226]: java
+            - code [ref=e1228]:
+              - generic [ref=e1229]: socket.setTcpNoDelay(true); // TCP_NODELAY = true，禁用 Nagle
+            - generic [ref=e1230]: "1"
+          - paragraph [ref=e1231]:
+            - strong [ref=e1232]: 经验法则
+            - text: ：RPC 框架（Dubbo、gRPC）默认开启
+            - code [ref=e1233]: TCP_NODELAY
+            - text: ；HTTP 服务器通常不开。
+          - heading [level=3] [ref=e1234]:
+            - text: 3.4.3
+            - code [ref=e1235]: SO_KEEPALIVE
+            - text: ：TCP 层保活
+            - 'link "Permalink to \"3.4.3 `SO_KEEPALIVE`：TCP 层保活\"" [ref=e1236] [cursor=pointer]':
+              - /url: "#_3-4-3-so-keepalive-tcp-层保活"
+              - text: "#"
+          - paragraph [ref=e1237]: TCP KeepAlive 在空闲连接上定期发送探测包，检测对端是否存活。
+          - generic [ref=e1238]:
+            - button "Copy Code" [ref=e1239] [cursor=pointer]
+            - generic [ref=e1240]: java
+            - code [ref=e1242]:
+              - generic [ref=e1243]: socket.setKeepAlive(true); // SO_KEEPALIVE = true
+            - generic [ref=e1244]: "1"
+          - paragraph [ref=e1245]: TCP KeepAlive 的默认参数（Linux）：
+          - table [ref=e1246]:
+            - rowgroup [ref=e1247]:
+              - row [ref=e1248]:
+                - columnheader "参数" [ref=e1249]
+                - columnheader "默认值" [ref=e1250]
+                - columnheader "含义" [ref=e1251]
+            - rowgroup [ref=e1252]:
+              - row [ref=e1253]:
+                - cell [ref=e1254]:
+                  - code [ref=e1255]: tcp_keepalive_time
+                - cell "7200 秒" [ref=e1256]
+                - cell "空闲多久后开始探测" [ref=e1257]
+              - row [ref=e1258]:
+                - cell [ref=e1259]:
+                  - code [ref=e1260]: tcp_keepalive_intvl
+                - cell "75 秒" [ref=e1261]
+                - cell "探测间隔" [ref=e1262]
+              - row [ref=e1263]:
+                - cell [ref=e1264]:
+                  - code [ref=e1265]: tcp_keepalive_probes
+                - cell "9 次" [ref=e1266]
+                - cell "多少次无响应判定断开" [ref=e1267]
+          - blockquote [ref=e1268]:
+            - paragraph [ref=e1269]:
+              - strong [ref=e1270]: 注意
+              - text: ：默认 2 小时才开始探测，对于长连接服务来说太慢了。生产中通常结合
+              - strong [ref=e1271]: 应用层心跳
+              - text: （如每 30 秒发一次 ping/pong），TCP KeepAlive 只作为兜底。
+          - heading [level=3] [ref=e1272]:
+            - text: 3.4.4
+            - code [ref=e1273]: SO_RCVBUF
+            - text: /
+            - code [ref=e1274]: SO_SNDBUF
+            - text: ：缓冲区大小
+            - 'link "Permalink to \"3.4.4 `SO_RCVBUF` / `SO_SNDBUF`：缓冲区大小\"" [ref=e1275] [cursor=pointer]':
+              - /url: "#_3-4-4-so-rcvbuf-so-sndbuf-缓冲区大小"
+              - text: "#"
+          - paragraph [ref=e1276]: 控制内核为每个 Socket 分配的收发缓冲区大小。
+          - generic [ref=e1277]:
+            - button "Copy Code" [ref=e1278] [cursor=pointer]
+            - generic [ref=e1279]: java
+            - code [ref=e1281]:
+              - generic [ref=e1282]: socket.setReceiveBufferSize(256 * 1024); // SO_RCVBUF = 256KB
+              - generic [ref=e1283]: socket.setSendBufferSize(256 * 1024); // SO_SNDBUF = 256KB
+            - generic [ref=e1284]: 1 2
+          - table [ref=e1285]:
+            - rowgroup [ref=e1286]:
+              - row [ref=e1287]:
+                - columnheader "场景" [ref=e1288]
+                - columnheader "建议" [ref=e1289]
+            - rowgroup [ref=e1290]:
+              - row [ref=e1291]:
+                - cell "低延迟、小数据量" [ref=e1292]
+                - cell "默认即可（128KB）" [ref=e1293]
+              - row [ref=e1294]:
+                - cell "高吞吐、大数据量（文件传输）" [ref=e1295]
+                - cell "适当增大（512KB ~ 1MB）" [ref=e1296]
+              - row [ref=e1297]:
+                - cell "内存紧张、连接数极多" [ref=e1298]
+                - cell "适当减小（64KB）" [ref=e1299]
+          - paragraph [ref=e1300]:
+            - text: Linux 内核会自动在
+            - code [ref=e1301]: tcp_rmem
+            - text: /
+            - code [ref=e1302]: tcp_wmem
+            - text: 范围内调整缓冲区大小（自动调优），通常不需要手动设置。
+          - heading [level=3] [ref=e1303]:
+            - text: 3.4.5 在 Java 中设置 Socket 选项
+            - link "Permalink to \"3.4.5 在 Java 中设置 Socket 选项\"" [ref=e1304] [cursor=pointer]:
+              - /url: "#_3-4-5-在-java-中设置-socket-选项"
+              - text: "#"
+          - table [ref=e1305]:
+            - rowgroup [ref=e1306]:
+              - row [ref=e1307]:
+                - columnheader "选项" [ref=e1308]
+                - columnheader "ServerSocket" [ref=e1309]
+                - columnheader "Socket" [ref=e1310]
+                - columnheader "Channel" [ref=e1311]
+            - rowgroup [ref=e1312]:
+              - row [ref=e1313]:
+                - cell [ref=e1314]:
+                  - code [ref=e1315]: SO_REUSEADDR
+                - cell [ref=e1316]:
+                  - code [ref=e1317]: setReuseAddress(true)
+                - cell [ref=e1318]:
+                  - code [ref=e1319]: setReuseAddress(true)
+                - cell [ref=e1320]:
+                  - code [ref=e1321]: setOption(SO_REUSEADDR, true)
+              - row [ref=e1322]:
+                - cell [ref=e1323]:
+                  - code [ref=e1324]: SO_REUSEPORT
+                - cell "—" [ref=e1325]
+                - cell "—" [ref=e1326]
+                - cell [ref=e1327]:
+                  - code [ref=e1328]: setOption(SO_REUSEPORT, true)
+              - row [ref=e1329]:
+                - cell [ref=e1330]:
+                  - code [ref=e1331]: TCP_NODELAY
+                - cell "—" [ref=e1332]
+                - cell [ref=e1333]:
+                  - code [ref=e1334]: setTcpNoDelay(true)
+                - cell [ref=e1335]:
+                  - code [ref=e1336]: setOption(TCP_NODELAY, true)
+              - row [ref=e1337]:
+                - cell [ref=e1338]:
+                  - code [ref=e1339]: SO_KEEPALIVE
+                - cell "—" [ref=e1340]
+                - cell [ref=e1341]:
+                  - code [ref=e1342]: setKeepAlive(true)
+                - cell [ref=e1343]:
+                  - code [ref=e1344]: setOption(SO_KEEPALIVE, true)
+              - row [ref=e1345]:
+                - cell [ref=e1346]:
+                  - code [ref=e1347]: SO_RCVBUF
+                - cell [ref=e1348]:
+                  - code [ref=e1349]: setReceiveBufferSize(n)
+                - cell [ref=e1350]:
+                  - code [ref=e1351]: setReceiveBufferSize(n)
+                - cell [ref=e1352]:
+                  - code [ref=e1353]: setOption(SO_RCVBUF, n)
+              - row [ref=e1354]:
+                - cell [ref=e1355]:
+                  - code [ref=e1356]: SO_SNDBUF
+                - cell "—" [ref=e1357]
+                - cell [ref=e1358]:
+                  - code [ref=e1359]: setSendBufferSize(n)
+                - cell [ref=e1360]:
+                  - code [ref=e1361]: setOption(SO_SNDBUF, n)
+          - blockquote [ref=e1362]:
+            - paragraph [ref=e1363]:
+              - strong [ref=e1364]: 注意
+              - text: ：Socket 选项必须在
+              - code [ref=e1365]: connect()
+              - text: /
+              - code [ref=e1366]: bind()
+              - strong [ref=e1367]: 之前
+              - text: 设置，部分选项在连接建立后修改不生效。
+          - separator [ref=e1368]
+          - heading [level=2] [ref=e1369]:
+            - text: 3.5 动手：用 Java Socket 跑通一个 Echo
+            - link "Permalink to \"3.5 动手：用 Java Socket 跑通一个 Echo\"" [ref=e1370] [cursor=pointer]:
+              - /url: "#_3-5-动手-用-java-socket-跑通一个-echo"
+              - text: "#"
+          - paragraph [ref=e1371]: 前面四节讲的是 Socket 的"是什么"和"怎么工作"。这一节用最小的代码示例把理论变成可运行的程序。
+          - heading [level=3] [ref=e1372]:
+            - text: 3.5.1 Echo Server
+            - link "Permalink to \"3.5.1 Echo Server\"" [ref=e1373] [cursor=pointer]:
+              - /url: "#_3-5-1-echo-server"
+              - text: "#"
+          - generic [ref=e1374]:
+            - button "Copy Code" [ref=e1375] [cursor=pointer]
+            - generic [ref=e1376]: java
+            - code [ref=e1378]:
+              - generic [ref=e1379]: import java.io.*;
+              - generic [ref=e1380]: import java.net.*;
+              - generic [ref=e1381]: import java.util.concurrent.*;
+              - generic [ref=e1382]: "public class EchoServer {"
+              - generic [ref=e1383]: "public static void main(String[] args) throws IOException {"
+              - generic [ref=e1384]: ServerSocket serverSocket = new ServerSocket(8080);
+              - generic [ref=e1385]: ExecutorService pool = Executors.newFixedThreadPool(100);
+              - generic [ref=e1386]: System.out.println("Echo Server started on port 8080");
+              - generic [ref=e1387]: "while (true) {"
+              - generic [ref=e1388]: Socket client = serverSocket.accept(); // 阻塞等待连接
+              - generic [ref=e1389]: "pool.submit(() -> {"
+              - generic [ref=e1390]: "try (client) {"
+              - generic [ref=e1391]: InputStream in = client.getInputStream();
+              - generic [ref=e1392]: OutputStream out = client.getOutputStream();
+              - generic [ref=e1393]: byte[] buf = new byte[1024];
+              - generic [ref=e1394]: int len;
+              - generic [ref=e1395]: "while ((len = in.read(buf)) != -1) { // 阻塞读取"
+              - generic [ref=e1396]: out.write(buf, 0, len); // Echo 回写
+              - generic [ref=e1397]: out.flush();
+              - generic [ref=e1398]: "}"
+              - generic [ref=e1399]: "} catch (IOException e) {"
+              - generic [ref=e1400]: // 客户端断开
+              - generic [ref=e1401]: "}"
+              - generic [ref=e1402]: "});"
+              - generic [ref=e1403]: "}"
+              - generic [ref=e1404]: "}"
+              - generic [ref=e1405]: "}"
+            - generic [ref=e1406]: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+          - heading [level=3] [ref=e1407]:
+            - text: 3.5.2 Echo Client
+            - link "Permalink to \"3.5.2 Echo Client\"" [ref=e1408] [cursor=pointer]:
+              - /url: "#_3-5-2-echo-client"
+              - text: "#"
+          - generic [ref=e1409]:
+            - button "Copy Code" [ref=e1410] [cursor=pointer]
+            - generic [ref=e1411]: java
+            - code [ref=e1413]:
+              - generic [ref=e1414]: import java.io.*;
+              - generic [ref=e1415]: import java.net.*;
+              - generic [ref=e1416]: "public class EchoClient {"
+              - generic [ref=e1417]: "public static void main(String[] args) throws IOException {"
+              - generic [ref=e1418]: Socket socket = new Socket("localhost", 8080);
+              - generic [ref=e1419]: OutputStream out = socket.getOutputStream();
+              - generic [ref=e1420]: InputStream in = socket.getInputStream();
+              - generic [ref=e1421]: out.write("hello\n".getBytes());
+              - generic [ref=e1422]: out.flush();
+              - generic [ref=e1423]: byte[] buf = new byte[1024];
+              - generic [ref=e1424]: int len = in.read(buf);
+              - generic [ref=e1425]: "System.out.println(\"Server replied: \" + new String(buf, 0, len));"
+              - generic [ref=e1426]: socket.close();
+              - generic [ref=e1427]: "}"
+              - generic [ref=e1428]: "}"
+            - generic [ref=e1429]: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
+          - heading [level=3] [ref=e1430]:
+            - text: 3.5.3 代码剖析
+            - link "Permalink to \"3.5.3 代码剖析\"" [ref=e1431] [cursor=pointer]:
+              - /url: "#_3-5-3-代码剖析"
+              - text: "#"
+          - paragraph [ref=e1432]:
+            - strong [ref=e1433]:
+              - text: 为什么
+              - code [ref=e1434]: out.flush()
+              - text: 是必要的？
+          - paragraph [ref=e1435]:
+            - code [ref=e1436]: OutputStream.write()
+            - text: 默认使用缓冲区，数据不会立即进入内核发送缓冲区。
+            - code [ref=e1437]: flush()
+            - text: 强制把应用层缓冲区的数据写入内核。不调
+            - code [ref=e1438]: flush()
+            - text: ，对方可能一直收不到数据。
+          - paragraph [ref=e1439]:
+            - strong [ref=e1440]:
+              - text: 为什么用
+              - code [ref=e1441]: FixedThreadPool
+              - text: 而不是
+              - code [ref=e1442]: CachedThreadPool
+              - text: ？
+          - paragraph [ref=e1443]:
+            - code [ref=e1444]: CachedThreadPool
+            - text: 无上限，连接暴涨时会创建过多线程。
+            - code [ref=e1445]: FixedThreadPool
+            - text: 限制并发线程数，超出的任务在队列中等待——这是保护服务端的基本手段。
+          - heading [level=3] [ref=e1446]:
+            - text: 3.5.4 一连接一线程的局限
+            - link "Permalink to \"3.5.4 一连接一线程的局限\"" [ref=e1447] [cursor=pointer]:
+              - /url: "#_3-5-4-一连接一线程的局限"
+              - text: "#"
+          - paragraph [ref=e1448]:
+            - text: 上面的 Echo Server 是经典的 BIO 模型：
+            - strong [ref=e1449]: 每个连接占一个线程
+            - text: 。线程大部分时间阻塞在
+            - code [ref=e1450]: read()
+            - text: 上，不消耗 CPU，但消耗内存和调度资源。
+          - generic [ref=e1451]:
+            - button "Copy Code" [ref=e1452] [cursor=pointer]
+            - generic [ref=e1453]: text
+            - code [ref=e1455]:
+              - generic [ref=e1456]: 1000 个连接 → 1000 个线程 → ~1GB 栈内存 → 勉强可行
+              - generic [ref=e1457]: 10000 个连接 → 10000 个线程 → ~10GB 栈内存 → 不可行
+            - generic [ref=e1458]: 1 2
+          - paragraph [ref=e1459]:
+            - text: 这个局限不是 Socket 的问题，而是
+            - strong [ref=e1460]: BIO 线程模型
+            - text: 的问题。解决方案是 NIO——用一个线程通过
+            - strong [ref=e1461]: Selector
+            - text: 监听多个 Channel 的事件，线程只在"有数据可读"时才被唤醒，不需要为每个连接阻塞一个线程。这是下一章的内容。
+          - separator [ref=e1462]
+          - heading [level=2] [ref=e1463]:
+            - text: 本章小结
+            - link "Permalink to \"本章小结\"" [ref=e1464] [cursor=pointer]:
+              - /url: "#本章小结"
+              - text: "#"
+          - table [ref=e1465]:
+            - rowgroup [ref=e1466]:
+              - row [ref=e1467]:
+                - columnheader "概念" [ref=e1468]
+                - columnheader "要点" [ref=e1469]
+            - rowgroup [ref=e1470]:
+              - row [ref=e1471]:
+                - cell "Socket 的本质" [ref=e1472]
+                - cell "OS 提供的网络编程抽象，本质是 fd + 协议栈" [ref=e1473]
+              - row [ref=e1474]:
+                - cell "五元组" [ref=e1475]
+                - cell [ref=e1476]:
+                  - code [ref=e1477]: "{源IP, 源端口, 目标IP, 目标端口, 协议}"
+                  - text: 唯一标识一条连接
+              - row [ref=e1478]:
+                - cell "一个端口多条连接" [ref=e1479]
+                - cell "服务端一个监听端口可以 accept 出成千上万条连接" [ref=e1480]
+              - row [ref=e1481]:
+                - cell "系统调用链" [ref=e1482]
+                - cell [ref=e1483]:
+                  - code [ref=e1484]: socket()
+                  - text: →
+                  - code [ref=e1485]: bind()
+                  - text: →
+                  - code [ref=e1486]: listen()
+                  - text: →
+                  - code [ref=e1487]: accept()
+                  - text: →
+                  - code [ref=e1488]: read()
+                  - text: /
+                  - code [ref=e1489]: write()
+                  - text: →
+                  - code [ref=e1490]: close()
+              - row [ref=e1491]:
+                - cell "内核缓冲区" [ref=e1492]
+                - cell "每个 Socket 有收发两块缓冲区，read/write 操作的是缓冲区而非网络" [ref=e1493]
+              - row [ref=e1494]:
+                - cell "全连接队列" [ref=e1495]
+                - cell [ref=e1496]:
+                  - text: accept queue 溢出时连接被丢弃，需关注
+                  - code [ref=e1497]: ss -ltn
+                  - text: 中的 Recv-Q
+              - row [ref=e1498]:
+                - cell "fd 限制" [ref=e1499]
+                - cell [ref=e1500]:
+                  - text: 单进程默认 1024，高并发需调
+                  - code [ref=e1501]: ulimit -n
+              - row [ref=e1502]:
+                - cell "Socket 选项" [ref=e1503]
+                - cell [ref=e1504]:
+                  - code [ref=e1505]: SO_REUSEADDR
+                  - text: 、
+                  - code [ref=e1506]: TCP_NODELAY
+                  - text: 、
+                  - code [ref=e1507]: SO_KEEPALIVE
+                  - text: 等是生产必调项
+              - row [ref=e1508]:
+                - cell "BIO 的局限" [ref=e1509]
+                - cell "一连接一线程，内存扛不住 → 需要 NIO" [ref=e1510]
+          - separator [ref=e1511]
+          - blockquote [ref=e1512]:
+            - paragraph [ref=e1513]:
+              - strong [ref=e1514]: 纵横联系
+            - list [ref=e1515]:
+              - listitem [ref=e1516]:
+                - strong [ref=e1517]: 本卷第2章
+                - text: 已经介绍了 TCP/IP 协议基础和三次握手/四次挥手，本章的系统调用链（
+                - code [ref=e1518]: connect
+                - text: /
+                - code [ref=e1519]: accept
+                - text: /
+                - code [ref=e1520]: close
+                - text: ）正是这些协议在编程层面的体现。
+              - listitem [ref=e1521]:
+                - strong [ref=e1522]: 本卷第4章
+                - text: 将深入讲解 Java NIO，它是对本章 BIO 模型的根本性革新——用 Selector 事件驱动替代线程阻塞等待。
+              - listitem [ref=e1523]:
+                - strong [ref=e1524]: 第三卷《并发》
+                - text: 中的线程与线程池知识（
+                - code [ref=e1525]: ExecutorService
+                - text: 、线程栈内存、上下文切换）是理解本章 §3.3（内核视角）和 §3.5（BIO 局限）的前置基础。
+              - listitem [ref=e1526]:
+                - strong [ref=e1527]: 第五卷《数据访问》
+                - text: 中数据库连接池的底层实现本质上也是 Socket 连接管理——连接池的大小受限于本章讨论的 fd 和内核资源。
+      - contentinfo [ref=e1528]:
+        - generic [ref=e1529]:
+          - link "在编辑器中打开源文件" [ref=e1531] [cursor=pointer]:
+            - /url: http://__vscode__/04-java-network/chapter-03-socket.md
+          - paragraph [ref=e1534]:
+            - text: "Last updated:"
+            - time [ref=e1535]: 8/9/26, 4:15 PM
+        - navigation "Pager" [ref=e1536]:
+          - link "上一章 TCP/IP" [ref=e1539] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-02-tcp-ip.html
+            - generic [ref=e1540]: 上一章
+            - generic [ref=e1541]: TCP/IP
+          - link "下一章 Java NIO" [ref=e1543] [cursor=pointer]:
+            - /url: /java-world/04-java-network/chapter-04-nio.html
+            - generic [ref=e1544]: 下一章
+            - generic [ref=e1545]: Java NIO
+```
+
+# Test source
+
+```ts
+  1   | import { test, expect } from '@playwright/test';
+  2   | 
+  3   | const PAGE = '/java-world/04-java-network/chapter-03-socket';
+  4   | 
+  5   | test.beforeEach(async ({ page }) => {
+  6   |   page.on('pageerror', e => console.log('  ⚠️ JS:', e.message));
+  7   |   await page.goto(PAGE, { waitUntil: 'networkidle', timeout: 30000 });
+  8   |   await page.waitForSelector('.svg-container', { timeout: 15000 });
+  9   |   await page.evaluate(() => document.querySelectorAll('.svg-container')[1]?.scrollIntoView({ block: 'center' }));
+  10  |   await page.waitForTimeout(300);
+  11  |   // 对齐 svg-editor.spec.ts 的点击方式
+  12  |   const container = page.locator('.svg-container').nth(1);
+  13  |   await container.hover();
+> 14  |   await container.locator('.svg-edit-btn').click({ force: true });
+      |                                            ^ Error: locator.click: Test timeout of 30000ms exceeded.
+  15  |   await page.waitForSelector('.editor-overlay', { timeout: 15000 });
+  16  |   await page.waitForTimeout(2000);
+  17  | });
+  18  | 
+  19  | async function resetCanvas(page: any) {
+  20  |   await page.evaluate(() => {
+  21  |     const c = (window as any).__fabricCanvas;
+  22  |     if (c) { c.discardActiveObject(); c.setViewportTransform([1,0,0,1,0,0]); }
+  23  |   });
+  24  | }
+  25  | 
+  26  | async function createRects(page: any, n: number, pfx: string) {
+  27  |   return page.evaluate(({n, pfx}: any) => {
+  28  |     const c = (window as any).__fabricCanvas;
+  29  |     if (!c) return [];
+  30  |     c.getObjects().filter((o: any) => o.id?.startsWith(pfx)).forEach((o: any) => c.remove(o));
+  31  |     const R = (window as any).fabric.Rect;
+  32  |     const rects: any[] = [];
+  33  |     for (let i = 0; i < n; i++) {
+  34  |       const r = new R({ left: 100 + i*60, top: 100 + i*30, width: 80, height: 50,
+  35  |         fill: ['#1565C0','#E53935','#4CAF50','#FF9800','#9C27B0'][i], id: `${pfx}-${i}` });
+  36  |       c.add(r); rects.push(r);
+  37  |     }
+  38  |     c.renderAll();
+  39  |     return rects.map((r: any) => ({ left: Math.round(r.left), top: Math.round(r.top), id: r.id }));
+  40  |   }, { n, pfx });
+  41  | }
+  42  | 
+  43  | async function multiSelect(page: any, ids: string[]) {
+  44  |   await page.evaluate((ids: string[]) => {
+  45  |     const c = (window as any).__fabricCanvas;
+  46  |     const objs = ids.map(id => c.getObjects().find((o: any) => o.id === id)).filter(Boolean);
+  47  |     if (objs.length >= 2) {
+  48  |       c.setActiveObject(new (window as any).fabric.ActiveSelection(objs, { canvas: c }));
+  49  |     } else if (objs.length === 1) c.setActiveObject(objs[0]);
+  50  |     c.renderAll();
+  51  |   }, ids);
+  52  | }
+  53  | 
+  54  | async function readSelectedRects(page: any, pfx: string) {
+  55  |   return page.evaluate((pfx: string) => {
+  56  |     const c = (window as any).__fabricCanvas;
+  57  |     const sel = c.getActiveObject();
+  58  |     const source = (sel && sel._objects) ? sel._objects : c.getObjects();
+  59  |     return (source as any[]).filter((o: any) => o.id?.startsWith(pfx))
+  60  |       .map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top), id: o.id }));
+  61  |   }, pfx);
+  62  | }
+  63  | 
+  64  | async function readRects(page: any, pfx: string) {
+  65  |   return page.evaluate((pfx: string) => {
+  66  |     const c = (window as any).__fabricCanvas;
+  67  |     return c.getObjects().filter((o: any) => o.id?.startsWith(pfx))
+  68  |       .map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top), id: o.id }));
+  69  |   }, pfx);
+  70  | }
+  71  | 
+  72  | async function clickByTip(page: any, tip: string) {
+  73  |   const idx = await page.evaluate((tip: string) => {
+  74  |     const btns = document.querySelectorAll('.editor-overlay button');
+  75  |     for (let i = 0; i < btns.length; i++) if (btns[i].getAttribute('data-tip') === tip) return i;
+  76  |     return -1;
+  77  |   }, tip);
+  78  |   if (idx >= 0) { await page.locator('.editor-overlay button').nth(idx).click(); await page.waitForTimeout(200); }
+  79  |   return idx;
+  80  | }
+  81  | 
+  82  | // ══════════════════════════════════════════════════════════
+  83  | 
+  84  | test('Group 1: 缩放—放大/缩小/适应画布', async ({ page }) => {
+  85  |   await resetCanvas(page);
+  86  |   const z1 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0);
+  87  |   console.log(`缩放初始: ${z1}`);
+  88  |   await clickByTip(page, '放大 (+)');
+  89  |   const z2 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0);
+  90  |   console.log(`放大后: ${z2}`);
+  91  |   expect(z2).toBeGreaterThan(z1);
+  92  |   await clickByTip(page, '缩小 (-)');
+  93  |   const z3 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0);
+  94  |   console.log(`缩小后: ${z3}`);
+  95  |   expect(z3).toBeLessThan(z2);
+  96  |   await clickByTip(page, '适应画布');
+  97  |   const z4 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0);
+  98  |   console.log(`适应后: ${z4}`);
+  99  |   expect(z4).toBeGreaterThan(0);
+  100 |   console.log('✅ 缩放全通过');
+  101 | });
+  102 | 
+  103 | test('Group 2: 6种对齐—逐个验证坐标变化', async ({ page }) => {
+  104 |   await resetCanvas(page);
+  105 |   const tips = ['左对齐','水平居中','右对齐','顶对齐','垂直居中','底对齐'];
+  106 |   for (const tip of tips) {
+  107 |     await createRects(page, 2, 'align');
+  108 |     await multiSelect(page, ['align-0','align-1']);
+  109 |     const before = await readSelectedRects(page, 'align');
+  110 |     const btnIdx = await clickByTip(page, tip);
+  111 |     if (btnIdx < 0) { console.log(`  ⚠️ 未找到 "${tip}"`); continue; }
+  112 |     // 对齐后解包选区再读
+  113 |     await page.evaluate(() => { const c=(window as any).__fabricCanvas; const s=c.getActiveObject(); if(s&&s._objects){s.destroy();c.discardActiveObject();c.renderAll();} });
+  114 |     const after = await readRects(page, 'align');
+```

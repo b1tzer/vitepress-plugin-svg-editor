@@ -8,14 +8,22 @@
  *   4. 提取 viewBox / 宽高
  */
 
-import { THEME_VAR_TO_HEX } from './constants.ts'
+import { THEME_VAR_TO_HEX } from './constants'
+import type { ThemeMode, SvgLoadResult } from './types'
+
+/** 解析后的 marker 参数 */
+interface MarkerInfo {
+  fill: string
+  refX: number
+  tipOffset: number
+  markerW: number
+  markerH: number
+}
 
 /**
  * 将 CSS 变量替换为 hex 色值
- * @param {string} svg - SVG 文本
- * @param {'light'|'dark'} theme - 主题模式（默认 light）
  */
-function replaceCssVars(svg, theme = 'light') {
+function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
   const mapping = THEME_VAR_TO_HEX[theme] || THEME_VAR_TO_HEX.light
   let result = svg
   for (const [varName, hex] of Object.entries(mapping)) {
@@ -28,7 +36,7 @@ function replaceCssVars(svg, theme = 'light') {
  * 将 <stop style="stop-color:..."> 转为直接属性
  * Fabric.js 解析器对 style 属性中的 stop-color 支持有限
  */
-function fixStopColors(svg) {
+function fixStopColors(svg: string): string {
   return svg.replace(
     /<stop(\s[^>]*?)style="stop-color:\s*([^;"]+);\s*stop-opacity:\s*([^"]+)"([^>]*?)>/g,
     '<stop$1stop-color="$2" stop-opacity="$3"$4>'
@@ -38,7 +46,7 @@ function fixStopColors(svg) {
 /**
  * 提取原始 viewBox
  */
-function extractViewBox(svg) {
+function extractViewBox(svg: string): { viewBox: string; width: number; height: number } {
   const match = svg.match(/viewBox="([^"]+)"/)
   if (!match) return { viewBox: '', width: 0, height: 0 }
   const parts = match[1].split(/[\s,]+/).map(Number)
@@ -52,8 +60,8 @@ function extractViewBox(svg) {
 /**
  * 从 marker 定义中提取关键参数
  */
-function parseMarkers(svg) {
-  const markers = {}
+function parseMarkers(svg: string): Record<string, MarkerInfo> {
+  const markers: Record<string, MarkerInfo> = {}
 
   // polygon 形式
   const polyRe = /<marker\s+id="([^"]+)"[^>]*markerWidth="([^"]+)"[^>]*markerHeight="([^"]+)"[^>]*refX="([^"]+)"[^>]*refY="([^"]+)"[^>]*>\s*<polygon\s+[^>]*points="([^"]+)"[^>]*fill="([^"]+)"[^>]*\/>\s*<\/marker>/g
@@ -79,8 +87,8 @@ function parseMarkers(svg) {
 /**
  * 从 <style> 中解析 CSS 类级 marker-end 规则
  */
-function parseClassMarkers(svg) {
-  const classMarkers = {}
+function parseClassMarkers(svg: string): Record<string, string> {
+  const classMarkers: Record<string, string> = {}
   const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi
   let sm
   while ((sm = styleRe.exec(svg)) !== null) {
@@ -101,7 +109,7 @@ function parseClassMarkers(svg) {
  *   base中心 = 线终点 - refX（沿箭头反方向回退，marker 的 base 到 ref 距离）
  *   base两点 = base中心 ± (halfH * sin(angle), -halfH * cos(angle))（垂直方向展开）
  */
-function computeArrowPoints(x2, y2, angle, marker, prevX, prevY) {
+function computeArrowPoints(x2: number, y2: number, angle: number, marker: MarkerInfo, prevX: number, prevY: number): string {
   const refX = marker.refX || 0
   const tipOffset = marker.tipOffset || 0
   const halfH = (marker.markerH || 8) / 2
@@ -122,7 +130,7 @@ function computeArrowPoints(x2, y2, angle, marker, prevX, prevY) {
 /**
  * 为 <line> 注入箭头三角形
  */
-function injectLineArrows(svg, markers, classMarkers) {
+function injectLineArrows(svg: string, markers: Record<string, MarkerInfo>, classMarkers: Record<string, string>): string {
   return svg.replace(
     /<line\s+([^>]*?)\s*\/>/g,
     (full, attrs) => {
@@ -157,7 +165,7 @@ function injectLineArrows(svg, markers, classMarkers) {
 /**
  * 为 <path> 注入箭头三角形
  */
-function injectPathArrows(svg, markers) {
+function injectPathArrows(svg: string, markers: Record<string, MarkerInfo>): string {
   return svg.replace(
     /<path\s+([^>]*?)marker-end="url\(#([^)]+)\)"\s*([^>]*?)\s*\/>/g,
     (full, before, markerId, after) => {
@@ -180,11 +188,10 @@ function injectPathArrows(svg, markers) {
 
 /**
  * 主入口：预处理 SVG 文本，返回 Fabric.js 可直接加载的 SVG
- * @param {string} rawSvg - 原始 SVG 文本
- * @param {'light'|'dark'} theme - 主题模式（默认 light）
- * @returns {{ svg: string, originalViewBox: string, svgWidth: number, svgHeight: number }}
+ * @param rawSvg — 原始 SVG 文本
+ * @param theme  — 主题模式（默认 light）
  */
-export function preprocessSvg(rawSvg, theme = 'light') {
+export function preprocessSvg(rawSvg: string, theme: ThemeMode = 'light'): SvgLoadResult {
   let svg = rawSvg.replace(/<\?xml[^?]*\?>\s*/g, '')
 
   const { viewBox, width, height } = extractViewBox(svg)

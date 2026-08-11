@@ -7,22 +7,23 @@
  *   - 限制栈深度防止内存溢出
  */
 
-const MAX_STACK = 30
+import type { Canvas } from 'fabric'
+import type { IHistoryManager } from './types'
 
-export class HistoryManager {
-  constructor() {
-    this._undoStack = []
-    this._redoStack = []
-    this._onStateChange = null // 外部回调
-  }
+const MAX_STACK = 50
+
+export class HistoryManager implements IHistoryManager {
+  private _undoStack: object[] = []
+  private _redoStack: object[] = []
+  private _onStateChange: (() => void) | null = null
 
   /**
    * 保存当前画布状态
-   * @param {fabric.Canvas} canvas
-   * @param {Function} beforeSave - 保存前回调（用于移除背景等）
-   * @param {Function} afterSave - 保存后回调（用于恢复背景等）
+   * @param canvas    — Fabric.js Canvas 实例
+   * @param beforeSave — 保存前回调（用于移除背景等）
+   * @param afterSave  — 保存后回调（用于恢复背景等）
    */
-  save(canvas, beforeSave, afterSave) {
+  save(canvas: Canvas, beforeSave?: () => void, afterSave?: () => void): void {
     if (!canvas) return
     if (beforeSave) beforeSave()
     this._undoStack.push(canvas.toJSON(['selectable', 'evented']))
@@ -34,12 +35,12 @@ export class HistoryManager {
 
   /**
    * 撤销
-   * @param {fabric.Canvas} canvas
-   * @param {Function} afterLoad - loadFromJSON 完成后的回调
+   * @param canvas    — Fabric.js Canvas 实例
+   * @param afterLoad — loadFromJSON 完成后的回调
    */
-  undo(canvas, afterLoad) {
+  undo(canvas: Canvas, afterLoad?: () => void): void {
     if (!canvas || this._undoStack.length < 2) return
-    this._redoStack.push(this._undoStack.pop())
+    this._redoStack.push(this._undoStack.pop()!)
     const state = this._undoStack[this._undoStack.length - 1]
     canvas.loadFromJSON(state, () => {
       if (afterLoad) afterLoad()
@@ -50,12 +51,12 @@ export class HistoryManager {
 
   /**
    * 重做
-   * @param {fabric.Canvas} canvas
-   * @param {Function} afterLoad
+   * @param canvas    — Fabric.js Canvas 实例
+   * @param afterLoad — loadFromJSON 完成后的回调
    */
-  redo(canvas, afterLoad) {
+  redo(canvas: Canvas, afterLoad?: () => void): void {
     if (!canvas || !this._redoStack.length) return
-    const state = this._redoStack.pop()
+    const state = this._redoStack.pop()!
     this._undoStack.push(state)
     canvas.loadFromJSON(state, () => {
       if (afterLoad) afterLoad()
@@ -64,14 +65,15 @@ export class HistoryManager {
     this._notify()
   }
 
-  canUndo() { return this._undoStack.length >= 2 }
-  canRedo() { return this._redoStack.length > 0 }
+  canUndo(): boolean { return this._undoStack.length >= 2 }
+  canRedo(): boolean { return this._redoStack.length > 0 }
 
-  onStateChange(fn) { this._onStateChange = fn }
-  _notify() { if (this._onStateChange) this._onStateChange() }
+  onStateChange(fn: () => void): void { this._onStateChange = fn }
 
-  reset() {
+  reset(): void {
     this._undoStack = []
     this._redoStack = []
   }
+
+  private _notify(): void { if (this._onStateChange) this._onStateChange() }
 }

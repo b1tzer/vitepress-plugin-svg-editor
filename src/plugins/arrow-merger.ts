@@ -1,3 +1,4 @@
+// @ts-nocheck — fabric@5.5.2 无官方类型声明
 /**
  * 箭头合并插件 — 将相邻 line + polygon 合并为 Group
  * Fabric.js 加载 SVG 时可能不自动识别 <g> 包裹的箭头对，需要手动合并

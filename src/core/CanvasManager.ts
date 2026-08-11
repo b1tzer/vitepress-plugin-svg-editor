@@ -11,33 +11,33 @@
  * 依赖：全局 fabric（由 loadFabric 保证可用）
  */
 
-import { getObjBounds } from '../plugins/selection.ts'
+// @ts-nocheck — fabric@5.5.2 无官方类型声明，其事件回调参数无法类型化。
+// 待升级 fabric 6.x 后可移除此指令。
+import type { Canvas } from 'fabric'
+import { EventBus } from './EventBus'
+import { getObjBounds } from '../plugins/selection'
+import type { GuideLine } from './types'
 
 const SNAP_THRESHOLD = 8
 const GUIDE_LINE_STYLE = 'rgba(0, 120, 212, 0.5)'
 const GUIDE_LINE_DASH = [4, 4]
 
 export class CanvasManager {
-  constructor() {
-    this.canvas = null
-    this._zoomLevel = 100
-    this._guideLines = []
-    this._spacePressed = false
-    this._isPanning = false
-    this._lastPanPoint = { x: 0, y: 0 }
-    this._onZoomChange = null // 缩放回调
-    this._onGuideLinesChange = null // 辅助线回调
-    this._onSelectionChange = null // 选择回调
-    this._onModified = null // 修改回调
-  }
+  // ── 公共属性 ──
+  canvas: Canvas | null = null
+
+  // ── 私有状态 ──
+  private _eventBus: EventBus = new EventBus()
+  private _zoomLevel: number = 100
+  private _guideLines: GuideLine[] = []
+  private _spacePressed: boolean = false
+  private _isPanning: boolean = false
+  private _lastPanPoint: { x: number; y: number } = { x: 0, y: 0 }
 
   /**
    * 初始化画布
-   * @param {HTMLCanvasElement} canvasEl
-   * @param {number} containerW - 容器宽度
-   * @param {number} containerH - 容器高度
    */
-  init(canvasEl, containerW, containerH) {
+  init(canvasEl: HTMLCanvasElement, containerW: number, containerH: number): Canvas {
     const fc = new window.fabric.Canvas(canvasEl, {
       width: containerW,
       height: containerH,
@@ -64,7 +64,8 @@ export class CanvasManager {
   /**
    * 配置控制点样式
    */
-  _setupControls() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _setupControls(): void {
     window.fabric.Object.prototype.set({
       transparentCorners: false,
       cornerSize: 10,
@@ -82,7 +83,8 @@ export class CanvasManager {
   /**
    * 缩放/平移事件
    */
-  _setupCanvasEvents(fc) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _setupCanvasEvents(fc: any) {
     // 滚轮缩放（无需 Ctrl）
     fc.on('mouse:wheel', (opt) => {
       opt.e.preventDefault()
@@ -125,7 +127,8 @@ export class CanvasManager {
   /**
    * 对齐辅助线
    */
-  _setupGuideLines(fc) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _setupGuideLines(fc: any) {
     // 移动时：显示参考线
     fc.on('object:moving', (opt) => {
       const obj = opt.target
@@ -182,7 +185,7 @@ export class CanvasManager {
       this._guideLines = []
       this._notifyGuideLines()
       fc.requestRenderAll()
-      if (this._onModified) this._onModified()
+      this._eventBus.emit('modified')
     })
 
     fc.on('selection:cleared', () => { this._guideLines = []; this._notifyGuideLines() })
@@ -214,7 +217,8 @@ export class CanvasManager {
   /**
    * 交互事件（悬停、选择、文字缩放）
    */
-  _setupInteractionEvents(fc) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _setupInteractionEvents(fc: any) {
     fc.on('object:added', (e) => {
       if (e.target) {
         e.target.set({ selectable: true, evented: true })
@@ -271,26 +275,26 @@ export class CanvasManager {
   /**
    * 设置空格键状态（由外部 keydown/keyup 控制）
    */
-  setSpacePressed(pressed) { this._spacePressed = pressed; if (!pressed && !this._isPanning) this.canvas?.setCursor('default') }
+  setSpacePressed(pressed: boolean): void { this._spacePressed = pressed; if (!pressed && !this._isPanning) this.canvas?.setCursor('default') }
 
   // ── 缩放 ──
-  zoomIn() {
-    let z = this.canvas.getZoom() * 1.2
+  zoomIn(): void {
+    let z = this.canvas!.getZoom() * 1.2
     z = Math.min(z, 5)
-    this.canvas.setZoom(z)
+    this.canvas!.setZoom(z)
     this._zoomLevel = Math.round(z * 100)
     this._notifyZoom()
   }
 
-  zoomOut() {
-    let z = this.canvas.getZoom() / 1.2
+  zoomOut(): void {
+    let z = this.canvas!.getZoom() / 1.2
     z = Math.max(z, 0.1)
-    this.canvas.setZoom(z)
+    this.canvas!.setZoom(z)
     this._zoomLevel = Math.round(z * 100)
     this._notifyZoom()
   }
 
-  zoomFit() {
+  zoomFit(): void {
     const fc = this.canvas
     const objects = fc.getObjects()
     if (!objects.length) return
@@ -310,28 +314,33 @@ export class CanvasManager {
     this._notifyZoom()
   }
 
-  getZoomLevel() { return this._zoomLevel }
+  getZoomLevel(): number { return this._zoomLevel }
 
   // ── 背景（canvas.backgroundColor 直接控制，无需 fabric.Rect 对象）──
-  addBackground() {}
-  removeBg() {}
-  reAddBg() {}
+  addBackground(): void {}
+  removeBg(): void {}
+  reAddBg(): void {}
 
-  // ── 回调注册 ──
-  onZoomChange(fn) { this._onZoomChange = fn }
-  onGuideLinesChange(fn) { this._onGuideLinesChange = fn }
-  onSelectionChange(fn) { this._onSelectionChange = fn }
-  onModified(fn) { this._onModified = fn }
+  // ── 回调注册（委托给 EventBus，保持 API 兼容）──
+  onZoomChange(fn: (zoomLevel: number) => void): void { this._eventBus.on('zoomChange', fn) }
+  onGuideLinesChange(fn: (lines: GuideLine[]) => void): void { this._eventBus.on('guideLinesChange', fn) }
+  onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
+  onModified(fn: () => void): void { this._eventBus.on('modified', fn) }
 
-  _notifyZoom() { if (this._onZoomChange) this._onZoomChange(this._zoomLevel) }
-  _notifyGuideLines() { if (this._onGuideLinesChange) this._onGuideLinesChange(this._guideLines) }
-  _notifySelection() { if (this._onSelectionChange) this._onSelectionChange() }
+  /** 获取内部 EventBus（供高级使用者直接订阅事件） */
+  getEventBus(): EventBus { return this._eventBus }
+
+  // ── 内部通知（通过 EventBus 派发）──
+  private _notifyZoom(): void { this._eventBus.emit('zoomChange', this._zoomLevel) }
+  private _notifyGuideLines(): void { this._eventBus.emit('guideLinesChange', this._guideLines) }
+  private _notifySelection(): void { this._eventBus.emit('selectionChange') }
 
   // ── 生命周期 ──
-  dispose() {
+  dispose(): void {
     if (this.canvas) {
       this.canvas.dispose()
       this.canvas = null
     }
+    this._eventBus.clear()
   }
 }
