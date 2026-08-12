@@ -11,6 +11,7 @@ const makeProps = (overrides: Record<string, any> = {}) => ({
   gradientColor1: '#1565C0', gradientColor2: '#E3F2FD',
   shadowEnabled: false, shadowColor: '#000000', shadowBlur: 5,
   shadowOffsetX: 3, shadowOffsetY: 3, themeMode: 'dark', collapsed: false,
+  hasTextInSelection: false,
   ...overrides,
 })
 
@@ -73,7 +74,7 @@ describe('EditorContextPanel', () => {
   })
 
   it('选中文字时显示字号/加粗/斜体/下划线/对齐/颜色，不显示形状工具', () => {
-    const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'textbox' }) })
+    const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'textbox', hasTextInSelection: true }) })
     expect(w.find('[aria-label="字号"]').exists()).toBe(true)
     expect(w.find('[data-tip="加粗"]').exists()).toBe(true)
     expect(w.find('[data-tip="斜体"]').exists()).toBe(true)
@@ -87,7 +88,7 @@ describe('EditorContextPanel', () => {
     expect(w.find('[aria-label="填充颜色"]').exists()).toBe(true)
     expect(w.find('[data-tip="加粗"]').exists()).toBe(false)
 
-    await w.setProps({ selectionInfo: 'textbox' })
+    await w.setProps({ selectionInfo: 'textbox', hasTextInSelection: true })
     expect(w.find('[aria-label="填充颜色"]').exists()).toBe(false)
     expect(w.find('[data-tip="加粗"]').exists()).toBe(true)
     expect(w.find('.context-panel').exists()).toBe(true)
@@ -129,9 +130,9 @@ describe('EditorContextPanel', () => {
   // ══════════════════════════════════════════════════════
   it('激活状态的工具按钮应有 .active 类', () => {
     const cases: Array<[string, string, Record<string, any>]> = [
-      ['bold',   '[data-tip="加粗"]',   { selectionInfo: 'textbox', currentFontWeight: 'bold' }],
-      ['italic', '[data-tip="斜体"]',   { selectionInfo: 'textbox', currentFontStyle: 'italic' }],
-      ['underline', '[data-tip="下划线"]', { selectionInfo: 'textbox', currentUnderline: true }],
+      ['bold',   '[data-tip="加粗"]',   { selectionInfo: 'textbox', hasTextInSelection: true, currentFontWeight: 'bold' }],
+      ['italic', '[data-tip="斜体"]',   { selectionInfo: 'textbox', hasTextInSelection: true, currentFontStyle: 'italic' }],
+      ['underline', '[data-tip="下划线"]', { selectionInfo: 'textbox', hasTextInSelection: true, currentUnderline: true }],
       ['dash',   '[aria-label="切换虚线"]', { selectionInfo: 'rect', currentStrokeDash: true }],
       ['shadow', '[aria-label="切换阴影"]', { selectionInfo: 'rect', shadowEnabled: true }],
     ]
@@ -180,7 +181,7 @@ describe('EditorContextPanel', () => {
   })
 
   it('字号/加粗/下划线变更应触发对应 emit', async () => {
-    const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'textbox' }) })
+    const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'textbox', hasTextInSelection: true }) })
     await w.find('[aria-label="字号"]').setValue('18')
     await w.find('[aria-label="字号"]').trigger('change')
     expect(w.emitted('fontSize')).toBeTruthy()

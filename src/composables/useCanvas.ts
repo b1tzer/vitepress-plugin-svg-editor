@@ -60,7 +60,7 @@ export function useCanvas(container: DIContainer) {
     if (!fc) return
     const active = fc.getActiveObject()
     if (!active) { selectionInfo.value = ''; return }
-    const isMulti = active.type === 'activeSelection'
+    const isMulti = active.type === 'activeselection'
     selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
   }
 

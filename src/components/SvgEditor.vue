@@ -126,7 +126,7 @@ function updateSelectionInfo() {
   if (!fc) return
   const active = fc.getActiveObject()
   if (!active) { selectionInfo.value = ''; return }
-  const isMulti = active.type === 'activeSelection'
+  const isMulti = active.type === 'activeselection'
   selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
 
   // 判断选中集合中是否包含文本对象（支持多选时显示文字对齐按钮）
@@ -175,7 +175,7 @@ function undo() { historyMgr.undo(canvasMgr.canvas!, () => {}); refreshLayerList
 function redo() { historyMgr.redo(canvasMgr.canvas!, () => {}); refreshLayerList() }
 function copyObj() { const a = canvasMgr.canvas?.getActiveObject(); if (a) (a as any).clone((c: any) => { window._clipboard = c }) }
 function pasteObj() { if (!window._clipboard) return; const fc = canvasMgr.canvas; window._clipboard.clone((c: any) => { c.set({ left: c.left + 20, top: c.top + 20 }); fc!.add(c); fc!.setActiveObject(c); fc!.renderAll(); withSave(() => {}) }) }
-function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === 'activeSelection') { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
+function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === 'activeselection') { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
 function align(type: string) { withSave((fc: any) => (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)) }
 function applyFill(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('fill', hex) }) }
 function applyStroke(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('stroke', hex) }) }
@@ -187,7 +187,7 @@ function toggleBold() { withSave((fc: any) => { currentFontWeight.value = TextFo
 function toggleItalic() { withSave((fc: any) => { currentFontStyle.value = TextFormatPlugin.toggleItalic(fc) || 'normal' }) }
 function toggleUnderline() { withSave((fc: any) => { currentUnderline.value = TextFormatPlugin.toggleUnderline(fc) }) }
 function applyRotation(angle: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.rotate(angle); currentRotation.value = angle; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
-function groupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== 'activeSelection') return; (a as any).toGroup(); fc!.renderAll(); withSave(() => {}) }
+function groupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== 'activeselection') return; (a as any).toGroup(); fc!.renderAll(); withSave(() => {}) }
 function ungroupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== 'group') return; (a as any).toActiveSelection(); fc!.renderAll(); withSave(() => {}) }
 function applyOpacity(value: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.set('opacity', value / 100); currentOpacity.value = value; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
 function applyGradientUI() { const fc = canvasMgr.canvas; if (!fc) return; applyGradient(fc, { type: gradientType.value as any, angle: gradientAngle.value, color1: gradientColor1.value, color2: gradientColor2.value }); withSave(() => {}) }

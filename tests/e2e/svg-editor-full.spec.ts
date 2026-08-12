@@ -435,7 +435,7 @@ test.describe('SvgEditor 全量功能测试', () => {
         selectedCount: c.getActiveObjects().length,
       }
     })
-    expect(result!.type).toBe('activeSelection')
+    expect(result!.type).toBe('activeselection')
     expect(result!.selectedCount).toBe(2)
     await screenshot(page, '24-ungroup')
   })
@@ -461,7 +461,7 @@ test.describe('SvgEditor 全量功能测试', () => {
       clip.clone((cloned: any) => {
         c.discardActiveObject()
         cloned.set({ left: cloned.left + 20, top: cloned.top + 20, evented: true })
-        if (cloned.type === 'activeSelection') {
+        if (cloned.type === 'activeselection') {
           cloned.canvas = c
           cloned.forEachObject((obj: any) => c.add(obj))
           cloned.setCoords()

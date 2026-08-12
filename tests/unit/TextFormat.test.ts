@@ -14,7 +14,7 @@ function makeFakeCanvas(activeObjects: any[]) {
     getActiveObject: () => {
       if (activeObjects.length === 0) return null
       if (activeObjects.length === 1) return activeObjects[0]
-      return { type: 'activeSelection', _objects: activeObjects }
+      return { type: 'activeselection', _objects: activeObjects }
     },
     renderAll: () => {},
     getObjects: () => activeObjects,

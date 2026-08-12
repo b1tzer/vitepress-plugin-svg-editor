@@ -178,4 +178,23 @@ const isLight = computed(() => props.themeMode === 'light')
 
 /* ── 关闭按钮 ── */
 .btn-close:hover:not(:disabled) { background: rgba(239,68,68,0.15) !important; color: #ef4444 !important; }
+
+/* ── Tooltip：hover 500ms 后弹出，mouseleave 立即消失 ── */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px; border-radius: 4px;
+  font-size: 12px; line-height: 1.4; white-space: nowrap;
+  pointer-events: none; z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+[data-tip]:hover::after {
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+.toolbar-dark  [data-tip]::after { background: rgba(255,255,255,0.9); color: #222; }
+.toolbar-light [data-tip]::after { background: rgba(0,0,0,0.78); color: #fff; }
 </style>

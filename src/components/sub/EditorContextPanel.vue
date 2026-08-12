@@ -12,6 +12,7 @@ import { ICONS } from '../../core/constants'
 
 const props = defineProps<{
   selectionInfo: string
+  hasTextInSelection: boolean
   currentFill: string
   currentStroke: string
   currentFontSize: number
@@ -73,10 +74,7 @@ const emit = defineEmits<{
 }>()
 
 const hasActiveSelection = computed(() => !!props.selectionInfo)
-const isTextSelected = computed(() => {
-  const info = props.selectionInfo.toLowerCase()
-  return info.includes('text') || info.includes('textbox')
-})
+const isTextSelected = computed(() => props.hasTextInSelection)
 const isLight = computed(() => props.themeMode === 'light')
 </script>
 
@@ -319,7 +317,7 @@ const isLight = computed(() => props.themeMode === 'light')
 .context-dark  .tool-group button.active { background: rgba(59,130,246,0.2); color: #60a5fa; }
 .tool-group button:active { transform: scale(0.95); }
 .tool-group button span { display: flex; align-items: center; justify-content: center; }
-.tool-group button span svg { width: 15px; height: 15px; stroke-width: 1.8; }
+.tool-group button span svg { width: 16px; height: 16px; stroke-width: 1.8; }
 
 /* ── 属性行 ── */
 .prop-row {
@@ -354,4 +352,23 @@ const isLight = computed(() => props.themeMode === 'light')
 .context-dark  .prop-row .info { color: #666; }
 .prop-row .info { font-size: 12px; min-width: 30px; text-align: right; }
 .prop-row .prop-input-group { display: flex; align-items: center; gap: 4px; }
+
+/* ── Tooltip：hover 500ms 后弹出，mouseleave 立即消失 ── */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px; border-radius: 4px;
+  font-size: 12px; line-height: 1.4; white-space: nowrap;
+  pointer-events: none; z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+[data-tip]:hover::after {
+  opacity: 1;
+  transition-delay: 0.5s;
+}
+.context-light [data-tip]::after { background: rgba(0,0,0,0.78); color: #fff; }
+.context-dark  [data-tip]::after { background: rgba(255,255,255,0.9); color: #222; }
 </style>
