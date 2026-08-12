@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'resize', w: number, h: number): void
+  (e: 'resize', w: number, h: number, dir: string): void
   (e: 'scroll', scrollLeft: number, scrollTop: number): void
 }>()
 
@@ -117,7 +117,7 @@ function onResizeMove(e: MouseEvent) {
   if (resizeDir.value.includes('w')) nw = Math.max(50, resizeStart.value.w - dx)
   if (resizeDir.value.includes('s')) nh = Math.max(50, resizeStart.value.h + dy)
   if (resizeDir.value.includes('n')) nh = Math.max(50, resizeStart.value.h - dy)
-  emit('resize', Math.round(nw), Math.round(nh))
+  emit('resize', Math.round(nw), Math.round(nh), resizeDir.value)
 }
 function onResizeUp() { resizing.value = false; document.removeEventListener('mousemove', onResizeMove); document.removeEventListener('mouseup', onResizeUp) }
 

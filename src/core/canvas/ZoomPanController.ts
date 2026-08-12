@@ -22,6 +22,8 @@ export class ZoomPanController {
   /** 画布逻辑尺寸（100% 缩放比下的宽高） */
   private _baseW: number = 800
   private _baseH: number = 600
+  /** 最近一次 zoomFit 计算出的居中偏移（用于通过 scroll 定位而非 viewportTransform 平移） */
+  private _zoomFitPan: { x: number; y: number } = { x: 0, y: 0 }
 
   constructor(eventBus: IEventBus) {
     this._eventBus = eventBus
@@ -54,7 +56,8 @@ export class ZoomPanController {
 
   /**
    * 核心：Fabric 画布物理尺寸 = 逻辑尺寸 × 缩放比
-   * viewport transform = [z, 0, 0, z, 0, 0] 缩放渲染内容
+   * viewport transform = [z, 0, 0, z, tx, ty]
+   * 保留已有的平移量 tx/ty，避免 zoomFit 后的首次缩放跳变
    */
   private _syncCanvasSize(): void {
     const fc = this._canvas
@@ -64,7 +67,11 @@ export class ZoomPanController {
     const nh = Math.round(this._baseH * z)
     fc.setWidth(nw)
     fc.setHeight(nh)
-    ;(fc as any).viewportTransform = [z, 0, 0, z, 0, 0]
+    // 保留已有的平移偏移量（如 zoomFit 设置的居中平移）
+    const vt = (fc as any).viewportTransform
+    const tx = (vt && vt.length >= 6) ? vt[4] : 0
+    const ty = (vt && vt.length >= 6) ? vt[5] : 0
+    ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
     fc.requestRenderAll()
   }
 
@@ -117,10 +124,14 @@ export class ZoomPanController {
     const nh = Math.round(this._baseH * z)
     fc.setWidth(nw)
     fc.setHeight(nh)
-    ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
+    ;(fc as any).viewportTransform = [z, 0, 0, z, 0, 0]
     fc.requestRenderAll()
+    this._zoomFitPan = { x: tx, y: ty }
     this._eventBus.emit('zoomChange', this._zoomLevel)
   }
+
+  /** 获取最近一次 zoomFit 的居中偏移量（供外部通过 scroll 定位，避免 viewportTransform 坐标漂移） */
+  getZoomFitPan(): { x: number; y: number } { return this._zoomFitPan }
 
   getZoomLevel(): number { return this._zoomLevel }
 

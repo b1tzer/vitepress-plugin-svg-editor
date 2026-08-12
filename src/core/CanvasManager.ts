@@ -144,9 +144,21 @@ export class CanvasManager {
     }
   }
 
-  /** 获取 ModeManager */
-  getModeManager(): ModeManager | null {
-    return this._modeManager
+  /** 获取最近一次 zoomFit 的居中偏移（供外部通过 scroll 定位） */
+  getZoomFitPan(): { x: number; y: number } { return this._zoomPan.getZoomFitPan() }
+
+  /**
+   * 平移所有 Fabric 对象（用于 resize 北边/西边时保持元素与对边相对位置不变）
+   * @param dx 逻辑坐标 X 偏移
+   * @param dy 逻辑坐标 Y 偏移
+   */
+  translateAllObjects(dx: number, dy: number): void {
+    if (!this.canvas) return
+    this.canvas.getObjects().forEach((obj: any) => {
+      obj.set({ left: (obj.left || 0) + dx, top: (obj.top || 0) + dy })
+      obj.setCoords()
+    })
+    this.canvas.renderAll()
   }
 
   // ── 生命周期 ──

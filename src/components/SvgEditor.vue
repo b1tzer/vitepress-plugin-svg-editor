@@ -272,11 +272,19 @@ async function save() {
 }
 
 // ── 画布 resize ──
-function onResizeCanvas(w: number, h: number) {
+function onResizeCanvas(w: number, h: number, dir: string) {
   // 手柄拖拽产出的是显示像素（display px），需换算为逻辑尺寸
-  svgWidth.value = Math.round(w * 100 / zoomLevel.value)
-  svgHeight.value = Math.round(h * 100 / zoomLevel.value)
+  const newLogicalW = Math.round(w * 100 / zoomLevel.value)
+  const newLogicalH = Math.round(h * 100 / zoomLevel.value)
+  // 计算本次尺寸变化（逻辑坐标）
+  const dw = newLogicalW - svgWidth.value
+  const dh = newLogicalH - svgHeight.value
+  svgWidth.value = newLogicalW
+  svgHeight.value = newLogicalH
   canvasMgr.setLogicalSize(svgWidth.value, svgHeight.value)
+  // 北边/西边 resize：平移所有元素，保持与对边（底边/右边）相对位置不变
+  if (dir.includes('w')) canvasMgr.translateAllObjects(dw, 0)
+  if (dir.includes('n')) canvasMgr.translateAllObjects(0, dh)
 }
 
 // ── 主加载流程 ──
@@ -312,7 +320,14 @@ async function loadAndInit() {
       const converted = merged.map(convertToTextbox)
       converted.forEach((obj: any) => { ensureInteractive(obj); fc.add(obj) })
       fc.getObjects().forEach((o: any) => { o.set({ selectable: true, evented: true }); if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true })) })
-      canvasMgr.zoomFit(); historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
+      canvasMgr.zoomFit()
+      // 通过滚动容器居中画布内容（而非 viewportTransform 平移），确保编辑器坐标 = 导出坐标
+      nextTick(() => {
+        const s = canvasRef.value?.scrollRef
+        if (s && s.scrollWidth > s.clientWidth) s.scrollLeft = (s.scrollWidth - s.clientWidth) / 2
+        if (s && s.scrollHeight > s.clientHeight) s.scrollTop = (s.scrollHeight - s.clientHeight) / 2
+      })
+      historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
     } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
     finally { loading.value = false }
   })
