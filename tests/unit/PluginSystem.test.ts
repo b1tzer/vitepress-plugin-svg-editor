@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PluginSystem } from '../../src/core/PluginSystem'
-import type { EditorPlugin, PluginContext } from '../../src/core/types'
+import type { IEditorPlugin, PluginContext } from '../../src/core/types'
 
 describe('PluginSystem', () => {
   let ps: PluginSystem
@@ -9,7 +9,7 @@ describe('PluginSystem', () => {
     ps = new PluginSystem()
   })
 
-  const makePlugin = (name: string, install = vi.fn()): EditorPlugin => ({ name, install })
+  const makePlugin = (name: string, install = vi.fn()): IEditorPlugin => ({ name, install })
 
   it('register 应注册插件', () => {
     ps.register(makePlugin('align'))
