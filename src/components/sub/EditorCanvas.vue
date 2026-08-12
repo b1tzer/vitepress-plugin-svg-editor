@@ -1,21 +1,18 @@
 <script setup lang="ts">
 /**
- * 编辑器画布子组件 — 纯 viewport zoom 模型
+ * 编辑器画布子组件 — 逻辑画布（workspace Rect）方案 C
  *
- * 布局（从外到内）：
+ * 布局：
  *   .editor-canvas（棋盘格背景 + overflow:hidden）
  *   ├── .ruler-canvas（固定标尺层，pointer-events:none，z-index:10）
- *   ├── .canvas-scroll（固定视口容器 overflow:hidden，grid-template-areas:"stack"）
- *   │   ├── .canvas-area（grid-area:stack，仅含 Fabric 画布，尺寸 = 逻辑 SVG 尺寸）
- *   │   │   └── canvas.fabric-canvas（Fabric.js 接管，viewportTransform 驱动缩放/平移）
- *   │   └── .resize-handles-overlay（grid-area:stack 同层叠加，CSS Grid 保证对齐）
- *   │       └── .rh-*（8 边 resize 手柄，尺寸固定不受缩放影响）
+ *   ├── .canvas-scroll（fill 容器，overflow:hidden）
+ *   │   └── canvas.fabric-canvas（Fabric.js 接管，尺寸 = viewport 容器尺寸）
  *   └── .loading（加载遮罩）
  *
  * 关键设计：
- *   - canvas 物理尺寸 = 逻辑 SVG 尺寸（固定不变），zoom 纯由 viewportTransform 矩阵完成
- *   - 平移统一由 Fabric relativePan 驱动（空格 + 拖拽 或 中键拖拽）
- *   - 两个 grid item 共享同一 grid-area，CSS Grid 自动像素级叠加 — 零 JS 坐标计算
+ *   - canvas 物理尺寸 = viewport 容器尺寸（自适应），由 CanvasManager.init 管控
+ *   - workspace Rect（Fabric 内部对象）提供边界线、背景色和 clipPath 裁剪
+ *   - DOM 层只负责容器布局和标尺绘制，画布内容/边界全由 Fabric 渲染管线处理
  */
 
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
@@ -33,7 +30,6 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'resize', w: number, h: number, dir: string): void
   (e: 'canvasWheel', deltaY: number): void
   (e: 'canvasAreaMouseEvent', clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void
 }>()
@@ -47,11 +43,7 @@ const RULER = 24
 let _ro: ResizeObserver | null = null
 let _af: number | null = null
 let _zw: ReturnType<typeof watch> | null = null
-let _lastRulerKey = '' // P3: 缓存标尺参数，不变则跳过重绘
-
-const resizing = ref(false)
-const resizeDir = ref('')
-const resizeStart = ref({ x: 0, y: 0, w: 0, h: 0 })
+let _lastRulerKey = ''
 
 defineExpose({ canvasAreaRef, scrollRef })
 
@@ -79,12 +71,10 @@ function drawRuler() {
   let step = 10
   for (const s of [1,2,5,10,20,50,100,200,500,1000]) { if (s * z >= 30) { step = s; break } }
 
-  // P3: step、尺寸、主题不变 → 无刻度变化，跳过重绘
   const key = `${step}_${w}_${h}_${light}`
   if (key === _lastRulerKey) return
   _lastRulerKey = key
 
-  // 水平标尺（含坐标数字）
   ctx.strokeStyle = tColor; ctx.fillStyle = fColor
   ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
   for (let x = RULER; x < w; x += step * z) {
@@ -95,7 +85,6 @@ function drawRuler() {
     } else { ctx.beginPath(); ctx.moveTo(x, RULER); ctx.lineTo(x, RULER - 5); ctx.stroke() }
   }
 
-  // 垂直标尺
   ctx.textBaseline = 'middle'; ctx.textAlign = 'right'
   for (let y = RULER; y < h; y += step * z) {
     const v = Math.round((y - RULER) / z)
@@ -105,7 +94,6 @@ function drawRuler() {
     } else { ctx.beginPath(); ctx.moveTo(RULER, y); ctx.lineTo(RULER - 5, y); ctx.stroke() }
   }
 
-  // 角标
   ctx.fillStyle = light ? '#e8eaed' : '#2a2a2a'
   ctx.fillRect(0, 0, RULER, RULER)
   ctx.strokeStyle = light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.06)'
@@ -114,45 +102,20 @@ function drawRuler() {
   ctx.beginPath(); ctx.moveTo(RULER, RULER); ctx.lineTo(RULER, h); ctx.stroke()
 }
 
-// resize 拖拽
-function onResizeDown(e: MouseEvent, dir: string) {
-  e.preventDefault(); e.stopPropagation()
-  resizing.value = true; resizeDir.value = dir
-  resizeStart.value = { x: e.clientX, y: e.clientY, w: props.canvasWidth, h: props.canvasHeight }
-  document.addEventListener('mousemove', onResizeMove)
-  document.addEventListener('mouseup', onResizeUp)
-}
-function onResizeMove(e: MouseEvent) {
-  if (!resizing.value) return
-  const dx = e.clientX - resizeStart.value.x, dy = e.clientY - resizeStart.value.y
-  let nw = resizeStart.value.w, nh = resizeStart.value.h
-  if (resizeDir.value.includes('e')) nw = Math.max(50, resizeStart.value.w + dx)
-  if (resizeDir.value.includes('w')) nw = Math.max(50, resizeStart.value.w - dx)
-  if (resizeDir.value.includes('s')) nh = Math.max(50, resizeStart.value.h + dy)
-  if (resizeDir.value.includes('n')) nh = Math.max(50, resizeStart.value.h - dy)
-  emit('resize', Math.round(nw), Math.round(nh), resizeDir.value)
-}
-function onResizeUp() { resizing.value = false; document.removeEventListener('mousemove', onResizeMove); document.removeEventListener('mouseup', onResizeUp) }
-
 // ── 画布区域外滚轮/框选事件代理 ──
-let _injectDragging = false // 是否正在注入框选拖拽
+let _injectDragging = false
 
-/** 滚轮缩放：来自 canvas-scroll 容器，转发到父组件处理 */
 function onCanvasWheel(e: WheelEvent) {
   e.preventDefault()
   emit('canvasWheel', e.deltaY)
 }
 
-/** 画布外 mousedown → 开始注入框选事件链 */
 function onCanvasMouseDown(e: MouseEvent) {
-  // 中键 → 由 Fabric relativePan 处理（见 CanvasManager._setupCanvasEvents）
   if (e.button === 1) return
   if (e.button !== 0) return
-  // 如果点击的是 Fabric canvas 自身或其 resize 手柄子元素，不干预
   const target = e.target as HTMLElement
   if (!target) return
-  if (target.tagName === 'CANVAS' || target.classList.contains('fabric-canvas')) return
-  if (target.classList.contains('rh')) return
+  if (target.tagName === 'CANVAS') return
   e.preventDefault()
   _injectDragging = true
   emit('canvasAreaMouseEvent', e.clientX, e.clientY, 'mousedown')
@@ -177,7 +140,6 @@ onMounted(() => {
   _zw = watch(() => props.zoomLevel, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   watch(() => props.themeMode, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   nextTick(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
-  document.addEventListener('contextmenu', (e) => { if (resizing.value) e.preventDefault() })
 })
 onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.() })
 </script>
@@ -188,21 +150,8 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
     <div class="canvas-scroll" ref="scrollRef"
       @wheel.prevent="onCanvasWheel"
       @mousedown="onCanvasMouseDown">
-      <div class="canvas-area" ref="canvasAreaRef"
-        :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">
+      <div class="canvas-area" ref="canvasAreaRef">
         <canvas class="fabric-canvas" />
-      </div>
-      <!-- resize 手柄层：同一 grid-area 自然叠加于 canvas-area 上方，尺寸/位置完全由 CSS Grid 驱动 -->
-      <div class="resize-handles-overlay"
-        :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">
-        <div class="rh rh-n" @mousedown="onResizeDown($event,'n')" title="向上拖拽调整高度" />
-        <div class="rh rh-s" @mousedown="onResizeDown($event,'s')" title="向下拖拽调整高度" />
-        <div class="rh rh-w" @mousedown="onResizeDown($event,'w')" title="向左拖拽调整宽度" />
-        <div class="rh rh-e" @mousedown="onResizeDown($event,'e')" title="向右拖拽调整宽度" />
-        <div class="rh rh-nw" @mousedown="onResizeDown($event,'nw')" title="拖拽调整宽高" />
-        <div class="rh rh-ne" @mousedown="onResizeDown($event,'ne')" title="拖拽调整宽高" />
-        <div class="rh rh-sw" @mousedown="onResizeDown($event,'sw')" title="拖拽调整宽高" />
-        <div class="rh rh-se" @mousedown="onResizeDown($event,'se')" title="拖拽调整宽高" />
       </div>
     </div>
     <div v-if="loading" class="loading">
@@ -222,46 +171,13 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
   background-image:linear-gradient(45deg,#2a2a2a 25%,transparent 25%),linear-gradient(-45deg,#2a2a2a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a2a2a 75%),linear-gradient(-45deg,transparent 75%,#2a2a2a 75%); }
 .ruler-canvas { pointer-events:none; position:absolute; top:0; left:0; z-index:10; }
 
-/* 滚动容器：左/上偏移 = 标尺宽度；grid-template-areas 让 canvas-area 和手柄层自动叠加 */
+/* canvas 填满整个视口容器（左/上偏移 24px = 标尺区域），由 CanvasManager 设置 Fabric canvas 尺寸 */
 .canvas-scroll {
   position:absolute; top:24px; left:24px; right:0; bottom:0;
   overflow:hidden;
-  display:grid;
-  grid-template-areas: "stack";
 }
-
-/* 画布区域：grid-area:stack 确保与手柄层共享同一格位 */
-.canvas-area {
-  grid-area: stack;
-  position:relative; margin:48px;
-  outline:1px solid rgba(128,128,128,.25);
-  place-self:center;
-}
-
-/* 手柄层：同一 grid-area，同尺寸同 margin，CSS Grid 保证像素级对齐，零 JS 参与 */
-.resize-handles-overlay {
-  grid-area: stack;
-  position:relative;
-  margin:48px;
-  place-self:center;
-  z-index:20;
-  pointer-events:none;
-}
-
-/* resize 手柄：灰色小长条，尺寸固定不受缩放影响 */
-.rh { position:absolute; z-index:20; background:rgba(128,128,128,.12); transition:background .15s; pointer-events:auto; }
-.rh:hover { background:rgba(59,130,246,.35); }
-/* 四边手柄 */
-.rh-n, .rh-s { left:4px; right:4px; height:6px; cursor:ns-resize; border-radius:3px; }
-.rh-w, .rh-e { top:4px; bottom:4px; width:6px; cursor:ew-resize; border-radius:3px; }
-.rh-n { top:-3px; } .rh-s { bottom:-3px; } .rh-w { left:-3px; } .rh-e { right:-3px; }
-/* 四角手柄 */
-.rh-nw,.rh-ne,.rh-sw,.rh-se { width:8px; height:8px; background:rgba(128,128,128,.25); border:1px solid rgba(128,128,128,.3); border-radius:2px; }
-.rh-nw { top:-4px; left:-4px; cursor:nwse-resize; }
-.rh-ne { top:-4px; right:-4px; cursor:nesw-resize; }
-.rh-sw { bottom:-4px; left:-4px; cursor:nesw-resize; }
-.rh-se { bottom:-4px; right:-4px; cursor:nwse-resize; }
-.rh-nw:hover,.rh-ne:hover,.rh-sw:hover,.rh-se:hover { background:rgba(59,130,246,.4); border-color:rgba(59,130,246,.6); }
+.canvas-area { width:100%; height:100%; }
+.fabric-canvas { display:block; }
 
 /* 加载态 */
 .loading { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:rgba(17,17,17,.85); color:#666; font-size:14px; z-index:30; pointer-events:none; }

@@ -1,11 +1,8 @@
 /**
  * 缩放/平移控制器 — 纯 viewportTransform 驱动
  *
- * canvas 物理尺寸固定 = 逻辑尺寸，zoom/pan 全部由 viewportTransform 矩阵完成。
- * 对比旧「物理 resize × viewport 双通道」模型：
- *   - 不再 setWidth/setHeight → 零 GPU 位图重分配，无 Aw Snap 风险
- *   - 无需 CANVAS_MAX 天花板
- *   - zoomFit 居中直接写 viewportTransform，无需 _zoomFitPan → scroll 绕路
+ * 配合「逻辑画布 Rect」方案：canvas 物理尺寸 = viewport 容器尺寸（自适应），
+ * 逻辑画布由 Fabric Rect（workspace）表示，zoom/pan 全部由 viewportTransform 矩阵完成。
  *
  * DIP：通过构造函数注入 IEventBus
  */
@@ -21,10 +18,10 @@ export class ZoomPanController {
   private _spacePressed: boolean = false
   private _isPanning: boolean = false
   private _lastPanPoint: { x: number; y: number } = { x: 0, y: 0 }
-  /** 画布逻辑尺寸（100% 时宽高，同时 = canvas 物理像素尺寸） */
+  /** 逻辑画布尺寸（workspace Rect 的宽高，100% 时的逻辑 SVG 尺寸） */
   private _baseW: number = 800
   private _baseH: number = 600
-  /** rAF 节流：待写入的缩放级别 */
+  /** rAF 节流 */
   private _pendingZoom: number | null = null
   private _zoomRafId: number | null = null
 
@@ -32,27 +29,20 @@ export class ZoomPanController {
     this._eventBus = eventBus
   }
 
-  /** 绑定画布实例（在 CanvasManager.init 中调用） */
-  bindCanvas(canvas: Canvas, containerW: number, containerH: number): void {
+  /** 绑定画布实例 */
+  bindCanvas(canvas: Canvas): void {
     this._canvas = canvas
-    this._baseW = containerW
-    this._baseH = containerH
   }
 
   unbindCanvas(): void { this._canvas = null }
 
   /**
-   * 设置画布逻辑尺寸（SVG 加载 / resize 手柄拖拽后调用）
-   * canvas 物理像素 = 逻辑尺寸（固定），zoom 仅改 viewportTransform
+   * 设置逻辑画布尺寸（workspace Rect 目标宽高）
+   * 仅存储，不修改 canvas 物理尺寸。workspace Rect 的 resize 由 CanvasManager 负责。
    */
   setLogicalSize(w: number, h: number): void {
     this._baseW = w
     this._baseH = h
-    const fc = this._canvas
-    if (!fc) return
-    fc.setWidth(w)
-    fc.setHeight(h)
-    this._applyZoom()
   }
 
   getBaseWidth(): number { return this._baseW }
@@ -60,24 +50,22 @@ export class ZoomPanController {
 
   /**
    * 应用当前 zoom 到 viewportTransform
-   * canvas 物理尺寸不变 — 纯 viewport zoom 模型的核心
+   * canvas 物理尺寸 = viewport 尺寸（固定），仅变换 viewportTransform 矩阵
    */
   private _applyZoom(): void {
     const fc = this._canvas
     if (!fc) return
     const z = this._zoomLevel / 100
-    // 保留已有平移分量，防止 zoom 时画面跳变
     const vt = (fc as any).viewportTransform
     const tx = (vt && vt.length >= 6) ? vt[4] : 0
     const ty = (vt && vt.length >= 6) ? vt[5] : 0
     ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
-    // 仅刷新选中对象的 oCoords，其余惰性计算
     const active = fc.getActiveObject()
     if (active) (active as any).setCoords()
     fc.requestRenderAll()
   }
 
-  /** 滚轮缩放（rAF 节流 — 同一帧内多次 wheel 只执行一次 _applyZoom） */
+  /** 滚轮缩放（rAF 节流） */
   handleWheel(deltaY: number): void {
     this._pendingZoom = Math.round(this._zoomLevel * (0.999 ** deltaY))
     this._pendingZoom = Math.min(Math.max(10, this._pendingZoom), 2000)
@@ -105,11 +93,9 @@ export class ZoomPanController {
   }
 
   /**
-   * 自适应缩放：计算 zoom 使所有对象落入视口并居中
-   * @param viewportW viewport 可用宽度（不含标尺）；不传则用画布逻辑宽度
-   * @param viewportH viewport 可用高度（不含标尺）；不传则用画布逻辑高度
+   * 自适应缩放：使 workspace Rect 内容居中于 viewport
    */
-  zoomFit(viewportW?: number, viewportH?: number): void {
+  zoomFit(): void {
     const fc = this._canvas
     if (!fc) return
     const objects = fc.getObjects().filter((o: any) => !o.excludeFromExport)
@@ -127,17 +113,16 @@ export class ZoomPanController {
     })
     const bw = maxX - minX, bh = maxY - minY
     if (bw <= 0 || bh <= 0) return
-    // 可用视口空间：canvas-scroll 区域 - canvas-area margin 48px × 2
-    const targetW = (viewportW && viewportW > 0) ? viewportW - 96 : this._baseW
-    const targetH = (viewportH && viewportH > 0) ? viewportH - 96 : this._baseH
-    const z = Math.min((targetW - 60) / bw, (targetH - 60) / bh, 2)
+    // viewport = canvas 物理尺寸（即 EditorCanvas 容器尺寸）
+    const vpW = fc.getWidth() - 120
+    const vpH = fc.getHeight() - 120
+    const z = Math.min(vpW / bw, vpH / bh, 2)
     this._zoomLevel = Math.round(z * 100)
 
-    // 居中偏移直接写入 viewportTransform，无需 _zoomFitPan → scroll 绕路
     const cx = (minX + maxX) / 2
     const cy = (minY + maxY) / 2
-    const tx = (this._baseW / 2 - cx) * z
-    const ty = (this._baseH / 2 - cy) * z
+    const tx = (fc.getWidth() / 2 - cx) * z
+    const ty = (fc.getHeight() / 2 - cy) * z
     ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
     const active = fc.getActiveObject()
     if (active) (active as any).setCoords()

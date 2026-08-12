@@ -1,13 +1,12 @@
 /**
  * Canvas 管理器 — 封装 Fabric.js 画布生命周期
  *
- * 职责（精简后）：
- *   - 初始化/销毁 Fabric.js 画布
- *   - 配置控制点样式
- *   - 缩放/平移事件 → 委托给 ZoomPanController
- *   - 交互事件 → 委托给 InteractionManager
+ * 方案 C：逻辑画布（workspace Rect）模式
+ *   - Fabric canvas 物理尺寸 = viewport 容器尺寸（自适应）
+ *   - workspace Rect（id='workspace'）表示逻辑画布，有 fill/stroke（边界线自动跟随 zoom）
+ *   - canvas.clipPath = workspace → 溢出内容被裁剪，但控制条仍可见
  *
- * 构造函数支持注入 EventBus（DIP），不传则自动创建（向后兼容）
+ * DIP：构造函数支持注入 EventBus
  */
 
 import * as fabric from 'fabric'
@@ -18,14 +17,12 @@ import { InteractionManager } from './canvas/InteractionManager'
 import type { ModeManager } from './editor-mode/ModeManager'
 
 export class CanvasManager {
-  // ── 公共属性 ──
   canvas: Canvas | null = null
-
-  // ── 子模块 ──
   private _eventBus: EventBus
   private _zoomPan: ZoomPanController
   private _interaction: InteractionManager
   private _modeManager: ModeManager | null = null
+  private _workspaceRect: fabric.Rect | null = null
 
   constructor(eventBus?: EventBus) {
     this._eventBus = eventBus || new EventBus()
@@ -33,14 +30,14 @@ export class CanvasManager {
     this._interaction = new InteractionManager(this._eventBus)
   }
 
-  /**
-   * 初始化画布
-   */
-  init(canvasEl: HTMLCanvasElement, containerW: number, containerH: number): Canvas {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** 初始化：canvas 尺寸 = viewport 容器，同步创建 workspace Rect + clipPath */
+  init(canvasEl: HTMLCanvasElement, logicalW: number, logicalH: number): Canvas {
+    const parent = canvasEl.parentElement
+    const vpW = parent?.clientWidth || 800
+    const vpH = parent?.clientHeight || 600
+
     const fc = new fabric.Canvas(canvasEl as any, {
-      width: containerW,
-      height: containerH,
+      width: vpW, height: vpH,
       backgroundColor: 'transparent',
       selection: true,
       preserveObjectStacking: true,
@@ -51,21 +48,50 @@ export class CanvasManager {
 
     this._setupControls()
     this._setupCanvasEvents(fc)
-
-    // 子模块绑定
-    this._zoomPan.bindCanvas(fc, containerW, containerH)
+    this._zoomPan.bindCanvas(fc)
+    this._zoomPan.setLogicalSize(logicalW, logicalH)
     this._interaction.setupEvents(fc)
+    this._createWorkspace(fc, logicalW, logicalH)
 
     this.canvas = fc
-    // 暴露实例到 window（便于测试和调试）
     ;(window as any).__fabricCanvas = fc
     ;(window as any).__canvasMgr = this
     return fc
   }
 
-  /**
-   * 配置控制点样式 — 使用 Fabric 6 的 ownDefaults 静态属性
-   */
+  getWorkspaceRect(): fabric.Rect | null { return this._workspaceRect }
+
+  updateWorkspaceSize(w: number, h: number): void {
+    const fc = this.canvas
+    const ws = this._workspaceRect
+    if (!fc || !ws) return
+    ws.set({ width: w, height: h, left: (fc.getWidth() - w) / 2, top: (fc.getHeight() - h) / 2 })
+    fc.clipPath = new fabric.Rect({
+      left: ws.left, top: ws.top, width: w, height: h,
+      absolutePositioned: true, selectable: false, evented: false, excludeFromExport: true,
+    })
+    fc.requestRenderAll()
+    this._zoomPan.setLogicalSize(w, h)
+  }
+
+  private _createWorkspace(fc: Canvas, w: number, h: number): void {
+    const ws = new fabric.Rect({
+      id: 'workspace',
+      left: (fc.getWidth() - w) / 2, top: (fc.getHeight() - h) / 2,
+      width: w, height: h,
+      fill: '#ffffff', stroke: 'rgba(0,0,0,0.12)', strokeWidth: 1,
+      selectable: false, evented: false, excludeFromExport: true,
+    })
+    fc.add(ws)
+    fc.sendObjectToBack(ws)
+    this._workspaceRect = ws
+    fc.clipPath = new fabric.Rect({
+      left: ws.left, top: ws.top, width: w, height: h,
+      absolutePositioned: true, selectable: false, evented: false, excludeFromExport: true,
+    })
+    fc.requestRenderAll()
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupControls(): void {
     Object.assign(fabric.Object.ownDefaults, {
@@ -79,108 +105,62 @@ export class CanvasManager {
       borderDashArray: [4, 2],
       padding: 8,
       perPixelTargetFind: false,
-      objectCaching: false, // P0: 禁用 per-object 缓存，消除 zoom 时 cache canvas resize 的 30ms+ GC
+      objectCaching: false,
     } as any)
   }
 
-  /**
-   * 缩放/平移事件 — 委托给 ZoomPanController
-   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupCanvasEvents(fc: any): void {
-    // 滚轮缩放
     fc.on('mouse:wheel', (opt: any) => {
-      opt.e.preventDefault()
-      opt.e.stopPropagation()
+      opt.e.preventDefault(); opt.e.stopPropagation()
       this._zoomPan.handleWheel(opt.e.deltaY)
     })
-
-    // 空格 + 拖拽平移
-    fc.on('mouse:down', (opt: any) => {
-      this._zoomPan.handlePanMouseDown(opt.e, fc)
-    })
-    fc.on('mouse:move', (opt: any) => {
-      this._zoomPan.handlePanMouseMove(opt.e, fc)
-    })
-    fc.on('mouse:up', () => {
-      this._zoomPan.handlePanMouseUp(fc)
-    })
+    fc.on('mouse:down', (opt: any) => { this._zoomPan.handlePanMouseDown(opt.e, fc) })
+    fc.on('mouse:move', (opt: any) => { this._zoomPan.handlePanMouseMove(opt.e, fc) })
+    fc.on('mouse:up', () => { this._zoomPan.handlePanMouseUp(fc) })
   }
 
-  // ── 委托给 ZoomPanController ──
-  setLogicalSize(w: number, h: number): void { this._zoomPan.setLogicalSize(w, h) }
+  // ── 委托 ──
+  setLogicalSize(w: number, h: number): void { this.updateWorkspaceSize(w, h) }
   getBaseWidth(): number { return this._zoomPan.getBaseWidth() }
   getBaseHeight(): number { return this._zoomPan.getBaseHeight() }
   zoomIn(): void { this._zoomPan.zoomIn() }
   zoomOut(): void { this._zoomPan.zoomOut() }
-  zoomFit(viewportW?: number, viewportH?: number): void { this._zoomPan.zoomFit(viewportW, viewportH) }
+  zoomFit(): void { this._zoomPan.zoomFit() }
   getZoomLevel(): number { return this._zoomPan.getZoomLevel() }
   setSpacePressed(pressed: boolean): void { this._zoomPan.setSpacePressed(pressed) }
-
-  // ── 回调注册（委托给 EventBus，保持 API 兼容）──
-  onZoomChange(fn: (zoomLevel: number) => void): void { this._eventBus.on('zoomChange', fn) }
+  onZoomChange(fn: (z: number) => void): void { this._eventBus.on('zoomChange', fn) }
   onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
   onModified(fn: () => void): void { this._eventBus.on('modified', fn) }
-
-  /** 获取内部 EventBus（供高级使用者直接订阅事件） */
   getEventBus(): EventBus { return this._eventBus }
-
-  /** 获取子模块（供测试和高级使用） */
   getZoomPanController(): ZoomPanController { return this._zoomPan }
   getInteractionManager(): InteractionManager { return this._interaction }
+  setModeManager(mm: ModeManager): void { this._modeManager = mm; if (this.canvas) mm.setCanvas(this.canvas) }
 
-  /** 设置 ModeManager（可选，用于状态模式切换） */
-  setModeManager(mm: ModeManager): void {
-    this._modeManager = mm
-    if (this.canvas) {
-      mm.setCanvas(this.canvas)
-    }
-  }
-
-  /**
-   * 平移所有 Fabric 对象（用于 resize 北边/西边时保持元素与对边相对位置不变）
-   * @param dx 逻辑坐标 X 偏移
-   * @param dy 逻辑坐标 Y 偏移
-   */
   translateAllObjects(dx: number, dy: number): void {
     if (!this.canvas) return
     this.canvas.getObjects().forEach((obj: any) => {
+      if (obj.excludeFromExport) return
       obj.set({ left: (obj.left || 0) + dx, top: (obj.top || 0) + dy })
       obj.setCoords()
     })
     this.canvas.renderAll()
   }
 
-  // ── 生命周期 ──
   dispose(): void {
-    if (this.canvas) {
-      this.canvas.dispose()
-      this.canvas = null
-    }
+    if (this.canvas) { this.canvas.dispose(); this.canvas = null }
     this._zoomPan.unbindCanvas()
+    this._workspaceRect = null
     this._eventBus.clear()
   }
 
-  // ── 画布外部事件注入（滚轮缩放 / 框选） ──
-
-  /**
-   * 注入滚轮事件 — 鼠标在 Fabric canvas 元素外部时，滚轮仍可缩放画布
-   */
   injectWheel(deltaY: number): void {
     if (!this.canvas) return
     this._zoomPan.handleWheel(deltaY)
   }
 
-  /**
-   * 注入鼠标事件 — 鼠标在 Fabric canvas 元素外部时，仍可拖拽框选
-   *
-   * 原理：向 Fabric canvas 原生元素 dispatch 合成 MouseEvent，
-   * Fabric 内部事件系统会自然处理（_onMouseDown / _onMouseMove / _onMouseUp）。
-   */
   injectMouseEvent(clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void {
     if (!this.canvas) return
-    // Fabric.js v6 所有 mousedown/mousemove/mouseup 监听器注册在 upperCanvasEl 上，
-    // 而非外层包装 DIV（getElement() 返回值）或 lowerCanvasEl（纯渲染层）。
     const el = (this.canvas as any).upperCanvasEl || (this.canvas as any).lowerCanvasEl
     if (!el) return
     const ev = new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true })

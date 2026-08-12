@@ -83,10 +83,6 @@ const hasTextInSelection = ref(false)
 function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
 function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
 
-// 显示尺寸 = 画布逻辑尺寸（canvas 物理大小固定，zoom 由 viewportTransform 驱动）
-const displayWidth = computed(() => svgWidth.value)
-const displayHeight = computed(() => svgHeight.value)
-
 // 画布对象列表（供图层面板使用）
 const canvasObjects = ref<Array<{ id: string; type: string; name: string; visible: boolean }>>([])
 
@@ -279,21 +275,7 @@ async function save() {
   finally { if (wasDark) toggleTheme(); saving.value = false }
 }
 
-// ── 画布 resize ──
-function onResizeCanvas(w: number, h: number, dir: string) {
-  // w/h 即逻辑尺寸（canvas 物理大小 = 逻辑尺寸）
-  const dw = w - svgWidth.value
-  const dh = h - svgHeight.value
-  svgWidth.value = w
-  svgHeight.value = h
-  canvasMgr.setLogicalSize(svgWidth.value, svgHeight.value)
-  // 北边/西边 resize：平移所有元素，保持与对边（底边/右边）相对位置不变
-  if (dir.includes('w')) canvasMgr.translateAllObjects(dw, 0)
-  if (dir.includes('n')) canvasMgr.translateAllObjects(0, dh)
-}
-
-// ── 主加载流程 ──
-async function loadAndInit() {
+// ── 保存 ──async function loadAndInit() {
   loading.value = true
   onUnmounted(() => {
     if (_keyHandlerFn) { document.removeEventListener('keydown', _keyHandlerFn); document.removeEventListener('keyup', _keyUpHandler!) }
@@ -313,7 +295,7 @@ async function loadAndInit() {
   if (!area) return
   await new Promise(r => requestAnimationFrame(r))
   await new Promise(r => requestAnimationFrame(r))
-  // 使用 SVG 实际尺寸初始化画布（而非容器尺寸）
+  // canvas 物理尺寸由 CanvasManager.init 根据 viewport 容器自适应
   const w = svgWidth.value || 800
   const h = svgHeight.value || 500
   const canvasEl = area.querySelector('canvas')
@@ -326,8 +308,7 @@ async function loadAndInit() {
       const converted = merged.map(convertToTextbox)
       converted.forEach((obj: any) => { ensureInteractive(obj); fc.add(obj) })
       fc.getObjects().forEach((o: any) => { o.set({ selectable: true, evented: true }); if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true })) })
-      const s = canvasRef.value?.scrollRef
-      canvasMgr.zoomFit(s?.clientWidth, s?.clientHeight)
+      canvasMgr.zoomFit()
       historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
     } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
     finally { loading.value = false }
@@ -412,9 +393,8 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
 
         <!-- 中：画布 + 标尺 -->
         <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
-          :canvasWidth="displayWidth" :canvasHeight="displayHeight"
+          :canvasWidth="svgWidth" :canvasHeight="svgHeight"
           :themeMode="themeMode"
-          @resize="onResizeCanvas"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
           @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')" />
 
