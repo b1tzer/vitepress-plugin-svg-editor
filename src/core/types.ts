@@ -35,28 +35,12 @@ export interface SvgLoadResult {
   svgHeight: number
 }
 
-/** 辅助线 */
-export type GuideLine =
-  | { type: 'vertical'; x: number }
-  | { type: 'horizontal'; y: number }
-
-/** 对象边界矩形 */
-export interface ObjectBounds {
-  left: number
-  top: number
-  right: number
-  bottom: number
-  centerX: number
-  centerY: number
-}
-
 // ═══════════════════════════════════════════════════════════════
 // CanvasManager 事件映射
 // ═══════════════════════════════════════════════════════════════
 
 export interface CanvasEvents {
   zoomChange: (zoomLevel: number) => void
-  guideLinesChange: (lines: GuideLine[]) => void
   selectionChange: () => void
   modified: () => void
 }

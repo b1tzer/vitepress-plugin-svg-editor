@@ -5,7 +5,6 @@
  *   - 初始化/销毁 Fabric.js 画布
  *   - 配置控制点样式
  *   - 缩放/平移事件 → 委托给 ZoomPanController
- *   - 对齐辅助线 → 委托给 GuideLineManager
  *   - 交互事件 → 委托给 InteractionManager
  *
  * 构造函数支持注入 EventBus（DIP），不传则自动创建（向后兼容）
@@ -14,9 +13,7 @@
 import * as fabric from 'fabric'
 import type { Canvas } from 'fabric'
 import { EventBus } from './EventBus'
-import type { GuideLine } from '../types'
 import { ZoomPanController } from './canvas/ZoomPanController'
-import { GuideLineManager } from './canvas/GuideLineManager'
 import { InteractionManager } from './canvas/InteractionManager'
 import type { ModeManager } from './editor-mode/ModeManager'
 
@@ -27,14 +24,12 @@ export class CanvasManager {
   // ── 子模块 ──
   private _eventBus: EventBus
   private _zoomPan: ZoomPanController
-  private _guideLine: GuideLineManager
   private _interaction: InteractionManager
   private _modeManager: ModeManager | null = null
 
   constructor(eventBus?: EventBus) {
     this._eventBus = eventBus || new EventBus()
     this._zoomPan = new ZoomPanController(this._eventBus)
-    this._guideLine = new GuideLineManager(this._eventBus)
     this._interaction = new InteractionManager(this._eventBus)
   }
 
@@ -59,7 +54,6 @@ export class CanvasManager {
 
     // 子模块绑定
     this._zoomPan.bindCanvas(fc, containerW, containerH)
-    this._guideLine.setupEvents(fc)
     this._interaction.setupEvents(fc)
 
     this.canvas = fc
@@ -124,7 +118,6 @@ export class CanvasManager {
 
   // ── 回调注册（委托给 EventBus，保持 API 兼容）──
   onZoomChange(fn: (zoomLevel: number) => void): void { this._eventBus.on('zoomChange', fn) }
-  onGuideLinesChange(fn: (lines: GuideLine[]) => void): void { this._eventBus.on('guideLinesChange', fn) }
   onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
   onModified(fn: () => void): void { this._eventBus.on('modified', fn) }
 
@@ -133,13 +126,7 @@ export class CanvasManager {
 
   /** 获取子模块（供测试和高级使用） */
   getZoomPanController(): ZoomPanController { return this._zoomPan }
-  getGuideLineManager(): GuideLineManager { return this._guideLine }
   getInteractionManager(): InteractionManager { return this._interaction }
-
-  /** 启用/禁用辅助线（虚线）和吸附对齐功能 */
-  setGuideLinesEnabled(enabled: boolean): void {
-    this._guideLine.setEnabled(enabled)
-  }
 
   /** 设置 ModeManager（可选，用于状态模式切换） */
   setModeManager(mm: ModeManager): void {

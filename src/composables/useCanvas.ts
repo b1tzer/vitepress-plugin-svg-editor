@@ -22,7 +22,6 @@ export function useCanvas(container: DIContainer) {
   const svgWidth = ref(0)
   const svgHeight = ref(0)
   const selectionInfo = ref('')
-  const guideLines = ref<any[]>([])
   const originalViewBox = ref('')
   const themeMode = ref<'light' | 'dark'>(
     typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
@@ -34,7 +33,6 @@ export function useCanvas(container: DIContainer) {
 
   // ── 事件订阅 ──
   canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
-  canvasMgr.onGuideLinesChange((lines: any) => { guideLines.value = lines })
   canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
 
   // ── 图层面板刷新 ──
@@ -142,7 +140,6 @@ export function useCanvas(container: DIContainer) {
     svgWidth,
     svgHeight,
     selectionInfo,
-    guideLines,
     originalViewBox,
     themeMode,
     canvasObjects,

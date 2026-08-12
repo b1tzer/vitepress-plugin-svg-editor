@@ -32,6 +32,3 @@ export { toggleShadow, applyShadow } from './shadow'
 
 // 箭头合并（line + polygon → Group）
 export { mergeArrows } from './arrow-merger'
-
-// 选择辅助（getObjBounds）
-export { getObjBounds } from './selection'

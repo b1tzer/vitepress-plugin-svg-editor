@@ -39,10 +39,6 @@ describe('CanvasManager（精简版）', () => {
     expect(cm.getZoomPanController()).toBeTruthy()
   })
 
-  it('getGuideLineManager 应返回非 null 实例', () => {
-    expect(cm.getGuideLineManager()).toBeTruthy()
-  })
-
   it('getInteractionManager 应返回非 null 实例', () => {
     expect(cm.getInteractionManager()).toBeTruthy()
   })
@@ -80,13 +76,6 @@ describe('CanvasManager（精简版）', () => {
     cm.onModified(fn)
     cm.getEventBus().emit('modified')
     expect(fn).toHaveBeenCalled()
-  })
-
-  it('onGuideLinesChange 应通过 EventBus 注册回调', () => {
-    const fn = vi.fn()
-    cm.onGuideLinesChange(fn)
-    cm.getEventBus().emit('guideLinesChange', [{ type: 'vertical', x: 100 }])
-    expect(fn).toHaveBeenCalledWith([{ type: 'vertical', x: 100 }])
   })
 
   it('onSelectionChange 应通过 EventBus 注册回调', () => {

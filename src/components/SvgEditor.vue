@@ -70,7 +70,6 @@ const shadowOffsetX = ref(3)
 const shadowOffsetY = ref(3)
 const originalViewBox = ref('')
 const spacePressed = ref(false)
-const guideLines = ref([])
 const isPanning = ref(false)
 const themeMode = ref(
   typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
@@ -96,7 +95,6 @@ let _keyHandlerFn: any = null
 let _keyUpHandler: any = null
 
 canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
-canvasMgr.onGuideLinesChange((lines: any) => { guideLines.value = lines })
 canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
 canvasMgr.onModified(() => { historyMgr.save(canvasMgr.canvas!, () => {}, () => {}); refreshLayerList() })
 historyMgr.onStateChange(() => { canUndo.value = historyMgr.canUndo(); canRedo.value = historyMgr.canRedo() })
@@ -314,9 +312,6 @@ async function loadAndInit() {
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
   const fc = canvasMgr.init(canvasEl, w, h)
-
-  // 禁用拖拽时的虚线辅助线与松手后的自动吸附对齐
-  canvasMgr.setGuideLinesEnabled(false)
 
   fabric.loadSVGFromString(svg).then(({ objects }: any) => {
     try {

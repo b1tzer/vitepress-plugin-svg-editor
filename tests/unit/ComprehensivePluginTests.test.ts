@@ -11,7 +11,6 @@ import { describe, it, expect, vi } from 'vitest'
 import * as AlignPlugin from '../../src/plugins/align'
 import * as DistributePlugin from '../../src/plugins/distribute'
 import * as LayerPlugin from '../../src/plugins/layer'
-import * as SelectionPlugin from '../../src/plugins/selection'
 
 // ═════════════════════════════════════════════════════════
 // Mock Helpers
@@ -194,22 +193,6 @@ describe('LayerPlugin', () => {
     expect(() => LayerPlugin.backward(c)).not.toThrow()
     expect(() => LayerPlugin.toFront(c)).not.toThrow()
     expect(() => LayerPlugin.toBack(c)).not.toThrow()
-  })
-})
-
-// ═════════════════════════════════════════════════════════
-// 4. 选择辅助
-// ═════════════════════════════════════════════════════════
-describe('SelectionPlugin.getObjBounds', () => {
-  it('应返回正确的边界信息', () => {
-    const obj = makeObj({ left: 10, top: 20, width: 80, height: 60, scaleX: 1, scaleY: 1 })
-    const b = SelectionPlugin.getObjBounds(obj)
-    expect(b.left).toBe(10)
-    expect(b.top).toBe(20)
-    expect(b.right).toBe(90)
-    expect(b.bottom).toBe(80)
-    expect(b.centerX).toBe(50)
-    expect(b.centerY).toBe(50)
   })
 })
 
