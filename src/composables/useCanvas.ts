@@ -12,6 +12,7 @@ import * as fabric from 'fabric'
 import type { DIContainer } from '../../di/container'
 import { preprocessSvg } from '../../core/preprocessor'
 import { mergeArrows } from '../../plugins/arrow-merger'
+import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES, TEXT_TYPES } from '../core/FabricTypes'
 
 export function useCanvas(container: DIContainer) {
   const { canvasMgr } = container
@@ -48,7 +49,7 @@ export function useCanvas(container: DIContainer) {
   }
 
   function getObjectName(obj: any, idx: number): string {
-    if (obj.type === 'text' || obj.type === 'textbox') {
+    if (TEXT_TYPES.includes(obj.type)) {
       return (obj.text || '').substring(0, 15) || '文本'
     }
     const typeMap: Record<string, string> = { rect: '矩形', circle: '圆', triangle: '三角', ellipse: '椭圆', line: '线条', path: '路径', polygon: '多边形', group: '组合' }
@@ -60,7 +61,7 @@ export function useCanvas(container: DIContainer) {
     if (!fc) return
     const active = fc.getActiveObject()
     if (!active) { selectionInfo.value = ''; return }
-    const isMulti = active.type === 'activeselection'
+    const isMulti = active.type === FABRIC_TYPE.ACTIVE_SELECTION
     selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
   }
 
@@ -102,7 +103,7 @@ export function useCanvas(container: DIContainer) {
       try {
         const merged = mergeArrows(objects)
         const converted = merged.map((obj: any) => {
-          if (obj.type === 'text') {
+          if (obj.type === FABRIC_TYPE.TEXT) {
             try {
               return new fabric.Textbox(obj.text || '', { left: obj.left || 0, top: obj.top || 0, width: Math.max((obj.width || 80) + 20, 40), fontSize: obj.fontSize || 12, fontFamily: obj.fontFamily || 'sans-serif', fontWeight: obj.fontWeight || 'normal', fontStyle: obj.fontStyle || 'normal', fill: obj.fill || '#000', stroke: obj.stroke || '', strokeWidth: obj.strokeWidth || 0, textAlign: obj.textAlign || 'left', lineHeight: obj.lineHeight || 1.16, charSpacing: obj.charSpacing || 0, opacity: obj.opacity ?? 1, angle: obj.angle || 0, originX: obj.originX || 'left', originY: obj.originY || 'top', selectable: true, evented: true, editable: true, splitByGrapheme: true })
             } catch (e) { return obj }
@@ -112,7 +113,7 @@ export function useCanvas(container: DIContainer) {
         converted.forEach((obj: any) => {
           obj.set({ selectable: true, evented: true, perPixelTargetFind: false })
           if (!obj.fill || obj.fill === 'none' || obj.fill === 'transparent') {
-            if (obj.type === 'rect' || obj.type === 'path' || obj.type === 'polygon' || obj.type === 'circle' || obj.type === 'ellipse') {
+            if (HOLLOW_SHAPE_TYPES.includes(obj.type)) {
               obj.set({ fill: 'rgba(0,0,0,0.001)' })
             }
           }

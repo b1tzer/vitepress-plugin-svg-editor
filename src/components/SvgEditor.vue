@@ -27,6 +27,7 @@ import * as TextFormatPlugin from '../plugins/text-format.ts'
 import * as DistributePlugin from '../plugins/distribute.ts'
 import { applyGradient } from '../plugins/gradient.ts'
 import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
+import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES, TEXT_TYPES } from '../core/FabricTypes.ts'
 
 // ── 存储适配器 ──
 const storageAdapter = new VitePressSaveAdapter()
@@ -113,7 +114,7 @@ function refreshLayerList() {
 }
 
 function getObjectName(obj: any, idx: number): string {
-  if (obj.type === 'text' || obj.type === 'textbox') {
+  if (TEXT_TYPES.includes(obj.type)) {
     return (obj.text || '').substring(0, 15) || '文本'
   }
   const typeMap: Record<string, string> = { rect: '矩形', circle: '圆', triangle: '三角', ellipse: '椭圆', line: '线条', path: '路径', polygon: '多边形', group: '组合' }
@@ -126,16 +127,16 @@ function updateSelectionInfo() {
   if (!fc) return
   const active = fc.getActiveObject()
   if (!active) { selectionInfo.value = ''; return }
-  const isMulti = active.type === 'activeselection'
+  const isMulti = active.type === FABRIC_TYPE.ACTIVE_SELECTION
   selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
 
   // 判断选中集合中是否包含文本对象（支持多选时显示文字对齐按钮）
   if (isMulti) {
     hasTextInSelection.value = (active as any)._objects.some(
-      (o: any) => o.type === 'text' || o.type === 'textbox'
+      (o: any) => TEXT_TYPES.includes(o.type)
     )
   } else {
-    hasTextInSelection.value = active.type === 'text' || active.type === 'textbox'
+    hasTextInSelection.value = TEXT_TYPES.includes(active.type)
   }
 
   if (active.fill && typeof active.fill === 'string') currentFill.value = active.fill
@@ -175,7 +176,7 @@ function undo() { historyMgr.undo(canvasMgr.canvas!, () => {}); refreshLayerList
 function redo() { historyMgr.redo(canvasMgr.canvas!, () => {}); refreshLayerList() }
 function copyObj() { const a = canvasMgr.canvas?.getActiveObject(); if (a) (a as any).clone((c: any) => { window._clipboard = c }) }
 function pasteObj() { if (!window._clipboard) return; const fc = canvasMgr.canvas; window._clipboard.clone((c: any) => { c.set({ left: c.left + 20, top: c.top + 20 }); fc!.add(c); fc!.setActiveObject(c); fc!.renderAll(); withSave(() => {}) }) }
-function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === 'activeselection') { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
+function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
 function align(type: string) { withSave((fc: any) => (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)) }
 function applyFill(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('fill', hex) }) }
 function applyStroke(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('stroke', hex) }) }
@@ -187,8 +188,8 @@ function toggleBold() { withSave((fc: any) => { currentFontWeight.value = TextFo
 function toggleItalic() { withSave((fc: any) => { currentFontStyle.value = TextFormatPlugin.toggleItalic(fc) || 'normal' }) }
 function toggleUnderline() { withSave((fc: any) => { currentUnderline.value = TextFormatPlugin.toggleUnderline(fc) }) }
 function applyRotation(angle: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.rotate(angle); currentRotation.value = angle; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
-function groupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== 'activeselection') return; (a as any).toGroup(); fc!.renderAll(); withSave(() => {}) }
-function ungroupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== 'group') return; (a as any).toActiveSelection(); fc!.renderAll(); withSave(() => {}) }
+function groupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== FABRIC_TYPE.ACTIVE_SELECTION) return; (a as any).toGroup(); fc!.renderAll(); withSave(() => {}) }
+function ungroupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== FABRIC_TYPE.GROUP) return; (a as any).toActiveSelection(); fc!.renderAll(); withSave(() => {}) }
 function applyOpacity(value: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.set('opacity', value / 100); currentOpacity.value = value; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
 function applyGradientUI() { const fc = canvasMgr.canvas; if (!fc) return; applyGradient(fc, { type: gradientType.value as any, angle: gradientAngle.value, color1: gradientColor1.value, color2: gradientColor2.value }); withSave(() => {}) }
 function toggleShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; shadowEnabled.value = toggleShadow(fc); withSave(() => {}) }
@@ -358,11 +359,11 @@ async function loadAndInit() {
 
 function convertToTextbox(obj: any): any {
   if (!obj) return obj
-  if (obj.type === 'text') { try { return new fabric.Textbox(obj.text || '', { left: obj.left||0, top: obj.top||0, width: Math.max((obj.width||80)+20,40), fontSize: obj.fontSize||12, fontFamily: obj.fontFamily||'sans-serif', fontWeight: obj.fontWeight||'normal', fontStyle: obj.fontStyle||'normal', fill: obj.fill||'#000', stroke: obj.stroke||'', strokeWidth: obj.strokeWidth||0, textAlign: obj.textAlign||'left', lineHeight: obj.lineHeight||1.16, charSpacing: obj.charSpacing||0, opacity: obj.opacity??1, angle: obj.angle||0, originX: obj.originX||'left', originY: obj.originY||'top', selectable: true, evented: true, editable: true, splitByGrapheme: true }) } catch (e) { return obj } }
+  if (obj.type === FABRIC_TYPE.TEXT) { try { return new fabric.Textbox(obj.text || '', { left: obj.left||0, top: obj.top||0, width: Math.max((obj.width||80)+20,40), fontSize: obj.fontSize||12, fontFamily: obj.fontFamily||'sans-serif', fontWeight: obj.fontWeight||'normal', fontStyle: obj.fontStyle||'normal', fill: obj.fill||'#000', stroke: obj.stroke||'', strokeWidth: obj.strokeWidth||0, textAlign: obj.textAlign||'left', lineHeight: obj.lineHeight||1.16, charSpacing: obj.charSpacing||0, opacity: obj.opacity??1, angle: obj.angle||0, originX: obj.originX||'left', originY: obj.originY||'top', selectable: true, evented: true, editable: true, splitByGrapheme: true }) } catch (e) { return obj } }
   if (obj._objects) obj._objects = obj._objects.map(convertToTextbox)
   return obj
 }
-function ensureInteractive(o: any): void { o.set({ selectable: true, evented: true, perPixelTargetFind: false }); if (!o.fill || o.fill === 'none' || o.fill === 'transparent') { if (o.type === 'rect' || o.type === 'path' || o.type === 'polygon' || o.type === 'circle' || o.type === 'ellipse') o.set({ fill: 'rgba(0,0,0,0.001)' }) }; if (o._objects) o._objects.forEach(ensureInteractive) }
+function ensureInteractive(o: any): void { o.set({ selectable: true, evented: true, perPixelTargetFind: false }); if (!o.fill || o.fill === 'none' || o.fill === 'transparent') { if (HOLLOW_SHAPE_TYPES.includes(o.type)) o.set({ fill: 'rgba(0,0,0,0.001)' }) }; if (o._objects) o._objects.forEach(ensureInteractive) }
 
 onMounted(loadAndInit)
 onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })

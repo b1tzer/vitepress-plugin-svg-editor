@@ -4,12 +4,14 @@
  * 支持单选 Textbox 和多选文字批量操作
  */
 
+import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes'
+
 export function getTextObjects(canvas) {
   const a = canvas.getActiveObject()
   if (!a) return []
-  if (a.type === 'textbox' || a.type === 'i-text' || a.type === 'itext' || a.type === 'text') return [a]
-  if (a.type === 'activeselection' || a.type === 'group') {
-    return (a._objects || []).filter(o => o.type === 'textbox' || o.type === 'i-text' || o.type === 'itext' || o.type === 'text')
+  if (TEXT_TYPES.includes(a.type)) return [a]
+  if (a.type === FABRIC_TYPE.ACTIVE_SELECTION || a.type === FABRIC_TYPE.GROUP) {
+    return (a._objects || []).filter(o => TEXT_TYPES.includes(o.type))
   }
   return []
 }

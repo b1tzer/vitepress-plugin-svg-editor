@@ -12,6 +12,7 @@
 
 import type { Canvas } from 'fabric'
 import type { IEventBus } from '../types'
+import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES } from '../FabricTypes'
 
 export class InteractionManager {
   private _eventBus: IEventBus
@@ -30,14 +31,14 @@ export class InteractionManager {
         e.target.set({ selectable: true, evented: true })
         // ⚠️ 关键：对于无填充的对象设置透明填充，使其可点击（Fabric.js 默认不处理 fill=none 的点击）
         if (!e.target.fill || e.target.fill === 'none' || e.target.fill === 'transparent') {
-          if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(e.target.type)) {
+          if (HOLLOW_SHAPE_TYPES.includes(e.target.type)) {
             e.target.set({ fill: 'rgba(0,0,0,0.001)' })
           }
         }
         if (e.target._objects) e.target._objects.forEach((o: any) => {
           o.set({ selectable: true, evented: true })
           if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
-            if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
+            if (HOLLOW_SHAPE_TYPES.includes(o.type)) {
               o.set({ fill: 'rgba(0,0,0,0.001)' })
             }
           }
@@ -73,14 +74,14 @@ export class InteractionManager {
     // ── Textbox 缩放时保持字号不变（Office 行为）──
     fc.on('object:scaling', (e: any) => {
       const obj = e.target
-      if (!obj || (obj.type !== 'textbox' && obj.type !== 'i-text')) return
+      if (!obj || (obj.type !== FABRIC_TYPE.TEXTBOX && obj.type !== FABRIC_TYPE.I_TEXT)) return
       if (obj.__scalingFontSize == null) obj.__scalingFontSize = obj.fontSize
       obj.set({ fontSize: obj.__scalingFontSize / Math.max(obj.scaleY, 0.1) })
     })
 
     fc.on('object:modified', (e: any) => {
       const obj = e.target
-      if (obj && (obj.type === 'textbox' || obj.type === 'i-text')) {
+      if (obj && (obj.type === FABRIC_TYPE.TEXTBOX || obj.type === FABRIC_TYPE.I_TEXT)) {
         if (obj.__scalingFontSize != null) {
           const origFontSize = obj.__scalingFontSize
           const newWidth = Math.max(obj.width * obj.scaleX, 30)

@@ -4,6 +4,7 @@
  */
 
 import * as fabric from 'fabric'
+import { FABRIC_TYPE } from '../core/FabricTypes'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeArrows(objects: any[]) {
@@ -12,9 +13,9 @@ export function mergeArrows(objects: any[]) {
   for (let i = 0; i < objects.length; i++) {
     if (used.has(i)) continue
     const obj = objects[i]
-    if (obj.type === 'line' && i + 1 < objects.length) {
+    if (obj.type === FABRIC_TYPE.LINE && i + 1 < objects.length) {
       const next = objects[i + 1]
-      if (next.type === 'polygon' && !used.has(i + 1)) {
+      if (next.type === FABRIC_TYPE.POLYGON && !used.has(i + 1)) {
         const lineCenterX = (obj.left || 0) + (obj.width || 0) / 2
         const lineCenterY = (obj.top || 0) + (obj.height || 0) / 2
         const useAbsX2 = Math.abs(obj.x2 || 0) > Math.max((obj.width || 0) / 2 + 5, 15)
