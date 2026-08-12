@@ -275,7 +275,8 @@ async function save() {
   finally { if (wasDark) toggleTheme(); saving.value = false }
 }
 
-// ── 保存 ──async function loadAndInit() {
+// ── 主加载流程 ──
+async function loadAndInit() {
   loading.value = true
   onUnmounted(() => {
     if (_keyHandlerFn) { document.removeEventListener('keydown', _keyHandlerFn); document.removeEventListener('keyup', _keyUpHandler!) }
