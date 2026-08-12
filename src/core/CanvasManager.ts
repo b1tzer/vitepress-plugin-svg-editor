@@ -113,7 +113,7 @@ export class CanvasManager {
   getBaseHeight(): number { return this._zoomPan.getBaseHeight() }
   zoomIn(): void { this._zoomPan.zoomIn() }
   zoomOut(): void { this._zoomPan.zoomOut() }
-  zoomFit(): void { this._zoomPan.zoomFit() }
+  zoomFit(viewportW?: number, viewportH?: number): void { this._zoomPan.zoomFit(viewportW, viewportH) }
   getZoomLevel(): number { return this._zoomPan.getZoomLevel() }
   setSpacePressed(pressed: boolean): void { this._zoomPan.setSpacePressed(pressed) }
 
@@ -136,9 +136,6 @@ export class CanvasManager {
       mm.setCanvas(this.canvas)
     }
   }
-
-  /** 获取最近一次 zoomFit 的居中偏移（供外部通过 scroll 定位） */
-  getZoomFitPan(): { x: number; y: number } { return this._zoomPan.getZoomFitPan() }
 
   /**
    * 平移所有 Fabric 对象（用于 resize 北边/西边时保持元素与对边相对位置不变）
@@ -182,18 +179,11 @@ export class CanvasManager {
    */
   injectMouseEvent(clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void {
     if (!this.canvas) return
-    const el = (this.canvas as any).getElement?.() || (this.canvas as any).lowerCanvasEl
+    // Fabric.js v6 所有 mousedown/mousemove/mouseup 监听器注册在 upperCanvasEl 上，
+    // 而非外层包装 DIV（getElement() 返回值）或 lowerCanvasEl（纯渲染层）。
+    const el = (this.canvas as any).upperCanvasEl || (this.canvas as any).lowerCanvasEl
     if (!el) return
-    // 将 clientX/Y 计算为相对于 canvas 元素左上角的坐标
-    const rect = el.getBoundingClientRect()
-    const x = clientX - rect.left
-    const y = clientY - rect.top
     const ev = new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true })
-    // 预注入 offsetX/offsetY，供 Fabric 的 getPointer 使用（部分环境依赖这些属性）
-    Object.defineProperties(ev, {
-      offsetX: { value: x, writable: false },
-      offsetY: { value: y, writable: false },
-    })
     el.dispatchEvent(ev)
   }
 }

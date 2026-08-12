@@ -78,13 +78,13 @@ const canUndo = ref(false)
 const canRedo = ref(false)
 const panelCollapsed = ref(false)
 const leftPanelCollapsed = ref(false)
+const hasTextInSelection = ref(false)
 function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
 function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
 
-// 显示尺寸 = 逻辑尺寸 × 当前缩放比，上限 4096px 防止 DOM/GPU 溢出
-const CANVAS_MAX = 4096
-const displayWidth = computed(() => Math.min(Math.round(svgWidth.value * zoomLevel.value / 100), CANVAS_MAX))
-const displayHeight = computed(() => Math.min(Math.round(svgHeight.value * zoomLevel.value / 100), CANVAS_MAX))
+// 显示尺寸 = 画布逻辑尺寸（canvas 物理大小固定，zoom 由 viewportTransform 驱动）
+const displayWidth = computed(() => svgWidth.value)
+const displayHeight = computed(() => svgHeight.value)
 
 // 画布对象列表（供图层面板使用）
 const canvasObjects = ref<Array<{ id: string; type: string; name: string; visible: boolean }>>([])
@@ -128,6 +128,15 @@ function updateSelectionInfo() {
   if (!active) { selectionInfo.value = ''; return }
   const isMulti = active.type === 'activeSelection'
   selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
+
+  // 判断选中集合中是否包含文本对象（支持多选时显示文字对齐按钮）
+  if (isMulti) {
+    hasTextInSelection.value = (active as any)._objects.some(
+      (o: any) => o.type === 'text' || o.type === 'textbox'
+    )
+  } else {
+    hasTextInSelection.value = active.type === 'text' || active.type === 'textbox'
+  }
 
   if (active.fill && typeof active.fill === 'string') currentFill.value = active.fill
   if (active.stroke && typeof active.stroke === 'string') currentStroke.value = active.stroke
@@ -271,14 +280,11 @@ async function save() {
 
 // ── 画布 resize ──
 function onResizeCanvas(w: number, h: number, dir: string) {
-  // 手柄拖拽产出的是显示像素（display px），需换算为逻辑尺寸
-  const newLogicalW = Math.round(w * 100 / zoomLevel.value)
-  const newLogicalH = Math.round(h * 100 / zoomLevel.value)
-  // 计算本次尺寸变化（逻辑坐标）
-  const dw = newLogicalW - svgWidth.value
-  const dh = newLogicalH - svgHeight.value
-  svgWidth.value = newLogicalW
-  svgHeight.value = newLogicalH
+  // w/h 即逻辑尺寸（canvas 物理大小 = 逻辑尺寸）
+  const dw = w - svgWidth.value
+  const dh = h - svgHeight.value
+  svgWidth.value = w
+  svgHeight.value = h
   canvasMgr.setLogicalSize(svgWidth.value, svgHeight.value)
   // 北边/西边 resize：平移所有元素，保持与对边（底边/右边）相对位置不变
   if (dir.includes('w')) canvasMgr.translateAllObjects(dw, 0)
@@ -319,13 +325,8 @@ async function loadAndInit() {
       const converted = merged.map(convertToTextbox)
       converted.forEach((obj: any) => { ensureInteractive(obj); fc.add(obj) })
       fc.getObjects().forEach((o: any) => { o.set({ selectable: true, evented: true }); if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true })) })
-      canvasMgr.zoomFit()
-      // 通过滚动容器居中画布内容（而非 viewportTransform 平移），确保编辑器坐标 = 导出坐标
-      nextTick(() => {
-        const s = canvasRef.value?.scrollRef
-        if (s && s.scrollWidth > s.clientWidth) s.scrollLeft = (s.scrollWidth - s.clientWidth) / 2
-        if (s && s.scrollHeight > s.clientHeight) s.scrollTop = (s.scrollHeight - s.clientHeight) / 2
-      })
+      const s = canvasRef.value?.scrollRef
+      canvasMgr.zoomFit(s?.clientWidth, s?.clientHeight)
       historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
     } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
     finally { loading.value = false }
@@ -419,6 +420,7 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
         <!-- 右：属性面板 -->
         <EditorContextPanel
           :selectionInfo="selectionInfo"
+          :hasTextInSelection="hasTextInSelection"
           :currentFill="currentFill"
           :currentStroke="currentStroke"
           :currentFontSize="currentFontSize"

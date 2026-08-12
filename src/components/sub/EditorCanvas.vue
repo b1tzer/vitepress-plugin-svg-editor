@@ -1,20 +1,21 @@
 <script setup lang="ts">
 /**
- * 编辑器画布子组件
+ * 编辑器画布子组件 — 纯 viewport zoom 模型
  *
  * 布局（从外到内）：
  *   .editor-canvas（棋盘格背景 + overflow:hidden）
  *   ├── .ruler-canvas（固定标尺层，pointer-events:none，z-index:10）
- *   ├── .canvas-scroll（grid-template-areas:"stack" 可滚动容器）
- *   │   ├── .canvas-area（grid-area:stack，仅含 Fabric 画布）
- *   │   │   └── canvas.fabric-canvas（Fabric.js 接管）
+ *   ├── .canvas-scroll（固定视口容器 overflow:hidden，grid-template-areas:"stack"）
+ *   │   ├── .canvas-area（grid-area:stack，仅含 Fabric 画布，尺寸 = 逻辑 SVG 尺寸）
+ *   │   │   └── canvas.fabric-canvas（Fabric.js 接管，viewportTransform 驱动缩放/平移）
  *   │   └── .resize-handles-overlay（grid-area:stack 同层叠加，CSS Grid 保证对齐）
  *   │       └── .rh-*（8 边 resize 手柄，尺寸固定不受缩放影响）
  *   └── .loading（加载遮罩）
  *
- * 关键设计：两个 grid item 共享同一 grid-area，
- * 拥有相同的 width/height、margin、place-self，
- * CSS Grid 自动将它们像素级叠加 —— 零 JS 坐标计算。
+ * 关键设计：
+ *   - canvas 物理尺寸 = 逻辑 SVG 尺寸（固定不变），zoom 纯由 viewportTransform 矩阵完成
+ *   - 平移统一由 Fabric relativePan 驱动（空格 + 拖拽 或 中键拖拽）
+ *   - 两个 grid item 共享同一 grid-area，CSS Grid 自动像素级叠加 — 零 JS 坐标计算
  */
 
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
@@ -33,7 +34,6 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   (e: 'resize', w: number, h: number, dir: string): void
-  (e: 'scroll', scrollLeft: number, scrollTop: number): void
   (e: 'canvasWheel', deltaY: number): void
   (e: 'canvasAreaMouseEvent', clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void
 }>()
@@ -145,8 +145,8 @@ function onCanvasWheel(e: WheelEvent) {
 
 /** 画布外 mousedown → 开始注入框选事件链 */
 function onCanvasMouseDown(e: MouseEvent) {
-  // 中键拖拽平移容器（保留原有行为）
-  onScrollMouseDown(e)
+  // 中键 → 由 Fabric relativePan 处理（见 CanvasManager._setupCanvasEvents）
+  if (e.button === 1) return
   if (e.button !== 0) return
   // 如果点击的是 Fabric canvas 自身或其 resize 手柄子元素，不干预
   const target = e.target as HTMLElement
@@ -171,17 +171,6 @@ function onCanvasOutsideMouseUp(e: MouseEvent) {
   document.removeEventListener('mouseup', onCanvasOutsideMouseUp)
 }
 
-// 中键拖拽平移滚动容器
-function onScrollMouseDown(e: MouseEvent) {
-  if (e.button !== 1) return
-  e.preventDefault()
-  const s = scrollRef.value; if (!s) return
-  const sx = e.clientX, sy = e.clientY, ox = s.scrollLeft, oy = s.scrollTop
-  const mm = (ev: MouseEvent) => { s.scrollLeft = ox + sx - ev.clientX; s.scrollTop = oy + sy - ev.clientY }
-  const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
-  document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu)
-}
-
 onMounted(() => {
   _ro = new ResizeObserver(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   if (containerRef.value) _ro.observe(containerRef.value)
@@ -198,8 +187,7 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
     <canvas ref="rulerCanvasRef" class="ruler-canvas" />
     <div class="canvas-scroll" ref="scrollRef"
       @wheel.prevent="onCanvasWheel"
-      @mousedown="onCanvasMouseDown"
-      @scroll="emit('scroll', ($event.target as HTMLElement).scrollLeft, ($event.target as HTMLElement).scrollTop)">
+      @mousedown="onCanvasMouseDown">
       <div class="canvas-area" ref="canvasAreaRef"
         :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">
         <canvas class="fabric-canvas" />
@@ -237,7 +225,7 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
 /* 滚动容器：左/上偏移 = 标尺宽度；grid-template-areas 让 canvas-area 和手柄层自动叠加 */
 .canvas-scroll {
   position:absolute; top:24px; left:24px; right:0; bottom:0;
-  overflow:auto;
+  overflow:hidden;
   display:grid;
   grid-template-areas: "stack";
 }

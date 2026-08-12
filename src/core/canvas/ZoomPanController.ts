@@ -1,35 +1,31 @@
 /**
- * 缩放/平移控制器 — 从 CanvasManager 中提取的缩放/平移职责
+ * 缩放/平移控制器 — 纯 viewportTransform 驱动
  *
- * 职责：
- *   - 缩放控制（zoomIn / zoomOut / zoomFit）
- *   - 画布平移（空格 + 拖拽）
- *   - 画布逻辑尺寸管理（setLogicalSize / _syncCanvasSize）
+ * canvas 物理尺寸固定 = 逻辑尺寸，zoom/pan 全部由 viewportTransform 矩阵完成。
+ * 对比旧「物理 resize × viewport 双通道」模型：
+ *   - 不再 setWidth/setHeight → 零 GPU 位图重分配，无 Aw Snap 风险
+ *   - 无需 CANVAS_MAX 天花板
+ *   - zoomFit 居中直接写 viewportTransform，无需 _zoomFitPan → scroll 绕路
  *
- * 通过构造函数注入 EventBus 实现 DIP
+ * DIP：通过构造函数注入 IEventBus
  */
 
 import type { Canvas } from 'fabric'
+import { Point } from 'fabric'
 import type { IEventBus } from '../types'
 
 export class ZoomPanController {
-  /** Canvas 物理像素安全天花板 — 超过此值浏览器 GPU 纹理可能溢出导致 Aw Snap */
-  private static readonly CANVAS_MAX = 4096
-
   private _eventBus: IEventBus
   private _canvas: Canvas | null = null
   private _zoomLevel: number = 100
   private _spacePressed: boolean = false
   private _isPanning: boolean = false
   private _lastPanPoint: { x: number; y: number } = { x: 0, y: 0 }
-  /** 画布逻辑尺寸（100% 缩放比下的宽高） */
+  /** 画布逻辑尺寸（100% 时宽高，同时 = canvas 物理像素尺寸） */
   private _baseW: number = 800
   private _baseH: number = 600
-  /** 最近一次 zoomFit 计算出的居中偏移（用于通过 scroll 定位而非 viewportTransform 平移） */
-  private _zoomFitPan: { x: number; y: number } = { x: 0, y: 0 }
   /** rAF 节流：待写入的缩放级别 */
   private _pendingZoom: number | null = null
-  /** rAF 节流：当前排期的 requestAnimationFrame id */
   private _zoomRafId: number | null = null
 
   constructor(eventBus: IEventBus) {
@@ -43,50 +39,45 @@ export class ZoomPanController {
     this._baseH = containerH
   }
 
-  /** 解绑画布实例 */
-  unbindCanvas(): void {
-    this._canvas = null
-  }
+  unbindCanvas(): void { this._canvas = null }
 
   /**
-   * 设置画布逻辑尺寸（用于缩放计算）
-   * 调用时机：SVG 加载完成 / 用户拖拽 resize 手柄后
+   * 设置画布逻辑尺寸（SVG 加载 / resize 手柄拖拽后调用）
+   * canvas 物理像素 = 逻辑尺寸（固定），zoom 仅改 viewportTransform
    */
   setLogicalSize(w: number, h: number): void {
     this._baseW = w
     this._baseH = h
-    this._syncCanvasSize()
+    const fc = this._canvas
+    if (!fc) return
+    fc.setWidth(w)
+    fc.setHeight(h)
+    this._applyZoom()
   }
 
   getBaseWidth(): number { return this._baseW }
   getBaseHeight(): number { return this._baseH }
 
   /**
-   * 核心：Fabric 画布物理尺寸 = 逻辑尺寸 × 缩放比
-   * viewport transform = [z, 0, 0, z, tx, ty]
-   * 保留已有的平移量 tx/ty，避免 zoomFit 后的首次缩放跳变
+   * 应用当前 zoom 到 viewportTransform
+   * canvas 物理尺寸不变 — 纯 viewport zoom 模型的核心
    */
-  private _syncCanvasSize(): void {
+  private _applyZoom(): void {
     const fc = this._canvas
     if (!fc) return
     const z = this._zoomLevel / 100
-    // P0: Canvas 物理尺寸天花板，超出 → GPU 纹理溢出 / Aw Snap
-    const nw = Math.min(Math.round(this._baseW * z), ZoomPanController.CANVAS_MAX)
-    const nh = Math.min(Math.round(this._baseH * z), ZoomPanController.CANVAS_MAX)
-    fc.setWidth(nw)
-    fc.setHeight(nh)
-    // 保留已有的平移偏移量（如 zoomFit 设置的居中平移）
+    // 保留已有平移分量，防止 zoom 时画面跳变
     const vt = (fc as any).viewportTransform
     const tx = (vt && vt.length >= 6) ? vt[4] : 0
     const ty = (vt && vt.length >= 6) ? vt[5] : 0
     ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
-    // P3: 仅刷新当前选中对象的 oCoords，其余对象在下次被选中时 Fabric 自动计算
+    // 仅刷新选中对象的 oCoords，其余惰性计算
     const active = fc.getActiveObject()
     if (active) (active as any).setCoords()
     fc.requestRenderAll()
   }
 
-  /** 滚轮缩放处理（rAF 节流 — 同一帧内多次 wheel 只执行一次 syncCanvasSize） */
+  /** 滚轮缩放（rAF 节流 — 同一帧内多次 wheel 只执行一次 _applyZoom） */
   handleWheel(deltaY: number): void {
     this._pendingZoom = Math.round(this._zoomLevel * (0.999 ** deltaY))
     this._pendingZoom = Math.min(Math.max(10, this._pendingZoom), 2000)
@@ -95,32 +86,36 @@ export class ZoomPanController {
         this._zoomLevel = this._pendingZoom!
         this._pendingZoom = null
         this._zoomRafId = null
-        this._syncCanvasSize()
+        this._applyZoom()
         this._eventBus.emit('zoomChange', this._zoomLevel)
       })
     }
   }
 
-  // ── 缩放操作 ──
   zoomIn(): void {
     this._zoomLevel = Math.round(Math.min(this._zoomLevel * 1.2, 2000))
-    this._syncCanvasSize()
+    this._applyZoom()
     this._eventBus.emit('zoomChange', this._zoomLevel)
   }
 
   zoomOut(): void {
     this._zoomLevel = Math.round(Math.max(this._zoomLevel / 1.2, 10))
-    this._syncCanvasSize()
+    this._applyZoom()
     this._eventBus.emit('zoomChange', this._zoomLevel)
   }
 
-  zoomFit(): void {
+  /**
+   * 自适应缩放：计算 zoom 使所有对象落入视口并居中
+   * @param viewportW viewport 可用宽度（不含标尺）；不传则用画布逻辑宽度
+   * @param viewportH viewport 可用高度（不含标尺）；不传则用画布逻辑高度
+   */
+  zoomFit(viewportW?: number, viewportH?: number): void {
     const fc = this._canvas
     if (!fc) return
     const objects = fc.getObjects().filter((o: any) => !o.excludeFromExport)
     if (!objects.length) {
       this._zoomLevel = 100
-      this._syncCanvasSize()
+      this._applyZoom()
       this._eventBus.emit('zoomChange', this._zoomLevel)
       return
     }
@@ -132,26 +127,23 @@ export class ZoomPanController {
     })
     const bw = maxX - minX, bh = maxY - minY
     if (bw <= 0 || bh <= 0) return
-    const z = Math.min((this._baseW - 60) / bw, (this._baseH - 60) / bh, 2)
+    // 可用视口空间：canvas-scroll 区域 - canvas-area margin 48px × 2
+    const targetW = (viewportW && viewportW > 0) ? viewportW - 96 : this._baseW
+    const targetH = (viewportH && viewportH > 0) ? viewportH - 96 : this._baseH
+    const z = Math.min((targetW - 60) / bw, (targetH - 60) / bh, 2)
     this._zoomLevel = Math.round(z * 100)
+
+    // 居中偏移直接写入 viewportTransform，无需 _zoomFitPan → scroll 绕路
     const cx = (minX + maxX) / 2
     const cy = (minY + maxY) / 2
     const tx = (this._baseW / 2 - cx) * z
     const ty = (this._baseH / 2 - cy) * z
-    const nw = Math.min(Math.round(this._baseW * z), ZoomPanController.CANVAS_MAX)
-    const nh = Math.min(Math.round(this._baseH * z), ZoomPanController.CANVAS_MAX)
-    fc.setWidth(nw)
-    fc.setHeight(nh)
-    ;(fc as any).viewportTransform = [z, 0, 0, z, 0, 0]
-    const active2 = fc.getActiveObject()
-    if (active2) (active2 as any).setCoords()
+    ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
+    const active = fc.getActiveObject()
+    if (active) (active as any).setCoords()
     fc.requestRenderAll()
-    this._zoomFitPan = { x: tx, y: ty }
     this._eventBus.emit('zoomChange', this._zoomLevel)
   }
-
-  /** 获取最近一次 zoomFit 的居中偏移量（供外部通过 scroll 定位，避免 viewportTransform 坐标漂移） */
-  getZoomFitPan(): { x: number; y: number } { return this._zoomFitPan }
 
   getZoomLevel(): number { return this._zoomLevel }
 
@@ -164,7 +156,6 @@ export class ZoomPanController {
   isSpacePressed(): boolean { return this._spacePressed }
   isPanning(): boolean { return this._isPanning }
 
-  /** 处理鼠标按下：判断是否开始平移 */
   handlePanMouseDown(e: MouseEvent, canvas: Canvas): boolean {
     if (!this._spacePressed) return false
     this._isPanning = true
@@ -174,17 +165,15 @@ export class ZoomPanController {
     return true
   }
 
-  /** 处理鼠标移动：执行平移 */
   handlePanMouseMove(e: MouseEvent, canvas: Canvas): boolean {
     if (!this._isPanning) return false
     const dx = e.clientX - this._lastPanPoint.x
     const dy = e.clientY - this._lastPanPoint.y
-    canvas.relativePan({ x: dx, y: dy })
+    canvas.relativePan(new Point(dx, dy))
     this._lastPanPoint = { x: e.clientX, y: e.clientY }
     return true
   }
 
-  /** 处理鼠标松开：结束平移 */
   handlePanMouseUp(canvas: Canvas): boolean {
     if (!this._isPanning) return false
     this._isPanning = false
