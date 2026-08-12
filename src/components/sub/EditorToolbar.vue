@@ -34,9 +34,24 @@ const emit = defineEmits<{
   (e: 'toggleTheme'): void
   (e: 'save'): void
   (e: 'close'): void
+  (e: 'resize', w: number, h: number): void
 }>()
 
 const isLight = computed(() => props.themeMode === 'light')
+
+// 画布尺寸本地编辑态（失焦/回车时提交 emit('resize', w, h)）
+import { ref, watch } from 'vue'
+const editingWidth = ref(props.svgWidth)
+const editingHeight = ref(props.svgHeight)
+watch(() => props.svgWidth, (v) => { editingWidth.value = v })
+watch(() => props.svgHeight, (v) => { editingHeight.value = v })
+function commitResize() {
+  const w = Math.max(10, editingWidth.value)
+  const h = Math.max(10, editingHeight.value)
+  editingWidth.value = w
+  editingHeight.value = h
+  emit('resize', w, h)
+}
 </script>
 
 <template>
@@ -60,7 +75,18 @@ const isLight = computed(() => props.themeMode === 'light')
 
     <!-- 中间：画布信息 -->
     <div class="toolbar-center">
-      <span class="info-tag">{{ svgWidth }} × {{ svgHeight }}px</span>
+      <span class="size-group">
+        <input class="size-input" type="number" v-model.number="editingWidth"
+          :min="10" :max="10000" step="10"
+          @blur="commitResize" @keydown.enter="($event.target as HTMLInputElement).blur()"
+          aria-label="画布宽度" />
+        <span class="size-sep">×</span>
+        <input class="size-input" type="number" v-model.number="editingHeight"
+          :min="10" :max="10000" step="10"
+          @blur="commitResize" @keydown.enter="($event.target as HTMLInputElement).blur()"
+          aria-label="画布高度" />
+        <span class="size-unit">px</span>
+      </span>
       <span class="info-selection">{{ selectionInfo || '未选中' }}</span>
     </div>
 
@@ -161,6 +187,30 @@ const isLight = computed(() => props.themeMode === 'light')
 .toolbar-dark  .info-selection { color: #888; }
 .toolbar-light .info-tag       { color: #888; background: rgba(0,0,0,0.03); }
 .toolbar-light .info-selection { color: #555; }
+
+/* ── 画布尺寸输入组 ── */
+.size-group {
+  display: flex; align-items: center; gap: 3px;
+}
+.size-input {
+  width: 56px; height: 24px;
+  text-align: center; font-size: 13px; font-variant-numeric: tabular-nums;
+  border: 1px solid transparent; border-radius: 4px;
+  padding: 0 4px; outline: none;
+  font-family: inherit;
+  /* 隐藏 spinner（Chrome/Safari/Firefox） */
+  -moz-appearance: textfield;
+}
+.size-input::-webkit-inner-spin-button,
+.size-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.size-sep { font-size: 12px; user-select: none; }
+.size-unit { font-size: 11px; user-select: none; }
+.toolbar-dark  .size-input { color: #aaa; background: rgba(255,255,255,0.04); }
+.toolbar-dark  .size-input:focus { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.08); color: #e0e0e0; }
+.toolbar-light .size-input { color: #555; background: rgba(0,0,0,0.04); }
+.toolbar-light .size-input:focus { border-color: rgba(0,0,0,0.15); background: rgba(0,0,0,0.06); color: #222; }
+.toolbar-dark  .size-sep, .toolbar-dark  .size-unit { color: #666; }
+.toolbar-light .size-sep, .toolbar-light .size-unit { color: #999; }
 
 /* ── 保存按钮 ── */
 .btn-save {

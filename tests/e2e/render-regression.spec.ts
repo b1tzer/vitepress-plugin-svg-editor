@@ -81,76 +81,100 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   })
 
   // ══════════════════════════════════════════════
-  // 4. 小画布在滚动容器中居中
+  // 4. workspace Rect 存在且尺寸与逻辑画布一致
   // ══════════════════════════════════════════════
-  test('04. 小 SVG 画布在滚动容器中水平居中', async ({ page }) => {
+  test('04. workspace Rect（Fabric 对象）存在且非零宽高', async ({ page }) => {
     const container = page.locator('.svg-container')
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
     await page.waitForTimeout(1500)
 
-    const layout = await page.evaluate(() => {
-      const scroll = document.querySelector('.canvas-scroll') as HTMLElement
-      const area = document.querySelector('.canvas-area') as HTMLElement
-      if (!scroll || !area) return null
-      const sr = scroll.getBoundingClientRect()
-      const ar = area.getBoundingClientRect()
+    const ws = await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      if (!c) return null
+      const objs = c.getObjects()
+      const workspace = objs.find((o: any) => o.id === 'workspace')
+      if (!workspace) return null
       return {
-        scrollW: sr.width, scrollH: sr.height,
-        areaW: ar.width, areaH: ar.height,
-        offsetFromCenter: Math.abs((ar.x + ar.width / 2) - (sr.x + sr.width / 2)),
+        id: workspace.id,
+        width: workspace.width,
+        height: workspace.height,
+        fill: String(workspace.fill),
       }
     })
-    expect(layout).not.toBeNull()
-    if (layout!.areaW < layout!.scrollW - 100) {
-      expect(layout!.offsetFromCenter).toBeLessThan(50)
-    }
-  })
-
-  // ══════════════════════════════════════════════
-  // 5. 8 个 resize 手柄默认可见（背景色非 transparent）
-  // ══════════════════════════════════════════════
-  test('05. 8 边 resize 手柄均有可见背景色', async ({ page }) => {
-    const container = page.locator('.svg-container')
-    await container.hover()
-    await page.locator('.svg-edit-btn').click()
-    await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
-    await page.waitForTimeout(1500)
-
-    const dirs = ['n','s','w','e','nw','ne','sw','se']
-    for (const dir of dirs) {
-      const visible = await page.evaluate((d) => {
-        const el = document.querySelector(`.rh-${d}`) as HTMLElement
-        if (!el) return null
-        const cs = getComputedStyle(el)
-        const bg = cs.backgroundColor
-        const isVisible = bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent' && cs.display !== 'none'
-        return { bg, isVisible }
-      }, dir)
-      expect(visible).not.toBeNull()
-      expect(visible!.isVisible).toBe(true)
-    }
-  })
-
-  // ══════════════════════════════════════════════
-  // 6. 画布区域有 outline 边界线
-  // ══════════════════════════════════════════════
-  test('06. .canvas-area 有 outline 边界线显示画布范围', async ({ page }) => {
-    const container = page.locator('.svg-container')
-    await container.hover()
-    await page.locator('.svg-edit-btn').click()
-    await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
-    await page.waitForTimeout(1500)
-
-    const outline = await page.evaluate(() => {
-      const el = document.querySelector('.canvas-area') as HTMLElement
-      if (!el) return null
-      return getComputedStyle(el).outline
+    expect(ws).not.toBeNull()
+    expect(ws!.id).toBe('workspace')
+    expect(ws!.width).toBeGreaterThan(0)
+    expect(ws!.height).toBeGreaterThan(0)
+    // workspace Rect 应位于最底层（sendObjectToBack 后 index=0）
+    const idx = await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const objs = c.getObjects()
+      return objs.findIndex((o: any) => o.id === 'workspace')
     })
-    expect(outline).not.toBeNull()
-    expect(outline).not.toBe('none')
-    expect(outline).not.toBe('')
+    expect(idx).toBe(0)
+  })
+
+  // ══════════════════════════════════════════════
+  // 5. workspace Rect 有可见边框（stroke 非透明，替代方案 C 前的 resize 手柄）
+  // ══════════════════════════════════════════════
+  test('05. workspace Rect 有可见边框线（stroke 非 transparent）', async ({ page }) => {
+    const container = page.locator('.svg-container')
+    await container.hover()
+    await page.locator('.svg-edit-btn').click()
+    await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
+    await page.waitForTimeout(1500)
+
+    const ws = await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      if (!c) return null
+      const workspace = c.getObjects().find((o: any) => o.id === 'workspace')
+      if (!workspace) return null
+      return {
+        stroke: String(workspace.stroke),
+        strokeWidth: workspace.strokeWidth,
+      }
+    })
+    expect(ws).not.toBeNull()
+    expect(ws!.stroke).not.toBe('transparent')
+    expect(ws!.stroke).not.toBe('')
+    expect(ws!.stroke).toMatch(/rgba?\(/)
+    expect(ws!.strokeWidth).toBeGreaterThan(0)
+  })
+
+  // ══════════════════════════════════════════════
+  // 6. canvas.clipPath 存在（方案 C 裁剪边界，替代旧 DOM outline）
+  // ══════════════════════════════════════════════
+  test('06. canvas.clipPath 存在且尺寸匹配 workspace Rect', async ({ page }) => {
+    const container = page.locator('.svg-container')
+    await container.hover()
+    await page.locator('.svg-edit-btn').click()
+    await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
+    await page.waitForTimeout(1500)
+
+    const clip = await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      if (!c) return null
+      const cp = c.clipPath
+      if (!cp) return null
+      const workspace = c.getObjects().find((o: any) => o.id === 'workspace')
+      return {
+        hasClipPath: true,
+        clipW: cp.width,
+        clipH: cp.height,
+        absolutePositioned: cp.absolutePositioned,
+        matchesWorkspace: workspace
+          ? Math.abs(cp.width - workspace.width) < 1 && Math.abs(cp.height - workspace.height) < 1
+          : false,
+      }
+    })
+    expect(clip).not.toBeNull()
+    expect(clip!.hasClipPath).toBe(true)
+    expect(clip!.absolutePositioned).toBe(true)
+    expect(clip!.matchesWorkspace).toBe(true)
+    expect(clip!.clipW).toBeGreaterThan(0)
+    expect(clip!.clipH).toBeGreaterThan(0)
   })
 
   // ══════════════════════════════════════════════

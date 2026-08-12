@@ -23,6 +23,7 @@ export class CanvasManager {
   private _interaction: InteractionManager
   private _modeManager: ModeManager | null = null
   private _workspaceRect: fabric.Rect | null = null
+  private _themeMode: 'light' | 'dark' = 'light'
 
   constructor(eventBus?: EventBus) {
     this._eventBus = eventBus || new EventBus()
@@ -31,10 +32,11 @@ export class CanvasManager {
   }
 
   /** 初始化：canvas 尺寸 = viewport 容器，同步创建 workspace Rect + clipPath */
-  init(canvasEl: HTMLCanvasElement, logicalW: number, logicalH: number): Canvas {
+  init(canvasEl: HTMLCanvasElement, logicalW: number, logicalH: number, themeMode?: 'light' | 'dark'): Canvas {
+    if (themeMode) this._themeMode = themeMode
     const parent = canvasEl.parentElement
-    const vpW = parent?.clientWidth || 800
-    const vpH = parent?.clientHeight || 600
+    const vpW = parent?.clientWidth || window.innerWidth - 320 || 800
+    const vpH = parent?.clientHeight || window.innerHeight - 100 || 600
 
     const fc = new fabric.Canvas(canvasEl as any, {
       width: vpW, height: vpH,
@@ -74,12 +76,27 @@ export class CanvasManager {
     this._zoomPan.setLogicalSize(w, h)
   }
 
+  /** 更新 workspace Rect 主题色（fill/stroke），适配亮/暗模式切换 */
+  updateWorkspaceTheme(light: boolean): void {
+    const ws = this._workspaceRect
+    if (!ws) return
+    this._themeMode = light ? 'light' : 'dark'
+    ws.set({
+      fill: light ? '#ffffff' : '#1e1e1e',
+      stroke: light ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)',
+    })
+    this.canvas?.requestRenderAll()
+  }
+
   private _createWorkspace(fc: Canvas, w: number, h: number): void {
+    const isLight = this._themeMode === 'light'
     const ws = new fabric.Rect({
       id: 'workspace',
       left: (fc.getWidth() - w) / 2, top: (fc.getHeight() - h) / 2,
       width: w, height: h,
-      fill: '#ffffff', stroke: 'rgba(0,0,0,0.12)', strokeWidth: 1,
+      fill: isLight ? '#ffffff' : '#1e1e1e',
+      stroke: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)',
+      strokeWidth: 1,
       selectable: false, evented: false, excludeFromExport: true,
     })
     fc.add(ws)

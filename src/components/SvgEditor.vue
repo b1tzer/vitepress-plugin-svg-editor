@@ -238,6 +238,13 @@ function toggleLayerVisibility(id: string) {
   if (obj) { obj.set('visible', !obj.visible); fc.renderAll(); refreshLayerList() }
 }
 
+// ── 画布尺寸调整 ──
+function handleResize(w: number, h: number) {
+  svgWidth.value = w
+  svgHeight.value = h
+  canvasMgr.setLogicalSize(w, h)
+}
+
 // ── 主题切换 ──
 function toggleTheme() {
   const fc = canvasMgr.canvas; if (!fc) return
@@ -254,6 +261,7 @@ function toggleTheme() {
       if (o._objects) o._objects.forEach(processObject)
     })(obj)
   })
+  canvasMgr.updateWorkspaceTheme(to === 'light')
   fc.requestRenderAll()
 }
 
@@ -301,7 +309,7 @@ async function loadAndInit() {
   const h = svgHeight.value || 500
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
-  const fc = canvasMgr.init(canvasEl, w, h)
+  const fc = canvasMgr.init(canvasEl, w, h, themeMode.value as 'light' | 'dark')
 
   fabric.loadSVGFromString(svg).then(({ objects }: any) => {
     try {
@@ -377,6 +385,7 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
         @toggleTheme="toggleTheme"
         @save="save"
         @close="emit('close')"
+        @resize="handleResize"
       />
 
       <!-- 主体：三栏布局 -->
