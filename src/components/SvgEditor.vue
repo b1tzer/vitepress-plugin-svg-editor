@@ -314,6 +314,10 @@ async function loadAndInit() {
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
   const fc = canvasMgr.init(canvasEl, w, h)
+
+  // 禁用拖拽时的虚线辅助线与松手后的自动吸附对齐
+  canvasMgr.setGuideLinesEnabled(false)
+
   fabric.loadSVGFromString(svg).then(({ objects }: any) => {
     try {
       const merged = mergeArrows(objects)
@@ -412,7 +416,9 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
         <!-- 中：画布 + 标尺 -->
         <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
           :canvasWidth="displayWidth" :canvasHeight="displayHeight"
-          @resize="onResizeCanvas" />
+          @resize="onResizeCanvas"
+          @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
+          @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')" />
 
         <!-- 右：属性面板 -->
         <EditorContextPanel

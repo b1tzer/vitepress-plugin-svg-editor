@@ -23,11 +23,23 @@ export class GuideLineManager {
   private _eventBus: IEventBus
   private _guideLines: GuideLine[] = []
   private _snappingStrategy: ISnappingStrategy
+  private _enabled = true
 
   constructor(eventBus: IEventBus, snappingStrategy?: ISnappingStrategy) {
     this._eventBus = eventBus
     this._snappingStrategy = snappingStrategy || new DefaultSnappingStrategy()
   }
+
+  /** 启用/禁用辅助线与吸附功能 */
+  setEnabled(enabled: boolean): void {
+    this._enabled = enabled
+    if (!enabled) {
+      this._guideLines = []
+      this._eventBus.emit('guideLinesChange', this._guideLines)
+    }
+  }
+
+  isEnabled(): boolean { return this._enabled }
 
   /** 替换吸附策略（运行时切换） */
   setSnappingStrategy(strategy: ISnappingStrategy): void {
@@ -42,6 +54,7 @@ export class GuideLineManager {
 
     // 移动时：显示参考线
     fc.on('object:moving', (opt: any) => {
+      if (!this._enabled) return
       const obj = opt.target
       if (!obj) return
       const lines: GuideLine[] = []
@@ -73,13 +86,24 @@ export class GuideLineManager {
           }
         }
       }
-      this._guideLines = lines
+      // 去重：相同位置（type + position）的辅助线只保留一条，避免产生大量重叠虚线
+      const seen = new Set<string>()
+      const deduped: GuideLine[] = []
+      for (const line of lines) {
+        const key = `${line.type}:${line.type === 'vertical' ? line.x : line.y}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          deduped.push(line)
+        }
+      }
+      this._guideLines = deduped
       this._eventBus.emit('guideLinesChange', this._guideLines)
       fc.requestRenderAll()
     })
 
     // 松手时：吸附
     fc.on('object:modified', (opt: any) => {
+      if (!this._enabled) return
       const obj = opt.target
       if (obj && this._guideLines.length) {
         const z = fc.getZoom()
@@ -102,13 +126,14 @@ export class GuideLineManager {
     })
 
     fc.on('selection:cleared', () => {
+      if (!this._enabled) return
       this._guideLines = []
       this._eventBus.emit('guideLinesChange', this._guideLines)
     })
 
     // 自定义渲染参考线
     fc.on('after:render', () => {
-      if (!this._guideLines.length) return
+      if (!this._enabled || !this._guideLines.length) return
       const ctx = fc.getContext()
       ctx.save()
       ctx.strokeStyle = GUIDE_LINE_STYLE

@@ -27,6 +27,8 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'resize', w: number, h: number, dir: string): void
   (e: 'scroll', scrollLeft: number, scrollTop: number): void
+  (e: 'canvasWheel', deltaY: number): void
+  (e: 'canvasAreaMouseEvent', clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
@@ -72,8 +74,7 @@ function drawRuler() {
   // 水平标尺（含坐标数字）
   ctx.strokeStyle = tColor; ctx.fillStyle = fColor
   ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
-  const sx = (RULER % (step * z)) % (step * z)
-  for (let x = RULER + sx; x < w; x += step * z) {
+  for (let x = RULER; x < w; x += step * z) {
     const v = Math.round((x - RULER) / z)
     if (v % (step * 5) === 0) {
       ctx.beginPath(); ctx.moveTo(x, RULER); ctx.lineTo(x, RULER - 10); ctx.stroke()
@@ -83,8 +84,7 @@ function drawRuler() {
 
   // 垂直标尺
   ctx.textBaseline = 'middle'; ctx.textAlign = 'right'
-  const sy = (RULER % (step * z)) % (step * z)
-  for (let y = RULER + sy; y < h; y += step * z) {
+  for (let y = RULER; y < h; y += step * z) {
     const v = Math.round((y - RULER) / z)
     if (v % (step * 5) === 0) {
       ctx.beginPath(); ctx.moveTo(RULER, y); ctx.lineTo(RULER - 10, y); ctx.stroke()
@@ -121,6 +121,43 @@ function onResizeMove(e: MouseEvent) {
 }
 function onResizeUp() { resizing.value = false; document.removeEventListener('mousemove', onResizeMove); document.removeEventListener('mouseup', onResizeUp) }
 
+// ── 画布区域外滚轮/框选事件代理 ──
+let _injectDragging = false // 是否正在注入框选拖拽
+
+/** 滚轮缩放：来自 canvas-scroll 容器，转发到父组件处理 */
+function onCanvasWheel(e: WheelEvent) {
+  e.preventDefault()
+  emit('canvasWheel', e.deltaY)
+}
+
+/** 画布外 mousedown → 开始注入框选事件链 */
+function onCanvasMouseDown(e: MouseEvent) {
+  // 中键拖拽平移容器（保留原有行为）
+  onScrollMouseDown(e)
+  if (e.button !== 0) return
+  // 如果点击的是 Fabric canvas 自身或其 resize 手柄子元素，不干预
+  const target = e.target as HTMLElement
+  if (!target) return
+  if (target.tagName === 'CANVAS' || target.classList.contains('fabric-canvas')) return
+  if (target.classList.contains('rh')) return
+  e.preventDefault()
+  _injectDragging = true
+  emit('canvasAreaMouseEvent', e.clientX, e.clientY, 'mousedown')
+  document.addEventListener('mousemove', onCanvasOutsideMouseMove)
+  document.addEventListener('mouseup', onCanvasOutsideMouseUp)
+}
+function onCanvasOutsideMouseMove(e: MouseEvent) {
+  if (!_injectDragging) return
+  emit('canvasAreaMouseEvent', e.clientX, e.clientY, 'mousemove')
+}
+function onCanvasOutsideMouseUp(e: MouseEvent) {
+  if (!_injectDragging) return
+  _injectDragging = false
+  emit('canvasAreaMouseEvent', e.clientX, e.clientY, 'mouseup')
+  document.removeEventListener('mousemove', onCanvasOutsideMouseMove)
+  document.removeEventListener('mouseup', onCanvasOutsideMouseUp)
+}
+
 // 中键拖拽平移滚动容器
 function onScrollMouseDown(e: MouseEvent) {
   if (e.button !== 1) return
@@ -146,7 +183,8 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
   <div class="editor-canvas" ref="containerRef">
     <canvas ref="rulerCanvasRef" class="ruler-canvas" />
     <div class="canvas-scroll" ref="scrollRef"
-      @mousedown="onScrollMouseDown"
+      @wheel.prevent="onCanvasWheel"
+      @mousedown="onCanvasMouseDown"
       @scroll="emit('scroll', ($event.target as HTMLElement).scrollLeft, ($event.target as HTMLElement).scrollTop)">
       <div class="canvas-area" ref="canvasAreaRef"
         :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">

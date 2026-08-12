@@ -136,6 +136,11 @@ export class CanvasManager {
   getGuideLineManager(): GuideLineManager { return this._guideLine }
   getInteractionManager(): InteractionManager { return this._interaction }
 
+  /** 启用/禁用辅助线（虚线）和吸附对齐功能 */
+  setGuideLinesEnabled(enabled: boolean): void {
+    this._guideLine.setEnabled(enabled)
+  }
+
   /** 设置 ModeManager（可选，用于状态模式切换） */
   setModeManager(mm: ModeManager): void {
     this._modeManager = mm
@@ -169,5 +174,38 @@ export class CanvasManager {
     }
     this._zoomPan.unbindCanvas()
     this._eventBus.clear()
+  }
+
+  // ── 画布外部事件注入（滚轮缩放 / 框选） ──
+
+  /**
+   * 注入滚轮事件 — 鼠标在 Fabric canvas 元素外部时，滚轮仍可缩放画布
+   */
+  injectWheel(deltaY: number): void {
+    if (!this.canvas) return
+    this._zoomPan.handleWheel(deltaY)
+  }
+
+  /**
+   * 注入鼠标事件 — 鼠标在 Fabric canvas 元素外部时，仍可拖拽框选
+   *
+   * 原理：向 Fabric canvas 原生元素 dispatch 合成 MouseEvent，
+   * Fabric 内部事件系统会自然处理（_onMouseDown / _onMouseMove / _onMouseUp）。
+   */
+  injectMouseEvent(clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void {
+    if (!this.canvas) return
+    const el = (this.canvas as any).getElement?.() || (this.canvas as any).lowerCanvasEl
+    if (!el) return
+    // 将 clientX/Y 计算为相对于 canvas 元素左上角的坐标
+    const rect = el.getBoundingClientRect()
+    const x = clientX - rect.left
+    const y = clientY - rect.top
+    const ev = new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true })
+    // 预注入 offsetX/offsetY，供 Fabric 的 getPointer 使用（部分环境依赖这些属性）
+    Object.defineProperties(ev, {
+      offsetX: { value: x, writable: false },
+      offsetY: { value: y, writable: false },
+    })
+    el.dispatchEvent(ev)
   }
 }
