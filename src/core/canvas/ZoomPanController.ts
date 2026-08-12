@@ -121,8 +121,8 @@ export class ZoomPanController {
 
     const cx = (minX + maxX) / 2
     const cy = (minY + maxY) / 2
-    const tx = (fc.getWidth() / 2 - cx) * z
-    const ty = (fc.getHeight() / 2 - cy) * z
+    const tx = fc.getWidth() / 2 - cx * z
+    const ty = fc.getHeight() / 2 - cy * z
     ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
     const active = fc.getActiveObject()
     if (active) (active as any).setCoords()
