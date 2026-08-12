@@ -13,6 +13,9 @@ import type { Canvas } from 'fabric'
 import type { IEventBus } from '../types'
 
 export class ZoomPanController {
+  /** Canvas 物理像素安全天花板 — 超过此值浏览器 GPU 纹理可能溢出导致 Aw Snap */
+  private static readonly CANVAS_MAX = 4096
+
   private _eventBus: IEventBus
   private _canvas: Canvas | null = null
   private _zoomLevel: number = 100
@@ -24,6 +27,10 @@ export class ZoomPanController {
   private _baseH: number = 600
   /** 最近一次 zoomFit 计算出的居中偏移（用于通过 scroll 定位而非 viewportTransform 平移） */
   private _zoomFitPan: { x: number; y: number } = { x: 0, y: 0 }
+  /** rAF 节流：待写入的缩放级别 */
+  private _pendingZoom: number | null = null
+  /** rAF 节流：当前排期的 requestAnimationFrame id */
+  private _zoomRafId: number | null = null
 
   constructor(eventBus: IEventBus) {
     this._eventBus = eventBus
@@ -63,8 +70,9 @@ export class ZoomPanController {
     const fc = this._canvas
     if (!fc) return
     const z = this._zoomLevel / 100
-    const nw = Math.round(this._baseW * z)
-    const nh = Math.round(this._baseH * z)
+    // P0: Canvas 物理尺寸天花板，超出 → GPU 纹理溢出 / Aw Snap
+    const nw = Math.min(Math.round(this._baseW * z), ZoomPanController.CANVAS_MAX)
+    const nh = Math.min(Math.round(this._baseH * z), ZoomPanController.CANVAS_MAX)
     fc.setWidth(nw)
     fc.setHeight(nh)
     // 保留已有的平移偏移量（如 zoomFit 设置的居中平移）
@@ -72,15 +80,25 @@ export class ZoomPanController {
     const tx = (vt && vt.length >= 6) ? vt[4] : 0
     const ty = (vt && vt.length >= 6) ? vt[5] : 0
     ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
+    // P3: 仅刷新当前选中对象的 oCoords，其余对象在下次被选中时 Fabric 自动计算
+    const active = fc.getActiveObject()
+    if (active) (active as any).setCoords()
     fc.requestRenderAll()
   }
 
-  /** 滚轮缩放处理（不由空格键控制，直接缩放） */
+  /** 滚轮缩放处理（rAF 节流 — 同一帧内多次 wheel 只执行一次 syncCanvasSize） */
   handleWheel(deltaY: number): void {
-    this._zoomLevel = Math.round(this._zoomLevel * (0.999 ** deltaY))
-    this._zoomLevel = Math.min(Math.max(10, this._zoomLevel), 2000)
-    this._syncCanvasSize()
-    this._eventBus.emit('zoomChange', this._zoomLevel)
+    this._pendingZoom = Math.round(this._zoomLevel * (0.999 ** deltaY))
+    this._pendingZoom = Math.min(Math.max(10, this._pendingZoom), 2000)
+    if (this._zoomRafId === null) {
+      this._zoomRafId = requestAnimationFrame(() => {
+        this._zoomLevel = this._pendingZoom!
+        this._pendingZoom = null
+        this._zoomRafId = null
+        this._syncCanvasSize()
+        this._eventBus.emit('zoomChange', this._zoomLevel)
+      })
+    }
   }
 
   // ── 缩放操作 ──
@@ -120,11 +138,13 @@ export class ZoomPanController {
     const cy = (minY + maxY) / 2
     const tx = (this._baseW / 2 - cx) * z
     const ty = (this._baseH / 2 - cy) * z
-    const nw = Math.round(this._baseW * z)
-    const nh = Math.round(this._baseH * z)
+    const nw = Math.min(Math.round(this._baseW * z), ZoomPanController.CANVAS_MAX)
+    const nh = Math.min(Math.round(this._baseH * z), ZoomPanController.CANVAS_MAX)
     fc.setWidth(nw)
     fc.setHeight(nh)
     ;(fc as any).viewportTransform = [z, 0, 0, z, 0, 0]
+    const active2 = fc.getActiveObject()
+    if (active2) (active2 as any).setCoords()
     fc.requestRenderAll()
     this._zoomFitPan = { x: tx, y: ty }
     this._eventBus.emit('zoomChange', this._zoomLevel)

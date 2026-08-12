@@ -5,11 +5,16 @@
  * 布局（从外到内）：
  *   .editor-canvas（棋盘格背景 + overflow:hidden）
  *   ├── .ruler-canvas（固定标尺层，pointer-events:none，z-index:10）
- *   ├── .canvas-scroll（可滚动容器，offset: 24px 匹配标尺原点）
- *   │   └── .canvas-area（position:relative，尺寸 = SVG 尺寸）
- *   │       ├── canvas.fabric-canvas（Fabric.js 接管）
- *   │       └── .rh-*（8 边 resize 灰色手柄，始终可见）
+ *   ├── .canvas-scroll（grid-template-areas:"stack" 可滚动容器）
+ *   │   ├── .canvas-area（grid-area:stack，仅含 Fabric 画布）
+ *   │   │   └── canvas.fabric-canvas（Fabric.js 接管）
+ *   │   └── .resize-handles-overlay（grid-area:stack 同层叠加，CSS Grid 保证对齐）
+ *   │       └── .rh-*（8 边 resize 手柄，尺寸固定不受缩放影响）
  *   └── .loading（加载遮罩）
+ *
+ * 关键设计：两个 grid item 共享同一 grid-area，
+ * 拥有相同的 width/height、margin、place-self，
+ * CSS Grid 自动将它们像素级叠加 —— 零 JS 坐标计算。
  */
 
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
@@ -19,9 +24,11 @@ const props = withDefaults(defineProps<{
   zoomLevel: number
   canvasWidth: number
   canvasHeight: number
+  themeMode: string
 }>(), {
   canvasWidth: 800,
   canvasHeight: 600,
+  themeMode: 'light',
 })
 
 const emit = defineEmits<{
@@ -40,6 +47,7 @@ const RULER = 24
 let _ro: ResizeObserver | null = null
 let _af: number | null = null
 let _zw: ReturnType<typeof watch> | null = null
+let _lastRulerKey = '' // P3: 缓存标尺参数，不变则跳过重绘
 
 const resizing = ref(false)
 const resizeDir = ref('')
@@ -59,7 +67,7 @@ function drawRuler() {
   ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h)
 
   const z = props.zoomLevel / 100
-  const light = !document.documentElement.classList.contains('dark')
+  const light = props.themeMode !== 'dark'
   const bg = light ? '#f0f1f3' : '#1e1e1e'
   const tColor = light ? '#bbb' : '#555'
   const fColor = light ? '#888' : '#777'
@@ -70,6 +78,11 @@ function drawRuler() {
 
   let step = 10
   for (const s of [1,2,5,10,20,50,100,200,500,1000]) { if (s * z >= 30) { step = s; break } }
+
+  // P3: step、尺寸、主题不变 → 无刻度变化，跳过重绘
+  const key = `${step}_${w}_${h}_${light}`
+  if (key === _lastRulerKey) return
+  _lastRulerKey = key
 
   // 水平标尺（含坐标数字）
   ctx.strokeStyle = tColor; ctx.fillStyle = fColor
@@ -173,6 +186,7 @@ onMounted(() => {
   _ro = new ResizeObserver(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   if (containerRef.value) _ro.observe(containerRef.value)
   _zw = watch(() => props.zoomLevel, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
+  watch(() => props.themeMode, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   nextTick(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   document.addEventListener('contextmenu', (e) => { if (resizing.value) e.preventDefault() })
 })
@@ -180,7 +194,7 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
 </script>
 
 <template>
-  <div class="editor-canvas" ref="containerRef">
+  <div class="editor-canvas" :class="'theme-' + themeMode" ref="containerRef">
     <canvas ref="rulerCanvasRef" class="ruler-canvas" />
     <div class="canvas-scroll" ref="scrollRef"
       @wheel.prevent="onCanvasWheel"
@@ -189,8 +203,11 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
       <div class="canvas-area" ref="canvasAreaRef"
         :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">
         <canvas class="fabric-canvas" />
-        <!-- 8 边 resize 手柄（始终可见灰色小长条） -->
-        <div class="rh rh-n" @mousedown="onResizeDown($event,'n')" title="向下拖拽调整高度" />
+      </div>
+      <!-- resize 手柄层：同一 grid-area 自然叠加于 canvas-area 上方，尺寸/位置完全由 CSS Grid 驱动 -->
+      <div class="resize-handles-overlay"
+        :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }">
+        <div class="rh rh-n" @mousedown="onResizeDown($event,'n')" title="向上拖拽调整高度" />
         <div class="rh rh-s" @mousedown="onResizeDown($event,'s')" title="向下拖拽调整高度" />
         <div class="rh rh-w" @mousedown="onResizeDown($event,'w')" title="向左拖拽调整宽度" />
         <div class="rh rh-e" @mousedown="onResizeDown($event,'e')" title="向右拖拽调整宽度" />
@@ -212,16 +229,39 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
   background-color:#e8e8e8;
   background-image:linear-gradient(45deg,#d4d4d4 25%,transparent 25%),linear-gradient(-45deg,#d4d4d4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d4d4d4 75%),linear-gradient(-45deg,transparent 75%,#d4d4d4 75%);
   background-size:20px 20px; background-position:0 0,0 10px,10px -10px,-10px 0; }
+.editor-canvas.theme-dark {
+  background-color:#1a1a1a;
+  background-image:linear-gradient(45deg,#2a2a2a 25%,transparent 25%),linear-gradient(-45deg,#2a2a2a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a2a2a 75%),linear-gradient(-45deg,transparent 75%,#2a2a2a 75%); }
 .ruler-canvas { pointer-events:none; position:absolute; top:0; left:0; z-index:10; }
 
-/* 滚动容器：左/上偏移 = 标尺宽度；grid+place-self:center 确保小画布居中 */
-.canvas-scroll { position:absolute; top:24px; left:24px; right:0; bottom:0; overflow:auto; display:grid; }
+/* 滚动容器：左/上偏移 = 标尺宽度；grid-template-areas 让 canvas-area 和手柄层自动叠加 */
+.canvas-scroll {
+  position:absolute; top:24px; left:24px; right:0; bottom:0;
+  overflow:auto;
+  display:grid;
+  grid-template-areas: "stack";
+}
 
-/* 画布区域：尺寸 = SVG 真实尺寸；place-self:center = 小画布自动居中，大画布自动滚动 */
-.canvas-area { position:relative; margin:48px; outline:1px solid rgba(128,128,128,.25); place-self:center; }
+/* 画布区域：grid-area:stack 确保与手柄层共享同一格位 */
+.canvas-area {
+  grid-area: stack;
+  position:relative; margin:48px;
+  outline:1px solid rgba(128,128,128,.25);
+  place-self:center;
+}
 
-/* resize 手柄：灰色小长条，始终可见 */
-.rh { position:absolute; z-index:20; background:rgba(128,128,128,.12); transition:background .15s; }
+/* 手柄层：同一 grid-area，同尺寸同 margin，CSS Grid 保证像素级对齐，零 JS 参与 */
+.resize-handles-overlay {
+  grid-area: stack;
+  position:relative;
+  margin:48px;
+  place-self:center;
+  z-index:20;
+  pointer-events:none;
+}
+
+/* resize 手柄：灰色小长条，尺寸固定不受缩放影响 */
+.rh { position:absolute; z-index:20; background:rgba(128,128,128,.12); transition:background .15s; pointer-events:auto; }
 .rh:hover { background:rgba(59,130,246,.35); }
 /* 四边手柄 */
 .rh-n, .rh-s { left:4px; right:4px; height:6px; cursor:ns-resize; border-radius:3px; }

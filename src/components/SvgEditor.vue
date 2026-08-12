@@ -81,9 +81,10 @@ const leftPanelCollapsed = ref(false)
 function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
 function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
 
-// 显示尺寸 = 逻辑尺寸 × 当前缩放比（物理 resize 模型，无 Fabric viewport zoom）
-const displayWidth = computed(() => Math.round(svgWidth.value * zoomLevel.value / 100))
-const displayHeight = computed(() => Math.round(svgHeight.value * zoomLevel.value / 100))
+// 显示尺寸 = 逻辑尺寸 × 当前缩放比，上限 4096px 防止 DOM/GPU 溢出
+const CANVAS_MAX = 4096
+const displayWidth = computed(() => Math.min(Math.round(svgWidth.value * zoomLevel.value / 100), CANVAS_MAX))
+const displayHeight = computed(() => Math.min(Math.round(svgHeight.value * zoomLevel.value / 100), CANVAS_MAX))
 
 // 画布对象列表（供图层面板使用）
 const canvasObjects = ref<Array<{ id: string; type: string; name: string; visible: boolean }>>([])
@@ -247,7 +248,6 @@ function toggleTheme() {
       if (o._objects) o._objects.forEach(processObject)
     })(obj)
   })
-  fc.set('backgroundColor', to === 'dark' ? '#1a1a1a' : '#ffffff')
   fc.requestRenderAll()
 }
 
@@ -411,6 +411,7 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
         <!-- 中：画布 + 标尺 -->
         <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
           :canvasWidth="displayWidth" :canvasHeight="displayHeight"
+          :themeMode="themeMode"
           @resize="onResizeCanvas"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
           @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')" />

@@ -79,6 +79,7 @@ export class CanvasManager {
       borderDashArray: [4, 2],
       padding: 8,
       perPixelTargetFind: false,
+      objectCaching: false, // P0: 禁用 per-object 缓存，消除 zoom 时 cache canvas resize 的 30ms+ GC
     } as any)
   }
 
