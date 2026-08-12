@@ -30,16 +30,52 @@ export class CanvasManager {
   private _spacePressed: boolean = false
   private _isPanning: boolean = false
   private _lastPanPoint: { x: number; y: number } = { x: 0, y: 0 }
+  /** 画布逻辑尺寸（100% 缩放比下的宽高） */
+  private _baseW: number = 800
+  private _baseH: number = 600
+
+  /**
+   * 设置画布逻辑尺寸（用于缩放计算）
+   * 调用时机：SVG 加载完成 / 用户拖拽 resize 手柄后
+   */
+  setLogicalSize(w: number, h: number): void {
+    this._baseW = w
+    this._baseH = h
+    this._syncCanvasSize()
+  }
+
+  /**
+   * 核心：Fabric 画布物理尺寸 = 逻辑尺寸 × 缩放比
+   * viewport transform = [z, 0, 0, z, 0, 0] 缩放渲染内容
+   * — 物理 resize 让 .canvas-area 随 zoom 变，viewport transform 让内部元素等比例变。
+   */
+  private _syncCanvasSize(): void {
+    const fc = this.canvas
+    if (!fc) return
+    const z = this._zoomLevel / 100
+    const nw = Math.round(this._baseW * z)
+    const nh = Math.round(this._baseH * z)
+    fc.setWidth(nw)
+    fc.setHeight(nh)
+    ;(fc as any).viewportTransform = [z, 0, 0, z, 0, 0]
+    fc.requestRenderAll()
+  }
+
+  /** 暴露逻辑宽度（供 addElement 等使用物理 resize 后的坐标体系） */
+  getBaseWidth(): number { return this._baseW }
+  getBaseHeight(): number { return this._baseH }
 
   /**
    * 初始化画布
    */
   init(canvasEl: HTMLCanvasElement, containerW: number, containerH: number): Canvas {
+    this._baseW = containerW
+    this._baseH = containerH
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fc = new fabric.Canvas(canvasEl as any, {
       width: containerW,
       height: containerH,
-      backgroundColor: '#ffffff',
+      backgroundColor: 'transparent',
       selection: true,
       preserveObjectStacking: true,
       perPixelTargetFind: false,
@@ -82,16 +118,14 @@ export class CanvasManager {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupCanvasEvents(fc: any) {
-    // 滚轮缩放（无需 Ctrl）
+    // 滚轮缩放（无需 Ctrl）— 调整 _zoomLevel → _syncCanvasSize 会物理 resize + 设置 viewport transform
     fc.on('mouse:wheel', (opt: any) => {
       opt.e.preventDefault()
       opt.e.stopPropagation()
       const delta = opt.e.deltaY
-      let zoom = fc.getZoom()
-      zoom *= 0.999 ** delta
-      zoom = Math.min(Math.max(0.1, zoom), 5)
-      fc.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom)
-      this._zoomLevel = Math.round(zoom * 100)
+      this._zoomLevel = Math.round(this._zoomLevel * (0.999 ** delta))
+      this._zoomLevel = Math.min(Math.max(10, this._zoomLevel), 2000)
+      this._syncCanvasSize()
       this._notifyZoom()
     })
 
@@ -219,7 +253,20 @@ export class CanvasManager {
     fc.on('object:added', (e: any) => {
       if (e.target) {
         e.target.set({ selectable: true, evented: true })
-        if (e.target._objects) e.target._objects.forEach((o: any) => o.set({ selectable: true, evented: true }))
+        // ⚠️ 关键：对于无填充的对象设置透明填充，使其可点击（Fabric.js 默认不处理 fill=none 的点击）
+        if (!e.target.fill || e.target.fill === 'none' || e.target.fill === 'transparent') {
+          if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(e.target.type)) {
+            e.target.set({ fill: 'rgba(0,0,0,0.001)' })
+          }
+        }
+        if (e.target._objects) e.target._objects.forEach((o: any) => {
+          o.set({ selectable: true, evented: true })
+          if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
+            if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
+              o.set({ fill: 'rgba(0,0,0,0.001)' })
+            }
+          }
+        })
       }
     })
 
@@ -274,27 +321,29 @@ export class CanvasManager {
    */
   setSpacePressed(pressed: boolean): void { this._spacePressed = pressed; if (!pressed && !this._isPanning) this.canvas?.setCursor('default') }
 
-  // ── 缩放 ──
+  // ── 缩放（物理 resize + viewport transform [z,0,0,z,0,0] 整体缩放）──
   zoomIn(): void {
-    let z = this.canvas!.getZoom() * 1.2
-    z = Math.min(z, 5)
-    this.canvas!.setZoom(z)
-    this._zoomLevel = Math.round(z * 100)
+    this._zoomLevel = Math.round(Math.min(this._zoomLevel * 1.2, 2000))
+    this._syncCanvasSize()
     this._notifyZoom()
   }
 
   zoomOut(): void {
-    let z = this.canvas!.getZoom() / 1.2
-    z = Math.max(z, 0.1)
-    this.canvas!.setZoom(z)
-    this._zoomLevel = Math.round(z * 100)
+    this._zoomLevel = Math.round(Math.max(this._zoomLevel / 1.2, 10))
+    this._syncCanvasSize()
     this._notifyZoom()
   }
 
   zoomFit(): void {
-    const fc = this.canvas!
-    const objects = fc.getObjects()
-    if (!objects.length) return
+    const fc = this.canvas
+    if (!fc) return
+    const objects = fc.getObjects().filter((o: any) => !o.excludeFromExport)
+    if (!objects.length) {
+      this._zoomLevel = 100
+      this._syncCanvasSize()
+      this._notifyZoom()
+      return
+    }
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     objects.forEach((o: any) => {
       const b = o.getBoundingRect()
@@ -302,21 +351,24 @@ export class CanvasManager {
       maxX = Math.max(maxX, b.left + b.width); maxY = Math.max(maxY, b.top + b.height)
     })
     const bw = maxX - minX, bh = maxY - minY
-    const cw = fc.width, ch = fc.height
-    const z = Math.min((cw - 60) / bw, (ch - 60) / bh, 2)
-    const vpt = [z, 0, 0, z, (cw - bw * z) / 2 - minX * z, (ch - bh * z) / 2 - minY * z] as [number, number, number, number, number, number]
-    fc.setViewportTransform(vpt)
-    fc.requestRenderAll()
+    if (bw <= 0 || bh <= 0) return
+    const z = Math.min((this._baseW - 60) / bw, (this._baseH - 60) / bh, 2)
     this._zoomLevel = Math.round(z * 100)
+    // 居中：内容的逻辑中心 → 物理画布中心
+    const cx = (minX + maxX) / 2
+    const cy = (minY + maxY) / 2
+    const tx = (this._baseW / 2 - cx) * z
+    const ty = (this._baseH / 2 - cy) * z
+    const nw = Math.round(this._baseW * z)
+    const nh = Math.round(this._baseH * z)
+    fc.setWidth(nw)
+    fc.setHeight(nh)
+    ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
+    fc.requestRenderAll()
     this._notifyZoom()
   }
 
   getZoomLevel(): number { return this._zoomLevel }
-
-  // ── 背景（canvas.backgroundColor 直接控制，无需 fabric.Rect 对象）──
-  addBackground(): void {}
-  removeBg(): void {}
-  reAddBg(): void {}
 
   // ── 回调注册（委托给 EventBus，保持 API 兼容）──
   onZoomChange(fn: (zoomLevel: number) => void): void { this._eventBus.on('zoomChange', fn) }

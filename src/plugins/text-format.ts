@@ -7,9 +7,9 @@
 export function getTextObjects(canvas) {
   const a = canvas.getActiveObject()
   if (!a) return []
-  if (a.type === 'textbox' || a.type === 'i-text') return [a]
+  if (a.type === 'textbox' || a.type === 'i-text' || a.type === 'itext' || a.type === 'text') return [a]
   if (a.type === 'activeSelection' || a.type === 'group') {
-    return (a._objects || []).filter(o => o.type === 'textbox' || o.type === 'i-text')
+    return (a._objects || []).filter(o => o.type === 'textbox' || o.type === 'i-text' || o.type === 'itext' || o.type === 'text')
   }
   return []
 }

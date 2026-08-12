@@ -1,75 +1,57 @@
-name: Test Suite
+name: Test
 
 on:
   push:
-    branches: [master, main]
+    branches: [main, master]
   pull_request:
-    branches: [master, main]
+    branches: [main, master]
 
 jobs:
-  lint-and-typecheck:
+  # ═══════════════════ 单元测试 + 组件测试 + 集成测试 ═══════════════════
+  unit-and-component:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [18, 20, 22]
+        node: ['18', '20', '22']
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: 'pnpm'
       - run: pnpm install
-      - run: pnpm typecheck
+      - run: pnpm test:unit
 
-  unit-test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [18, 20, 22]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-          cache: 'pnpm'
-      - run: pnpm install
-      - run: pnpm test:unit --coverage
-
+  # ═══════════════════ E2E 测试（Chromium + Firefox） ═══════════════════
   e2e:
     runs-on: ubuntu-latest
-    needs: [unit-test]
     strategy:
       matrix:
-        browser: [chromium, firefox]
+        vitepress: ['1.0.0', '1.3.0', '1.6.0']
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'pnpm'
       - run: pnpm install
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
-      - run: pnpm test -- --project=${{ matrix.browser }}
+      - run: pnpm add -D vitepress@${{ matrix.vitepress }}
+      - run: npx playwright install --with-deps chromium firefox
+      - run: pnpm test
 
-  build-verify:
+  # ═══════════════════ Build + Preview 验证 ═══════════════════
+  build-preview:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'pnpm'
       - run: pnpm install
       - run: pnpm build
+      - run: npx playwright install --with-deps chromium firefox
+      - run: pnpm test -- --project=build-preview-chromium --project=build-preview-firefox

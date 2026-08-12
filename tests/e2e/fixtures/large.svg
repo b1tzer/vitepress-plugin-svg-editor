@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <rect x="0" y="0" width="800" height="600" fill="#FAFAFA" stroke="#E0E0E0" stroke-width="1"/>
+  <!-- 大量图形用于压力测试 -->
+  <circle cx="100" cy="100" r="40" fill="#F44336" opacity="0.8"/>
+  <circle cx="250" cy="100" r="35" fill="#E91E63" opacity="0.8"/>
+  <circle cx="400" cy="100" r="30" fill="#9C27B0" opacity="0.8"/>
+  <circle cx="550" cy="100" r="35" fill="#673AB7" opacity="0.8"/>
+  <circle cx="700" cy="100" r="40" fill="#3F51B5" opacity="0.8"/>
+  <rect x="50" y="200" width="80" height="60" fill="#2196F3" rx="4"/>
+  <rect x="160" y="210" width="90" height="50" fill="#03A9F4" rx="4"/>
+  <rect x="280" y="200" width="80" height="60" fill="#00BCD4" rx="4"/>
+  <rect x="390" y="210" width="90" height="50" fill="#009688" rx="4"/>
+  <rect x="510" y="200" width="80" height="60" fill="#4CAF50" rx="4"/>
+  <rect x="620" y="210" width="90" height="50" fill="#8BC34A" rx="4"/>
+  <ellipse cx="200" cy="380" rx="50" ry="35" fill="#FF9800"/>
+  <ellipse cx="400" cy="370" rx="45" ry="30" fill="#FF5722"/>
+  <ellipse cx="600" cy="380" rx="55" ry="40" fill="#795548"/>
+  <line x1="50" y1="450" x2="200" y2="480" stroke="#607D8B" stroke-width="3"/>
+  <line x1="250" y1="450" x2="400" y2="520" stroke="#9E9E9E" stroke-width="2"/>
+  <line x1="450" y1="470" x2="600" y2="450" stroke="#BDBDBD" stroke-width="4"/>
+  <line x1="650" y1="500" x2="750" y2="470" stroke="#757575" stroke-width="2"/>
+  <text x="400" y="560" text-anchor="middle" font-size="18" fill="#333">Large SVG Stress Test</text>
+  <text x="200" y="160" text-anchor="middle" font-size="12" fill="#666">Circles</text>
+  <text x="400" y="270" text-anchor="middle" font-size="12" fill="#666">Rectangles</text>
+  <text x="400" y="430" text-anchor="middle" font-size="12" fill="#666">Ellipses &amp; Lines</text>
+</svg>

@@ -2,13 +2,18 @@
 /**
  * SVG 编辑器 — 容器层（Orchestrator）
  *
- * 职责：Vue 状态管理 + 生命周期 + 子组件编排
- * 模板委托给 EditorToolbar / EditorCanvas 子组件
+ * 布局参考：vue-fabric-editor 三栏布局（左-中-右 + 顶栏）
+ * 左：EditorLeftPanel（元素清单 + 图层面板）
+ * 中：EditorCanvas（Fabric.js 画布 + 标尺）
+ * 右：EditorContextPanel（属性面板）
+ * 顶：EditorToolbar（全局操作栏）
  */
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import * as fabric from 'fabric'
 import EditorToolbar from './sub/EditorToolbar.vue'
 import EditorCanvas from './sub/EditorCanvas.vue'
+import EditorLeftPanel from './sub/EditorLeftPanel.vue'
+import EditorContextPanel from './sub/EditorContextPanel.vue'
 import { ICONS, LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/constants.ts'
 import { preprocessSvg } from '../core/preprocessor.ts'
 import { cleanFabricSvg, rgbToHex, hexToCssVars, restoreViewBox } from '../core/postprocessor.ts'
@@ -70,18 +75,51 @@ const isPanning = ref(false)
 const themeMode = ref(
   typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 )
+const canUndo = ref(false)
+const canRedo = ref(false)
+const panelCollapsed = ref(false)
+const leftPanelCollapsed = ref(false)
+function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
+function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
 
-// ── 核心管理器 ──
+// 显示尺寸 = 逻辑尺寸 × 当前缩放比（物理 resize 模型，无 Fabric viewport zoom）
+const displayWidth = computed(() => Math.round(svgWidth.value * zoomLevel.value / 100))
+const displayHeight = computed(() => Math.round(svgHeight.value * zoomLevel.value / 100))
+
+// 画布对象列表（供图层面板使用）
+const canvasObjects = ref<Array<{ id: string; type: string; name: string; visible: boolean }>>([])
+
+// 核心管理器
 const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 let _keyHandlerFn: any = null
 let _keyUpHandler: any = null
-let _resizeObserver: any = null
 
 canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
 canvasMgr.onGuideLinesChange((lines: any) => { guideLines.value = lines })
 canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
-canvasMgr.onModified(() => { historyMgr.save(canvasMgr.canvas!, () => {}, () => {}) })
+canvasMgr.onModified(() => { historyMgr.save(canvasMgr.canvas!, () => {}, () => {}); refreshLayerList() })
+historyMgr.onStateChange(() => { canUndo.value = historyMgr.canUndo(); canRedo.value = historyMgr.canRedo() })
+
+// ── 图层面板刷新 ──
+function refreshLayerList() {
+  const fc = canvasMgr.canvas
+  if (!fc) { canvasObjects.value = []; return }
+  canvasObjects.value = fc.getObjects().map((obj: any, i: number) => ({
+    id: `layer-${i}`,
+    type: obj.type || 'unknown',
+    name: getObjectName(obj, i),
+    visible: obj.visible !== false,
+  }))
+}
+
+function getObjectName(obj: any, idx: number): string {
+  if (obj.type === 'text' || obj.type === 'textbox') {
+    return (obj.text || '').substring(0, 15) || '文本'
+  }
+  const typeMap: Record<string, string> = { rect: '矩形', circle: '圆', triangle: '三角', ellipse: '椭圆', line: '线条', path: '路径', polygon: '多边形', group: '组合' }
+  return typeMap[obj.type] || obj.type || `元素 ${idx + 1}`
+}
 
 // ── 选择状态更新 ──
 function updateSelectionInfo() {
@@ -124,9 +162,9 @@ function updateSelectionInfo() {
 }
 
 // ── 工具栏操作 ──
-function withSave(fn: (fc: any) => void) { const fc = canvasMgr.canvas; if (!fc) return; fn(fc); historyMgr.save(fc, () => {}, () => {}) }
-function undo() { historyMgr.undo(canvasMgr.canvas!, () => {}) }
-function redo() { historyMgr.redo(canvasMgr.canvas!, () => {}) }
+function withSave(fn: (fc: any) => void) { const fc = canvasMgr.canvas; if (!fc) return; fn(fc); historyMgr.save(fc, () => {}, () => {}); refreshLayerList() }
+function undo() { historyMgr.undo(canvasMgr.canvas!, () => {}); refreshLayerList() }
+function redo() { historyMgr.redo(canvasMgr.canvas!, () => {}); refreshLayerList() }
 function copyObj() { const a = canvasMgr.canvas?.getActiveObject(); if (a) (a as any).clone((c: any) => { window._clipboard = c }) }
 function pasteObj() { if (!window._clipboard) return; const fc = canvasMgr.canvas; window._clipboard.clone((c: any) => { c.set({ left: c.left + 20, top: c.top + 20 }); fc!.add(c); fc!.setActiveObject(c); fc!.renderAll(); withSave(() => {}) }) }
 function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === 'activeSelection') { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
@@ -148,11 +186,58 @@ function applyGradientUI() { const fc = canvasMgr.canvas; if (!fc) return; apply
 function toggleShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; shadowEnabled.value = toggleShadow(fc); withSave(() => {}) }
 function applyShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; applyShadow(fc, { color: shadowColor.value, blur: shadowBlur.value, offsetX: shadowOffsetX.value, offsetY: shadowOffsetY.value }); withSave(() => {}) }
 
+// ── 左侧面板：添加元素（使用逻辑坐标，viewport transform 负责缩放映射）──
+function addElement(type: string) {
+  const fc = canvasMgr.canvas
+  if (!fc) return
+  const centerX = svgWidth.value / 2
+  const centerY = svgHeight.value / 2
+  let obj: any = null
+  switch (type) {
+    case 'rect': obj = new fabric.Rect({ left: centerX - 40, top: centerY - 30, width: 80, height: 60, fill: '#3b82f6', stroke: '', strokeWidth: 0, rx: 4, ry: 4 }); break
+    case 'circle': obj = new fabric.Circle({ left: centerX, top: centerY, radius: 35, fill: '#10b981', stroke: '', strokeWidth: 0 }); break
+    case 'triangle': obj = new fabric.Triangle({ left: centerX, top: centerY - 30, width: 70, height: 60, fill: '#f59e0b', stroke: '', strokeWidth: 0 }); break
+    case 'ellipse': obj = new fabric.Ellipse({ left: centerX, top: centerY, rx: 45, ry: 30, fill: '#8b5cf6', stroke: '', strokeWidth: 0 }); break
+    case 'line': {
+      const points = [centerX - 40, centerY, centerX + 40, centerY]
+      obj = new fabric.Line(points, { stroke: '#ef4444', strokeWidth: 2 })
+      break
+    }
+    case 'text': obj = new fabric.Text('文本', { left: centerX - 20, top: centerY - 10, fontSize: 24, fill: '#000', fontFamily: 'sans-serif' }); break
+    case 'textbox': obj = new fabric.Textbox('文本框', { left: centerX - 40, top: centerY - 15, width: 120, fontSize: 16, fill: '#000', fontFamily: 'sans-serif' }); break
+  }
+  if (obj) {
+    ensureInteractive(obj)
+    fc.add(obj)
+    fc.setActiveObject(obj)
+    fc.renderAll()
+    withSave(() => {})
+  }
+}
+
+// ── 图层面板：选择图层 ──
+function selectLayer(id: string) {
+  const fc = canvasMgr.canvas
+  if (!fc) return
+  const idx = parseInt(id.replace('layer-', ''))
+  const obj = fc.getObjects()[idx]
+  if (obj) { fc.setActiveObject(obj); fc.renderAll() }
+}
+
+// ── 图层面板：切换可见性 ──
+function toggleLayerVisibility(id: string) {
+  const fc = canvasMgr.canvas
+  if (!fc) return
+  const idx = parseInt(id.replace('layer-', ''))
+  const obj = fc.getObjects()[idx]
+  if (obj) { obj.set('visible', !obj.visible); fc.renderAll(); refreshLayerList() }
+}
+
 // ── 主题切换 ──
 function toggleTheme() {
   const fc = canvasMgr.canvas; if (!fc) return
   const from = themeMode.value, to = from === 'light' ? 'dark' : 'light'
-const mapping: any = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
+  const mapping: any = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
   if (!mapping || !Object.keys(mapping).length) return
   themeMode.value = to
   function swapColor(hex: any): string { if (!hex || typeof hex !== 'string') return hex; return mapping[hex.toUpperCase()] || hex }
@@ -186,12 +271,19 @@ async function save() {
   finally { if (wasDark) toggleTheme(); saving.value = false }
 }
 
+// ── 画布 resize ──
+function onResizeCanvas(w: number, h: number) {
+  // 手柄拖拽产出的是显示像素（display px），需换算为逻辑尺寸
+  svgWidth.value = Math.round(w * 100 / zoomLevel.value)
+  svgHeight.value = Math.round(h * 100 / zoomLevel.value)
+  canvasMgr.setLogicalSize(svgWidth.value, svgHeight.value)
+}
+
 // ── 主加载流程 ──
 async function loadAndInit() {
   loading.value = true
   onUnmounted(() => {
     if (_keyHandlerFn) { document.removeEventListener('keydown', _keyHandlerFn); document.removeEventListener('keyup', _keyUpHandler!) }
-    if (_resizeObserver) _resizeObserver.disconnect()
     canvasMgr.dispose()
   })
   await nextTick()
@@ -201,25 +293,29 @@ async function loadAndInit() {
   try { const resp = await fetch(url); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); svgText = await resp.text() }
   catch (e) { console.error('[SvgEditor] 获取 SVG 失败:', url, e); loading.value = false; return }
   const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = preprocessSvg(svgText, themeMode.value)
-  if (vb) originalViewBox.value = vb; if (sw > 0) svgWidth.value = sw; if (sh > 0) svgHeight.value = sh
-  const container = canvasRef.value?.canvasContainerRef
-  if (!container) return
+  if (vb) originalViewBox.value = vb
+  if (sw > 0) svgWidth.value = sw; else svgWidth.value = 800
+  if (sh > 0) svgHeight.value = sh; else svgHeight.value = 500
+  const area = canvasRef.value?.canvasAreaRef
+  if (!area) return
   await new Promise(r => requestAnimationFrame(r))
   await new Promise(r => requestAnimationFrame(r))
-  const w = container.clientWidth || 800, h = container.clientHeight || 500
-  const fc = canvasMgr.init(container.querySelector('canvas')!, w, h)
+  // 使用 SVG 实际尺寸初始化画布（而非容器尺寸）
+  const w = svgWidth.value || 800
+  const h = svgHeight.value || 500
+  const canvasEl = area.querySelector('canvas')
+  if (!canvasEl) return
+  const fc = canvasMgr.init(canvasEl, w, h)
   fabric.loadSVGFromString(svg).then(({ objects }: any) => {
     try {
       const merged = mergeArrows(objects)
       const converted = merged.map(convertToTextbox)
       converted.forEach((obj: any) => { ensureInteractive(obj); fc.add(obj) })
       fc.getObjects().forEach((o: any) => { o.set({ selectable: true, evented: true }); if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true })) })
-      canvasMgr.zoomFit(); historyMgr.save(fc, () => {}, () => {})
+      canvasMgr.zoomFit(); historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
     } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
     finally { loading.value = false }
   })
-  _resizeObserver = new ResizeObserver(() => { const c = container; if (!c || !fc) return; fc.setDimensions({ width: c.clientWidth || 800, height: c.clientHeight || 500 }); fc.requestRenderAll() })
-  _resizeObserver.observe(container)
   _keyHandlerFn = (e: KeyboardEvent) => {
     if (e.key === ' ' && !e.repeat) { e.preventDefault(); spacePressed.value = true; canvasMgr.setSpacePressed(true); fc.setCursor('grab'); return }
     if (e.ctrlKey || e.metaKey) {
@@ -259,39 +355,19 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
 
 <template>
   <div class="editor-overlay" @click.self="emit('close')" @keydown.escape="emit('close')" tabindex="-1" ref="overlayRef">
-    <div class="editor-panel">
+    <div class="editor-app" :class="themeMode === 'light' ? 'theme-light' : 'theme-dark'">
+      <!-- 顶栏 -->
       <EditorToolbar
         :src="props.src"
         :zoomLevel="zoomLevel"
         :svgWidth="svgWidth"
         :svgHeight="svgHeight"
         :selectionInfo="selectionInfo"
-        :currentFill="currentFill"
-        :currentStroke="currentStroke"
-        :currentFontSize="currentFontSize"
-        :currentFontWeight="currentFontWeight"
-        :currentFontStyle="currentFontStyle"
-        :currentUnderline="currentUnderline"
-        :currentTextAlign="currentTextAlign"
-        :currentTextFill="currentTextFill"
-        :currentStrokeWidth="currentStrokeWidth"
-        :currentStrokeDash="currentStrokeDash"
-        :currentRotation="currentRotation"
-        :currentOpacity="currentOpacity"
-        :gradientType="gradientType"
-        :gradientAngle="gradientAngle"
-        :gradientColor1="gradientColor1"
-        :gradientColor2="gradientColor2"
-        :shadowEnabled="shadowEnabled"
-        :shadowColor="shadowColor"
-        :shadowBlur="shadowBlur"
-        :shadowOffsetX="shadowOffsetX"
-        :shadowOffsetY="shadowOffsetY"
         :showThemeToggle="props.showThemeToggle"
         :themeMode="themeMode"
         :saving="saving"
-        :canUndo="historyMgr.canUndo()"
-        :canRedo="historyMgr.canRedo()"
+        :canUndo="canUndo"
+        :canRedo="canRedo"
         @undo="undo"
         @redo="redo"
         @copy="copyObj"
@@ -300,65 +376,119 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
         @zoomIn="canvasMgr.zoomIn()"
         @zoomOut="canvasMgr.zoomOut()"
         @zoomFit="canvasMgr.zoomFit()"
-        @align="align"
-        @layerForward="withSave((fc:any)=>LayerPlugin.forward(fc))"
-        @layerBackward="withSave((fc:any)=>LayerPlugin.backward(fc))"
-        @layerToFront="withSave((fc:any)=>LayerPlugin.toFront(fc))"
-        @layerToBack="withSave((fc:any)=>LayerPlugin.toBack(fc))"
-        @distribute="(dir:string)=>withSave((fc:any)=>dir==='horizontal'?DistributePlugin.distributeHorizontal(fc):DistributePlugin.distributeVertical(fc))"
-        @group="groupSelected"
-        @ungroup="ungroupSelected"
-        @fill="applyFill"
-        @stroke="applyStroke"
-        @strokeWidth="applyStrokeWidth"
-        @strokeDash="toggleStrokeDash"
-        @fontSize="applyFontSize"
-        @bold="toggleBold"
-        @italic="toggleItalic"
-        @underline="toggleUnderline"
-        @textAlign="(a:string)=>withSave((fc:any)=>{currentTextAlign=TextFormatPlugin.applyTextAlign(fc,a)})"
-        @textFill="applyTextFill"
-        @rotation="applyRotation"
-        @opacity="applyOpacity"
-        @gradientChange="applyGradientUI"
-        @update:gradientType="gradientType=$event"
-        @update:gradientAngle="gradientAngle=$event"
-        @update:gradientColor1="gradientColor1=$event"
-        @update:gradientColor2="gradientColor2=$event"
-        @toggleShadow="toggleShadowUI"
-        @applyShadow="applyShadowUI"
-        @update:shadowColor="shadowColor=$event"
-        @update:shadowBlur="shadowBlur=$event"
-        @update:shadowOffsetX="shadowOffsetX=$event"
-        @update:shadowOffsetY="shadowOffsetY=$event"
         @toggleTheme="toggleTheme"
         @save="save"
         @close="emit('close')"
       />
-      <EditorCanvas ref="canvasRef" :loading="loading" />
+
+      <!-- 主体：三栏布局 -->
+      <div class="editor-body">
+        <!-- 左：元素清单 / 图层面板 -->
+        <EditorLeftPanel
+          :canvasObjects="canvasObjects"
+          :collapsed="leftPanelCollapsed"
+          :themeMode="themeMode"
+          @toggleCollapse="toggleLeftPanel"
+          @addElement="addElement"
+          @selectLayer="selectLayer"
+          @toggleLayerVisibility="toggleLayerVisibility"
+        />
+
+        <!-- 中：画布 + 标尺 -->
+        <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
+          :canvasWidth="displayWidth" :canvasHeight="displayHeight"
+          @resize="onResizeCanvas" />
+
+        <!-- 右：属性面板 -->
+        <EditorContextPanel
+          :selectionInfo="selectionInfo"
+          :currentFill="currentFill"
+          :currentStroke="currentStroke"
+          :currentFontSize="currentFontSize"
+          :currentFontWeight="currentFontWeight"
+          :currentFontStyle="currentFontStyle"
+          :currentUnderline="currentUnderline"
+          :currentTextAlign="currentTextAlign"
+          :currentTextFill="currentTextFill"
+          :currentStrokeWidth="currentStrokeWidth"
+          :currentStrokeDash="currentStrokeDash"
+          :currentRotation="currentRotation"
+          :currentOpacity="currentOpacity"
+          :gradientType="gradientType"
+          :gradientAngle="gradientAngle"
+          :gradientColor1="gradientColor1"
+          :gradientColor2="gradientColor2"
+          :shadowEnabled="shadowEnabled"
+          :shadowColor="shadowColor"
+          :shadowBlur="shadowBlur"
+          :shadowOffsetX="shadowOffsetX"
+          :shadowOffsetY="shadowOffsetY"
+          :themeMode="themeMode"
+          :collapsed="panelCollapsed"
+          @toggleCollapse="togglePanel"
+          @align="align"
+          @layerForward="withSave((fc:any)=>LayerPlugin.forward(fc))"
+          @layerBackward="withSave((fc:any)=>LayerPlugin.backward(fc))"
+          @layerToFront="withSave((fc:any)=>LayerPlugin.toFront(fc))"
+          @layerToBack="withSave((fc:any)=>LayerPlugin.toBack(fc))"
+          @distribute="(dir:string)=>withSave((fc:any)=>dir==='horizontal'?DistributePlugin.distributeHorizontal(fc):DistributePlugin.distributeVertical(fc))"
+          @group="groupSelected"
+          @ungroup="ungroupSelected"
+          @fill="applyFill"
+          @stroke="applyStroke"
+          @strokeWidth="applyStrokeWidth"
+          @strokeDash="toggleStrokeDash"
+          @fontSize="applyFontSize"
+          @bold="toggleBold"
+          @italic="toggleItalic"
+          @underline="toggleUnderline"
+          @textAlign="(a:string)=>withSave((fc:any)=>{currentTextAlign=TextFormatPlugin.applyTextAlign(fc,a)})"
+          @textFill="applyTextFill"
+          @rotation="applyRotation"
+          @opacity="applyOpacity"
+          @gradientChange="applyGradientUI"
+          @update:gradientType="gradientType=$event"
+          @update:gradientAngle="gradientAngle=$event"
+          @update:gradientColor1="gradientColor1=$event"
+          @update:gradientColor2="gradientColor2=$event"
+          @toggleShadow="toggleShadowUI"
+          @applyShadow="applyShadowUI"
+          @update:shadowColor="shadowColor=$event"
+          @update:shadowBlur="shadowBlur=$event"
+          @update:shadowOffsetX="shadowOffsetX=$event"
+          @update:shadowOffsetY="shadowOffsetY=$event"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* ── 全屏遮罩 ── */
 .editor-overlay {
   position: fixed; inset: 0; z-index: 9999;
   background: rgba(15, 15, 15, 0.75);
   backdrop-filter: blur(12px) saturate(1.2);
   display: flex; align-items: center; justify-content: center;
-  animation: overlayIn 0.2s ease;
+  animation: overlayIn 0.15s ease;
 }
 @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
-.editor-panel {
-  width: 92vw; height: 88vh;
-  background: #191919;
-  border-radius: 16px; overflow: hidden;
+
+/* ── 编辑器应用容器（铺满视口） ── */
+.editor-app {
+  width: 100vw; height: 100vh;
   display: flex; flex-direction: column;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 32px 80px rgba(0,0,0,0.55);
-  animation: panelIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
 }
-@keyframes panelIn {
-  from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+.editor-app.theme-dark  { background: #191919; }
+.editor-app.theme-light { background: #f0f1f3; }
+
+/* ── 主体：三栏弹性布局 ── */
+.editor-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 0;
 }
 </style>

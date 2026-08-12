@@ -12,6 +12,12 @@
 
 - **写完 .vue / core / plugin 文件后立即用无头浏览器验证**：1) 打开使用该组件的页面；2) 检查 Console 无 compile error；3) 点击"编辑 SVG"按钮触发 EditorOverlay 完整加载（这会 import 所有插件，暴露别名/路径错误）；4) 验证编辑器 overlay 和 canvas 渲染成功；5) 用 `getBoundingClientRect()` 验证 SVG 尺寸非零；6) 截图兜底。发现编译错误时先扫描全文件找出所有同类问题一次性修复。不要假设 HMR 会自动处理——必须亲自确认每一步。
 
+- **每次修改 .vue/.css/Core 文件后，必须运行 `pnpm test:render` 做可视渲染回归**：vitest + jsdom 只测 DOM 结构（exists/classes/text），无法检测 CSS 布局效果——棋盘格背景是否可见、画布是否居中、resize 手柄是否有背景色、Fabric canvas backgroundColor 是否为 transparent、标尺坐标是否绘制、折叠按钮是否从圆形变成了直角竖条。这些都是用户肉眼看到的，只有真实浏览器（Playwright）能验证。测试文件位于 `tests/render-regression.spec.ts`，覆盖 10 个关键渲染项。任何导致该测试失败的上游修改，都必须在本次变更范围内修复，不得带着失败提交。
+
+- **插件函数必须有自己的单元测试，不能仅依赖组件测试间接覆盖**：组件测试（如 EditorContextPanel.test.ts）mock 了所有 emit 事件，**从未实际调用插件函数本身**。这是 text-format.ts 静默失效 2 周未被发现的根因。每个 `src/plugins/*.ts` 中的导出函数必须有对应的 `tests/unit/*.test.ts`，至少覆盖：1) 正常输入→正确输出；2) 边界条件（null/undefined/空数组）；3) 所有 `addElement` 支持的对象类型。当前状态：9 个插件中 3 个有单元测试（text-format、align、distribute、layer、gradient、shadow、selection 中后者 6 个在 `ComprehensivePluginTests.test.ts`），arrow-merger 待补。
+
+- **插件中的类型过滤必须与 `addElement` 创建的对象类型保持同步**：`addElement`（SvgEditor.vue）创建 7 种 Fabric 对象类型（rect/circle/triangle/ellipse/line/text/textbox）。任何插件代码中出现的 `if (obj.type === '...')` 或 `.filter(o => o.type === '...')` 类型的白名单，都必须包含 `addElement` 能创建的所有相关类型。修改 `addElement` 时必须同时检查所有插件文件。历史 Bug：text-format.ts 的 getTextObjects 遗漏 type='text'，导致加粗/斜体/下划线/居中/字号/颜色 6 个按钮对 fabric.Text 对象静默失效。此外，永远不要在插件中用具体类型做白名单，应该用 Fabric 的 API（如 `obj.isType('text')`）或者至少检查 `obj instanceof fabric.Text` 而非 `obj.type === 'textbox'`。
+
 ### 通用开发规范
 
 - **后台启动交互式进程的关键陷阱**：仅用 `&` 放到后台会导致进程尝试读取 stdin，操作系统发送 SIGTTIN 信号将其冻结为 T（Stopped）状态。此时进程虽然存活（ps 可见），但事件循环完全卡死，所有网络请求都会失败（curl 返回 http_code=000 或 timeout）。诊断方法：`ps aux | grep <进程名>` 查看 STAT 列，若为 `T` 或 `Tl` 就是被冻结。修复方法：后台启动时必须重定向 stdin 为 /dev/null，标准写法为 `nohup 命令 </dev/null >/tmp/log 2>&1 &`。kill -9 可杀 T 状态进程，kill -9 不可杀 D（不可中断睡眠）和 Z（僵尸）状态进程。

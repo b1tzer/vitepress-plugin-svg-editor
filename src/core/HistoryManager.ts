@@ -40,13 +40,36 @@ export class HistoryManager implements IHistoryManager {
    */
   undo(canvas: Canvas, afterLoad?: () => void): void {
     if (!canvas || this._undoStack.length < 2) return
-    this._redoStack.push(this._undoStack.pop()!)
-    const state = this._undoStack[this._undoStack.length - 1]
-    // Fabric 6: loadFromJSON 返回 Promise，仍兼容 callback 参数
-    ;(canvas as any).loadFromJSON(state, () => {
-      if (afterLoad) afterLoad()
-      canvas.renderAll()
-    })
+
+    const currentState = this._undoStack.pop()!
+    this._redoStack.push(currentState)
+    const prevState = this._undoStack[this._undoStack.length - 1]
+
+    // Fabric 6: loadFromJSON 返回 Promise
+    canvas.clear()
+    ;(canvas as any)
+      .loadFromJSON(prevState)
+      .then(() => {
+        // 确保所有对象可交互（特别是 fill=none 的对象需要透明填充）
+        canvas.getObjects().forEach((o: any) => {
+          o.set({ selectable: true, evented: true })
+          if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
+            if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
+              o.set({ fill: 'rgba(0,0,0,0.001)' })
+            }
+          }
+          o.setCoords()
+        })
+        canvas.renderAll()
+        if (afterLoad) afterLoad()
+      })
+      .catch((err: any) => {
+        console.error('[HistoryManager] undo 加载状态失败，恢复当前状态', err)
+        // 失败兜底：把弹出状态重新放回
+        this._redoStack.pop()
+        this._undoStack.push(currentState)
+        canvas.renderAll()
+      })
     this._notify()
   }
 
@@ -55,12 +78,33 @@ export class HistoryManager implements IHistoryManager {
    */
   redo(canvas: Canvas, afterLoad?: () => void): void {
     if (!canvas || !this._redoStack.length) return
-    const state = this._redoStack.pop()!
-    this._undoStack.push(state)
-    ;(canvas as any).loadFromJSON(state, () => {
-      if (afterLoad) afterLoad()
-      canvas.renderAll()
-    })
+
+    const nextState = this._redoStack.pop()!
+    this._undoStack.push(nextState)
+
+    canvas.clear()
+    ;(canvas as any)
+      .loadFromJSON(nextState)
+      .then(() => {
+        // 确保所有对象可交互
+        canvas.getObjects().forEach((o: any) => {
+          o.set({ selectable: true, evented: true })
+          if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
+            if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
+              o.set({ fill: 'rgba(0,0,0,0.001)' })
+            }
+          }
+          o.setCoords()
+        })
+        canvas.renderAll()
+        if (afterLoad) afterLoad()
+      })
+      .catch((err: any) => {
+        console.error('[HistoryManager] redo 加载状态失败，恢复', err)
+        this._undoStack.pop()
+        this._redoStack.push(nextState)
+        canvas.renderAll()
+      })
     this._notify()
   }
 

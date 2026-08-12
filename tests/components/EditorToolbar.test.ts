@@ -1,107 +1,95 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import EditorToolbar from '../../src/components/sub/EditorToolbar.vue'
 
-// 构造最小 props
 const defaultProps = {
-  src: '/diagrams/test.svg',
-  zoomLevel: 100,
-  svgWidth: 800,
-  svgHeight: 600,
-  selectionInfo: '',
-  currentFill: '#ff0000',
-  currentStroke: '#000000',
-  currentFontSize: 12,
-  currentFontWeight: 'normal',
-  currentFontStyle: 'normal',
-  currentUnderline: false,
-  currentTextAlign: 'left',
-  currentTextFill: '#000000',
-  currentStrokeWidth: 1,
-  currentStrokeDash: false,
-  currentRotation: 0,
-  currentOpacity: 100,
-  gradientType: 'none',
-  gradientAngle: 0,
-  gradientColor1: '#1565C0',
-  gradientColor2: '#E3F2FD',
-  shadowEnabled: false,
-  shadowColor: '#000000',
-  shadowBlur: 5,
-  shadowOffsetX: 3,
-  shadowOffsetY: 3,
-  showThemeToggle: true,
-  themeMode: 'light',
-  saving: false,
-  canUndo: false,
-  canRedo: false,
+  src: '/diagrams/test.svg', zoomLevel: 100, svgWidth: 800, svgHeight: 600,
+  selectionInfo: '', showThemeToggle: true, themeMode: 'light',
+  saving: false, canUndo: false, canRedo: false,
 }
 
 describe('EditorToolbar', () => {
-  it('应渲染工具栏容器', () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    expect(wrapper.find('.editor-toolbar').exists()).toBe(true)
+  // ══════════════════════════════════════════════════════
+  // 1. 布局：三栏结构 + 防 CLS
+  // ══════════════════════════════════════════════════════
+  it('应渲染三栏布局且状态变化不影响结构', () => {
+    const w = mount(EditorToolbar, { props: defaultProps })
+    expect(w.find('.toolbar-left').exists()).toBe(true)
+    expect(w.find('.toolbar-center').exists()).toBe(true)
+    expect(w.find('.toolbar-right').exists()).toBe(true)
+    // 防 CLS：状态变化不应移除栏
+    w.setProps({ selectionInfo: 'rect', saving: true })
+    expect(w.find('.toolbar-left').exists()).toBe(true)
+    expect(w.find('.toolbar-center').exists()).toBe(true)
   })
 
-  it('应渲染保存按钮', () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    const saveBtn = wrapper.find('button[data-tip*="保存"]')
-    expect(saveBtn.exists()).toBe(true)
+  // ══════════════════════════════════════════════════════
+  // 2. 信息显示：文件名、缩放、尺寸、选中状态
+  // ══════════════════════════════════════════════════════
+  it('应正确显示文件名、缩放比例、画布尺寸和选中信息', () => {
+    const w = mount(EditorToolbar, { props: { ...defaultProps, zoomLevel: 150, selectionInfo: 'rect' } })
+    expect(w.find('.title').text()).toContain('/diagrams/test.svg')
+    expect(w.text()).toContain('150%')
+    expect(w.text()).toContain('800')
+    expect(w.text()).toContain('600')
+    expect(w.find('.info-selection').text()).toBe('rect')
   })
 
-  it('应渲染关闭按钮', () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    const closeBtn = wrapper.find('button[data-tip="关闭"]')
-    expect(closeBtn.exists()).toBe(true)
+  it('无选中时应显示"未选中"', () => {
+    const w = mount(EditorToolbar, { props: defaultProps })
+    expect(w.text()).toContain('未选中')
   })
 
-  it('saving=true 时保存按钮应 disabled', () => {
-    const wrapper = mount(EditorToolbar, {
-      props: { ...defaultProps, saving: true },
+  // ══════════════════════════════════════════════════════
+  // 3. 按钮 disabled 态
+  // ══════════════════════════════════════════════════════
+  it('canUndo/canRedo/saving 为 false 时对应按钮应 disabled', () => {
+    const w = mount(EditorToolbar, { props: defaultProps })
+    expect(w.find('button[aria-label="撤销 Ctrl+Z"]').attributes('disabled')).toBeDefined()
+    expect(w.find('button[aria-label="重做 Ctrl+Y"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('saving=true 时保存按钮应 disabled 且文案为"保存中…"', () => {
+    const w = mount(EditorToolbar, { props: { ...defaultProps, saving: true } })
+    const btn = w.find('button[data-tip*="保存"]')
+    expect(btn.attributes('disabled')).toBeDefined()
+    expect(btn.text()).toContain('保存中')
+  })
+
+  // ══════════════════════════════════════════════════════
+  // 4. 按钮 emit 验证（参数化）
+  // ══════════════════════════════════════════════════════
+  const emitCases: Array<{ name: string; selector: string; event: string; props?: Record<string, any> }> = [
+    { name: '撤销', selector: '[aria-label="撤销 Ctrl+Z"]', event: 'undo', props: { canUndo: true } },
+    { name: '重做', selector: '[aria-label="重做 Ctrl+Y"]', event: 'redo', props: { canRedo: true } },
+    { name: '复制', selector: '[aria-label="复制 Ctrl+C"]', event: 'copy' },
+    { name: '粘贴', selector: '[aria-label="粘贴 Ctrl+V"]', event: 'paste' },
+    { name: '删除', selector: '[aria-label="删除 Delete"]', event: 'delete' },
+    { name: '放大', selector: '[aria-label*="放大"]', event: 'zoomIn' },
+    { name: '缩小', selector: '[aria-label*="缩小"]', event: 'zoomOut' },
+    { name: '适应画布', selector: '[aria-label="适应画布 Ctrl+0"]', event: 'zoomFit' },
+    { name: '保存', selector: '[data-tip*="保存"]', event: 'save' },
+    { name: '关闭', selector: '[data-tip*="关闭"]', event: 'close' },
+  ]
+
+  emitCases.forEach(({ name, selector, event, props: extraProps }) => {
+    it(`点击${name}按钮应触发 ${event} 事件`, async () => {
+      const w = mount(EditorToolbar, { props: { ...defaultProps, ...extraProps } })
+      await w.find(selector).trigger('click')
+      expect(w.emitted(event)).toBeTruthy()
     })
-    const saveBtn = wrapper.find('button[data-tip*="保存"]')
-    expect(saveBtn.attributes('disabled')).toBeDefined()
   })
 
-  it('应显示缩放级别', () => {
-    const wrapper = mount(EditorToolbar, {
-      props: { ...defaultProps, zoomLevel: 150 },
-    })
-    expect(wrapper.text()).toContain('150%')
-  })
+  // ══════════════════════════════════════════════════════
+  // 5. 主题切换
+  // ══════════════════════════════════════════════════════
+  it('showThemeToggle 控制主题按钮显隐，点击触发 toggleTheme', async () => {
+    let w = mount(EditorToolbar, { props: { ...defaultProps, showThemeToggle: true } })
+    expect(w.find('.theme-btn').exists()).toBe(true)
+    await w.find('.theme-btn').trigger('click')
+    expect(w.emitted('toggleTheme')).toBeTruthy()
 
-  it('应显示 SVG 画布尺寸', () => {
-    const wrapper = mount(EditorToolbar, {
-      props: { ...defaultProps, svgWidth: 800, svgHeight: 600 },
-    })
-    expect(wrapper.text()).toContain('800')
-    expect(wrapper.text()).toContain('600')
-  })
-
-  it('canUndo=false 时撤销按钮应 disabled', () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    const undoBtn = wrapper.find('button[data-tip="撤销"]')
-    expect(undoBtn.attributes('disabled')).toBeDefined()
-  })
-
-  it('canRedo=false 时重做按钮应 disabled', () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    const redoBtn = wrapper.find('button[data-tip="重做"]')
-    expect(redoBtn.attributes('disabled')).toBeDefined()
-  })
-
-  it('点击保存按钮应触发 save 事件', async () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    const saveBtn = wrapper.find('button[data-tip*="保存"]')
-    await saveBtn.trigger('click')
-    expect(wrapper.emitted('save')).toBeTruthy()
-    expect(wrapper.emitted('save')).toHaveLength(1)
-  })
-
-  it('点击关闭按钮应触发 close 事件', async () => {
-    const wrapper = mount(EditorToolbar, { props: defaultProps })
-    const closeBtn = wrapper.find('button[data-tip="关闭"]')
-    await closeBtn.trigger('click')
-    expect(wrapper.emitted('close')).toBeTruthy()
+    w = mount(EditorToolbar, { props: { ...defaultProps, showThemeToggle: false } })
+    expect(w.find('.theme-btn').exists()).toBe(false)
   })
 })

@@ -43,7 +43,11 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:unit": "vitest run",
-    "test:unit:watch": "vitest"
+    "test:unit:watch": "vitest",
+    "test:visual": "playwright test tests/e2e/visual/editor-layout-stability.spec.ts --project=chromium",
+    "test:render": "playwright test tests/e2e/render-regression.spec.ts --project=chromium",
+    "test:visual:update": "playwright test tests/e2e/visual/editor-layout-stability.spec.ts --project=chromium --update-snapshots",
+    "cls:check": "lighthouse-ci --config=./.lighthouserc.json"
   },
   "peerDependencies": {
     "fabric": ">=6.0.0 <7.0.0",

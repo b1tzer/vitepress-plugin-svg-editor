@@ -1,151 +1,222 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-
-// Mock fabric.js Canvas 以便不依赖真实 DOM
-const mockLoadFromJSON = vi.fn((_state: any, callback?: () => void) => {
-  if (callback) callback()
-})
-const mockRenderAll = vi.fn()
-const mockToJSON = vi.fn(() => ({ version: '5.3.0', objects: [] }))
-
-const createMockCanvas = () => ({
-  toJSON: mockToJSON,
-  loadFromJSON: mockLoadFromJSON,
-  renderAll: mockRenderAll,
-} as any)
-
-vi.mock('fabric', () => ({})) // 空 mock，HistoryManager 仅需要 Canvas 类型
-
 import { HistoryManager } from '../../src/core/HistoryManager'
+
+vi.mock('fabric', () => ({}))
+
+/** 创建 mock Fabric.js Canvas 实例 */
+function createMockCanvas() {
+  return {
+    toJSON: vi.fn().mockReturnValue({ version: '6.0.0', objects: [] }),
+    loadFromJSON: vi.fn().mockResolvedValue(undefined),
+    renderAll: vi.fn(),
+    clear: vi.fn(),
+    getObjects: vi.fn().mockReturnValue([]),
+  }
+}
+
+/** 重置 mock canvas 的所有 spy */
+function resetMockCanvas(c: ReturnType<typeof createMockCanvas>) {
+  vi.clearAllMocks()
+}
 
 describe('HistoryManager', () => {
   let hm: HistoryManager
-  let canvas: any
+  let canvas: ReturnType<typeof createMockCanvas>
 
   beforeEach(() => {
     hm = new HistoryManager()
     canvas = createMockCanvas()
-    vi.clearAllMocks()
-    // 初始化 mock 返回值
-    mockToJSON.mockReturnValue({ version: '5.3.0', objects: [] })
+    resetMockCanvas(canvas)
   })
 
+  // ══════════════════════════════════════════════════════
+  // 基础 save/undo/redo
+  // ══════════════════════════════════════════════════════
   it('save 应将画布状态推入撤销栈', () => {
-    hm.save(canvas)
-    expect(mockToJSON).toHaveBeenCalled()
+    hm.save(canvas as any)
+    expect(canvas.toJSON).toHaveBeenCalled()
     expect(hm.canUndo()).toBe(false) // 仅 1 个状态时不可撤销
   })
 
   it('save 两次后 canUndo 应为 true', () => {
-    hm.save(canvas)
-    hm.save(canvas)
+    hm.save(canvas as any)
+    hm.save(canvas as any)
     expect(hm.canUndo()).toBe(true)
   })
 
-  it('undo 应恢复到上一个状态', () => {
-    mockToJSON.mockReturnValueOnce({ version: '5.3.0', objects: ['obj1'] })
-    hm.save(canvas)
-    mockToJSON.mockReturnValueOnce({ version: '5.3.0', objects: ['obj2'] })
-    hm.save(canvas)
+  it('undo 应恢复到上一个状态（Fabric 6 async 模式）', async () => {
+    canvas.toJSON.mockReturnValueOnce({ version: '6.0.0', objects: ['obj1'] })
+    hm.save(canvas as any)
+    canvas.toJSON.mockReturnValueOnce({ version: '6.0.0', objects: ['obj2'] })
+    hm.save(canvas as any)
 
-    hm.undo(canvas)
-    expect(mockLoadFromJSON).toHaveBeenCalled()
-    expect(mockRenderAll).toHaveBeenCalled()
+    hm.undo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
+    expect(canvas.renderAll).toHaveBeenCalled()
   })
 
-  it('undo 后 canRedo 应为 true', () => {
-    hm.save(canvas)
-    hm.save(canvas)
-    hm.undo(canvas)
+  it('undo 前应调用 canvas.clear()', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    hm.undo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.clear).toHaveBeenCalled()
+    })
+  })
+
+  it('undo 后应对无填充对象设置透明填充', async () => {
+    const mockSetCoords = vi.fn()
+    const mockSet = vi.fn()
+    canvas.getObjects.mockReturnValue([
+      { type: 'rect', set: mockSet, setCoords: mockSetCoords, fill: 'none' },
+    ])
+
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    hm.undo(canvas as any)
+
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.objectContaining({ fill: 'rgba(0,0,0,0.001)' })
+    )
+    expect(mockSetCoords).toHaveBeenCalled()
+  })
+
+  it('undo 后 canRedo 应为 true', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    hm.undo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
     expect(hm.canRedo()).toBe(true)
   })
 
-  it('redo 应恢复到撤销前的状态', () => {
-    hm.save(canvas)
-    hm.save(canvas)
-    hm.undo(canvas)
+  it('redo 应恢复到撤销前的状态', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    hm.undo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
 
-    const callsBefore = mockLoadFromJSON.mock.calls.length
-    hm.redo(canvas)
-    expect(mockLoadFromJSON.mock.calls.length).toBeGreaterThan(callsBefore)
+    const callsBefore = canvas.loadFromJSON.mock.calls.length
+    hm.redo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON.mock.calls.length).toBeGreaterThan(callsBefore)
+    })
   })
 
-  it('redo 后 canRedo 应为 false', () => {
-    hm.save(canvas)
-    hm.save(canvas)
-    hm.undo(canvas)
-    hm.redo(canvas)
+  it('redo 后 canRedo 应为 false', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    hm.undo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
+    hm.redo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON.mock.calls.length).toBe(2)
+    })
     expect(hm.canRedo()).toBe(false)
   })
 
+  // ══════════════════════════════════════════════════════
+  // 边界条件
+  // ══════════════════════════════════════════════════════
   it('空栈时 undo 不应崩溃', () => {
-    expect(() => hm.undo(canvas)).not.toThrow()
+    expect(() => hm.undo(canvas as any)).not.toThrow()
     expect(hm.canUndo()).toBe(false)
   })
 
   it('空栈时 redo 不应崩溃', () => {
-    expect(() => hm.redo(canvas)).not.toThrow()
+    expect(() => hm.redo(canvas as any)).not.toThrow()
     expect(hm.canRedo()).toBe(false)
   })
 
   it('save 超过 50 步应移除最旧的状态', () => {
     for (let i = 0; i < 60; i++) {
-      hm.save(canvas)
+      hm.save(canvas as any)
     }
-    // 应不超过 50 步
     expect(hm.canUndo()).toBe(true)
   })
 
-  it('save 后 redo 栈应被清空', () => {
-    hm.save(canvas)
-    hm.save(canvas)
-    hm.undo(canvas)
+  it('save 后 redo 栈应被清空', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    hm.undo(canvas as any)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
     expect(hm.canRedo()).toBe(true)
-    hm.save(canvas)
+    hm.save(canvas as any)
     expect(hm.canRedo()).toBe(false)
   })
 
-  it('beforeSave 回调应在 save 时被调用', () => {
+  // ══════════════════════════════════════════════════════
+  // 回调 & 兜底
+  // ══════════════════════════════════════════════════════
+  it('beforeSave / afterSave 回调应在 save 时被调用', () => {
     const before = vi.fn()
-    hm.save(canvas, before)
+    hm.save(canvas as any, before)
     expect(before).toHaveBeenCalled()
-  })
 
-  it('afterSave 回调应在 save 时被调用', () => {
     const after = vi.fn()
-    hm.save(canvas, undefined, after)
+    hm.save(canvas as any, undefined, after)
     expect(after).toHaveBeenCalled()
   })
 
-  it('afterLoad 回调应在 undo 时被调用', () => {
-    hm.save(canvas)
-    hm.save(canvas)
+  it('afterLoad 回调应在 undo 时被调用', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
     const after = vi.fn()
-    hm.undo(canvas, after)
+    hm.undo(canvas as any, after)
+    await vi.waitFor(() => {
+      expect(canvas.loadFromJSON).toHaveBeenCalled()
+    })
     expect(after).toHaveBeenCalled()
   })
 
+  it('undo 失败时 loadFromJSON 抛异常应触发兜底恢复', async () => {
+    hm.save(canvas as any)
+    hm.save(canvas as any)
+    expect(hm.canUndo()).toBe(true)
+
+    canvas.loadFromJSON.mockRejectedValueOnce(new Error('simulated failure'))
+    hm.undo(canvas as any)
+
+    await vi.waitFor(() => {
+      // 兜底：应至少调用了 renderAll
+      expect(canvas.renderAll).toHaveBeenCalled()
+    })
+  })
+
+  // ══════════════════════════════════════════════════════
+  // 生命周期
+  // ══════════════════════════════════════════════════════
   it('onStateChange 应在状态变更时被调用', () => {
     const fn = vi.fn()
     hm.onStateChange(fn)
-    hm.save(canvas)
+    hm.save(canvas as any)
     expect(fn).toHaveBeenCalled()
   })
 
   it('reset 应清空所有栈', () => {
-    hm.save(canvas)
-    hm.save(canvas)
+    hm.save(canvas as any)
+    hm.save(canvas as any)
     hm.reset()
     expect(hm.canUndo()).toBe(false)
     expect(hm.canRedo()).toBe(false)
   })
 
-  it('canvas 为 null 时 save 不应崩溃', () => {
+  it('canvas 为 null 时不应崩溃', () => {
     expect(() => hm.save(null as any)).not.toThrow()
-  })
-
-  it('canvas 为 null 时 undo 不应崩溃', () => {
-    hm.save(canvas)
-    hm.save(canvas)
+    hm.save(canvas as any)
+    hm.save(canvas as any)
     expect(() => hm.undo(null as any)).not.toThrow()
   })
 })

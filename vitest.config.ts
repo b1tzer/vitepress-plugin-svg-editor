@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
-    include: ['tests/unit/**/*.test.ts', 'tests/components/**/*.test.ts', 'src/adapters/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts', 'tests/components/**/*.test.ts', 'tests/integration/**/*.test.ts', 'src/adapters/**/*.test.ts'],
     exclude: ['tests/*.spec.ts', 'tests/**/screenshots/**', 'node_modules/**', 'dist/**'],
     deps: {
       inline: ['vitepress'],

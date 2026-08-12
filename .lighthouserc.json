@@ -1,0 +1,32 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "url": [
+        "http://localhost:5173"
+      ],
+      "startServerCommand": "pnpm dev",
+      "startServerReadyPattern": "localhost:5173",
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["performance"],
+        "skipAudits": [
+          "uses-http2",
+          "is-on-https",
+          "offscreen-images",
+          "uses-optimized-images"
+        ]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.8 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.05 }],
+        "layout-shift-elements": "warn"
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
