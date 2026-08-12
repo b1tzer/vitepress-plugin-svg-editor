@@ -67,10 +67,10 @@ export class CanvasManager {
     const fc = this.canvas
     const ws = this._workspaceRect
     if (!fc || !ws) return
-    ws.set({ width: w, height: h, left: (fc.getWidth() - w) / 2, top: (fc.getHeight() - h) / 2 })
+    ws.set({ width: w, height: h, left: 0, top: 0 })
     fc.clipPath = new fabric.Rect({
-      left: ws.left, top: ws.top, width: w, height: h,
-      absolutePositioned: true, selectable: false, evented: false, excludeFromExport: true,
+      left: 0, top: 0, width: w, height: h,
+      selectable: false, evented: false, excludeFromExport: true,
     })
     fc.requestRenderAll()
     this._zoomPan.setLogicalSize(w, h)
@@ -90,9 +90,11 @@ export class CanvasManager {
 
   private _createWorkspace(fc: Canvas, w: number, h: number): void {
     const isLight = this._themeMode === 'light'
+    // workspace Rect 固定位于 (0,0)，与 SVG 逻辑坐标原点一致
+    // 视觉居中由 viewportTransform（zoomFit / zoom / pan）负责 — vue-fabric-editor 做法
     const ws = new fabric.Rect({
       id: 'workspace',
-      left: (fc.getWidth() - w) / 2, top: (fc.getHeight() - h) / 2,
+      left: 0, top: 0,
       width: w, height: h,
       fill: isLight ? '#ffffff' : '#1e1e1e',
       stroke: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)',
@@ -102,9 +104,11 @@ export class CanvasManager {
     fc.add(ws)
     fc.sendObjectToBack(ws)
     this._workspaceRect = ws
+    // canvas.clipPath 同样位于 (0,0)，与 workspace 完全重合
+    // Fabric 官方文档：canvas.clipPath 受 zoom/pan 影响，从左上角定位
     fc.clipPath = new fabric.Rect({
-      left: ws.left, top: ws.top, width: w, height: h,
-      absolutePositioned: true, selectable: false, evented: false, excludeFromExport: true,
+      left: 0, top: 0, width: w, height: h,
+      selectable: false, evented: false, excludeFromExport: true,
     })
     fc.requestRenderAll()
   }

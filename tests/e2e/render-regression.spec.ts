@@ -163,7 +163,10 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
         hasClipPath: true,
         clipW: cp.width,
         clipH: cp.height,
-        absolutePositioned: cp.absolutePositioned,
+        clipLeft: cp.left,
+        clipTop: cp.top,
+        wsLeft: workspace ? workspace.left : null,
+        wsTop: workspace ? workspace.top : null,
         matchesWorkspace: workspace
           ? Math.abs(cp.width - workspace.width) < 1 && Math.abs(cp.height - workspace.height) < 1
           : false,
@@ -171,10 +174,15 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
     })
     expect(clip).not.toBeNull()
     expect(clip!.hasClipPath).toBe(true)
-    expect(clip!.absolutePositioned).toBe(true)
     expect(clip!.matchesWorkspace).toBe(true)
     expect(clip!.clipW).toBeGreaterThan(0)
     expect(clip!.clipH).toBeGreaterThan(0)
+    // 方案 C 关键设计：workspace 和 clipPath 都在 (0,0)，与 SVG 逻辑坐标原点一致
+    // 视觉居中由 viewportTransform（zoomFit）负责
+    expect(clip!.clipLeft).toBe(0)
+    expect(clip!.clipTop).toBe(0)
+    expect(clip!.wsLeft).toBe(0)
+    expect(clip!.wsTop).toBe(0)
   })
 
   // ══════════════════════════════════════════════
