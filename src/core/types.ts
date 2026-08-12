@@ -9,6 +9,16 @@
  */
 
 import type { Canvas } from 'fabric'
+import type { ICommand } from './Command'
+
+/** 解析后的 marker 参数 */
+export interface MarkerInfo {
+  fill: string
+  refX: number
+  tipOffset: number
+  markerW: number
+  markerH: number
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 基础类型
@@ -73,6 +83,17 @@ export interface IHistoryManager {
   reset(): void
 }
 
+/** 命令式历史管理器抽象接口（基于 ICommand 模式） */
+export interface ICommandHistory {
+  execute(cmd: ICommand): void
+  undo(): void
+  redo(): void
+  canUndo(): boolean
+  canRedo(): boolean
+  onStateChange(fn: () => void): void
+  reset(): void
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 插件系统类型
 // ═══════════════════════════════════════════════════════════════
@@ -85,7 +106,7 @@ export interface PluginContext {
 }
 
 /** 编辑器插件接口 */
-export interface EditorPlugin {
+export interface IEditorPlugin {
   /** 插件唯一标识名 */
   name: string
   /** 安装钩子：在 CanvasManager 初始化后调用 */
@@ -116,13 +137,13 @@ export interface SaveResult {
 }
 
 /** 存储适配器接口 */
-export interface StorageAdapter {
+export interface IStorageAdapter {
   save(svgText: string, sourcePath: string): Promise<SaveResult>
   load(sourcePath: string): Promise<string>
 }
 
 /** 主题适配器接口 */
-export interface ThemeAdapter {
+export interface IThemeAdapter {
   isDark(): boolean
   onChange(callback: (isDark: boolean) => void): void
 }

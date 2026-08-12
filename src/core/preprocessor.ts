@@ -9,16 +9,7 @@
  */
 
 import { THEME_VAR_TO_HEX } from './constants'
-import type { ThemeMode, SvgLoadResult } from './types'
-
-/** 解析后的 marker 参数 */
-interface MarkerInfo {
-  fill: string
-  refX: number
-  tipOffset: number
-  markerW: number
-  markerH: number
-}
+import type { ThemeMode, SvgLoadResult, MarkerInfo } from './types'
 
 /**
  * 将 CSS 变量替换为 hex 色值

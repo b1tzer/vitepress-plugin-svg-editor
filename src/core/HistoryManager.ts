@@ -50,17 +50,7 @@ export class HistoryManager implements IHistoryManager {
     ;(canvas as any)
       .loadFromJSON(prevState)
       .then(() => {
-        // 确保所有对象可交互（特别是 fill=none 的对象需要透明填充）
-        canvas.getObjects().forEach((o: any) => {
-          o.set({ selectable: true, evented: true })
-          if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
-            if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
-              o.set({ fill: 'rgba(0,0,0,0.001)' })
-            }
-          }
-          o.setCoords()
-        })
-        canvas.renderAll()
+        this._restoreInteractivity(canvas)
         if (afterLoad) afterLoad()
       })
       .catch((err: any) => {
@@ -86,17 +76,7 @@ export class HistoryManager implements IHistoryManager {
     ;(canvas as any)
       .loadFromJSON(nextState)
       .then(() => {
-        // 确保所有对象可交互
-        canvas.getObjects().forEach((o: any) => {
-          o.set({ selectable: true, evented: true })
-          if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
-            if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
-              o.set({ fill: 'rgba(0,0,0,0.001)' })
-            }
-          }
-          o.setCoords()
-        })
-        canvas.renderAll()
+        this._restoreInteractivity(canvas)
         if (afterLoad) afterLoad()
       })
       .catch((err: any) => {
@@ -119,4 +99,21 @@ export class HistoryManager implements IHistoryManager {
   }
 
   private _notify(): void { if (this._onStateChange) this._onStateChange() }
+
+  /**
+   * 恢复所有 canvas 对象的可交互性
+   * undo/redo 后 loadFromJSON 会重置对象属性，需要重新设置
+   */
+  private _restoreInteractivity(canvas: Canvas): void {
+    canvas.getObjects().forEach((o: any) => {
+      o.set({ selectable: true, evented: true })
+      if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
+        if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
+          o.set({ fill: 'rgba(0,0,0,0.001)' })
+        }
+      }
+      o.setCoords()
+    })
+    canvas.renderAll()
+  }
 }
