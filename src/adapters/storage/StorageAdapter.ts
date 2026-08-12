@@ -13,7 +13,7 @@ export interface SaveResult {
 }
 
 /** 存储适配器抽象接口 */
-export interface StorageAdapter {
+export interface IStorageAdapter {
   /**
    * 保存 SVG 文本到目标位置
    * @param svgText    — 最终 SVG 字符串

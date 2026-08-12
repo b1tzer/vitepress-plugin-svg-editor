@@ -9,9 +9,9 @@
  *   - 文件后缀必须为 .svg（防止覆盖非 SVG 文件）
  */
 
-import type { StorageAdapter, SaveResult } from './StorageAdapter'
+import type { IStorageAdapter, SaveResult } from './StorageAdapter'
 
-export class VitePressSaveAdapter implements StorageAdapter {
+export class VitePressSaveAdapter implements IStorageAdapter {
   private saveEndpoint: string
   private saveDir: string
 

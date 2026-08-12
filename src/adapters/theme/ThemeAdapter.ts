@@ -5,7 +5,7 @@
  * 例如自定义品牌色、固定主题等。
  */
 
-export interface ThemeAdapter {
+export interface IThemeAdapter {
   /** 返回当前是否为暗色模式 */
   isDark(): boolean
 

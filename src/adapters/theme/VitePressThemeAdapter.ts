@@ -6,9 +6,9 @@
  * 与 VitePress 内置的暗色模式切换保持同步。
  */
 
-import type { ThemeAdapter } from './ThemeAdapter'
+import type { IThemeAdapter } from './ThemeAdapter'
 
-export class VitePressThemeAdapter implements ThemeAdapter {
+export class VitePressThemeAdapter implements IThemeAdapter {
   private observer: MutationObserver | null = null
 
   isDark(): boolean {

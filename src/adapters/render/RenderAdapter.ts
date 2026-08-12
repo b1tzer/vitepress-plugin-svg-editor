@@ -8,7 +8,7 @@
 import type { Canvas } from 'fabric'
 import type { SvgLoadResult, ThemeMode } from '../../core/types'
 
-export interface RenderAdapter {
+export interface IRenderAdapter {
   /** 初始化画布 */
   init(canvasEl: HTMLCanvasElement, width: number, height: number): Canvas | Promise<Canvas>
 

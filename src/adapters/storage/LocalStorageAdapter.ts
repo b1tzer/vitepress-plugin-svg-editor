@@ -7,11 +7,11 @@
  * 存储键格式：svg-editor:{sourcePath}
  */
 
-import type { StorageAdapter, SaveResult } from './StorageAdapter'
+import type { IStorageAdapter, SaveResult } from './StorageAdapter'
 
 const KEY_PREFIX = 'svg-editor:'
 
-export class LocalStorageAdapter implements StorageAdapter {
+export class LocalStorageAdapter implements IStorageAdapter {
   async save(svgText: string, sourcePath: string): Promise<SaveResult> {
     try {
       localStorage.setItem(KEY_PREFIX + sourcePath, svgText)

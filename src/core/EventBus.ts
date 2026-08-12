@@ -12,9 +12,9 @@
  *   bus.emit('zoomChange', 150)
  */
 
-import type { CanvasEvents } from './types'
+import type { CanvasEvents, IEventBus } from './types'
 
-export class EventBus {
+export class EventBus implements IEventBus {
   private _handlers: Map<keyof CanvasEvents, Set<Function>> = new Map()
 
   /** 注册事件监听 */

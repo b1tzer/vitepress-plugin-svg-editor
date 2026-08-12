@@ -12,13 +12,13 @@
  *   ps.installAll(ctx)
  */
 
-import type { EditorPlugin, PluginContext } from './types'
+import type { IEditorPlugin, PluginContext } from './types'
 
 export class PluginSystem {
-  private _plugins: Map<string, EditorPlugin> = new Map()
+  private _plugins: Map<string, IEditorPlugin> = new Map()
 
   /** 注册插件（同名插件会被覆盖） */
-  register(plugin: EditorPlugin): void {
+  register(plugin: IEditorPlugin): void {
     this._plugins.set(plugin.name, plugin)
   }
 
@@ -28,7 +28,7 @@ export class PluginSystem {
   }
 
   /** 按名字获取插件 */
-  get(name: string): EditorPlugin | undefined {
+  get(name: string): IEditorPlugin | undefined {
     return this._plugins.get(name)
   }
 

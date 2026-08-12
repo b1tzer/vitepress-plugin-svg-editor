@@ -8,10 +8,11 @@
 import * as fabric from 'fabric'
 import type { Canvas } from 'fabric'
 import type { SvgLoadResult } from '../../core/types'
-import type { RenderAdapter } from './RenderAdapter'
+import type { IRenderAdapter } from './RenderAdapter'
 import { CanvasManager } from '../../core/CanvasManager'
+import { SvgSerializer } from '../../core/SvgSerializer'
 
-export class FabricRenderAdapter implements RenderAdapter {
+export class FabricRenderAdapter implements IRenderAdapter {
   private canvasMgr: CanvasManager
 
   constructor(canvasMgr: CanvasManager) {
@@ -35,8 +36,6 @@ export class FabricRenderAdapter implements RenderAdapter {
   }
 
   serialize(canvas: Canvas, originalViewBox?: string): string {
-    // 委托给 SvgSerializer 的静态方法
-    const { SvgSerializer } = require('../../core/SvgSerializer')
     const serializer = new SvgSerializer()
     return serializer.serialize(canvas, { originalViewBox })
   }
