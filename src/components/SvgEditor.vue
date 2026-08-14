@@ -16,7 +16,7 @@ import EditorLeftPanel from './sub/EditorLeftPanel.vue'
 import EditorContextPanel from './sub/EditorContextPanel.vue'
 import { ICONS, LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/constants.ts'
 import { preprocessSvg } from '../core/preprocessor.ts'
-import { cleanFabricSvg, rgbToHex, hexToCssVars, restoreViewBox } from '../core/postprocessor.ts'
+import { SvgSerializer } from '../core/SvgSerializer'
 import { CanvasManager } from '../core/CanvasManager.ts'
 import { HistoryManager } from '../core/HistoryManager.ts'
 import { mergeArrows } from '../plugins/arrow-merger.ts'
@@ -32,6 +32,8 @@ import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器 ──
 const storageAdapter = new VitePressSaveAdapter()
+// ── 序列化器（统一后处理链，复用 SvgSerializer 而非手写）──
+const serializer = new SvgSerializer()
 
 const props = defineProps({
   src: { type: String, required: true },
@@ -326,12 +328,7 @@ async function save() {
   if (wasDark) toggleTheme()
   try {
     const fc = canvasMgr.canvas!
-    let svgText = timed('export:toSVG', () => {
-      let s = fc.toSVG()
-      s = cleanFabricSvg(s); s = rgbToHex(s)
-      s = restoreViewBox(s, originalViewBox.value); s = hexToCssVars(s)
-      return s
-    })
+    const svgText = timed('export:toSVG', () => serializer.serialize(fc, { originalViewBox: originalViewBox.value }))
     const result = await storageAdapter.save(svgText, props.src)
     if (result.success) { emit('saved'); emit('close') }
     else { alert('保存失败: ' + result.error) }
