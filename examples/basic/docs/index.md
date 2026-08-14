@@ -4,6 +4,8 @@
 
 <SvgDiagram src="/diagrams/test.svg" />
 
+<SvgDiagram src="/diagrams/test-complex.svg" />
+
 ---
 
 ## 集成说明
@@ -15,4 +17,4 @@
 3. **注册** `theme/index.ts` 中注册组件
 4. **使用** Markdown 中写 `<SvgDiagram src="..." />`
 
-详见 [快速开始指南](../../docs/guide/getting-started.md)。
+更多功能见 [功能特性](./features.md)。

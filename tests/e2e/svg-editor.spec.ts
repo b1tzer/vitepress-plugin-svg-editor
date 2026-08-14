@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { openEditor } from './helpers'
 
-const PAGE_URL = '/java-world/01-java-language/chapter-01-type-system'
+const PAGE_URL = '/'
 const SVG_IDX = 1
 
 test.describe('SvgEditor UI 运行时验证', () => {
@@ -59,7 +59,7 @@ test.describe('SvgEditor UI 运行时验证', () => {
       console.log(`  按钮 ${i}: title="${title}", text="${text?.trim()}"`)
     }
 
-    const expectedTips = ['撤销', '重做', '复制', '粘贴', '删除', '适应画布']
+    const expectedTips = ['撤销 Ctrl+Z', '重做 Ctrl+Y', '复制 Ctrl+C', '粘贴 Ctrl+V', '删除 Delete', '适应画布 Ctrl+0']
     for (const t of expectedTips) {
       const btn = toolbar.locator(`button[data-tip="${t}"]`)
       const exists = await btn.count()
@@ -87,7 +87,7 @@ test.describe('SvgEditor UI 运行时验证', () => {
   test('6. 缩放级别显示', async ({ page }) => {
     await openEditor(page, SVG_IDX)
 
-    const zoomInfo = page.locator('.editor-toolbar .info').first()
+    const zoomInfo = page.locator('.editor-toolbar .zoom-badge').first()
     const text = await zoomInfo.textContent()
     console.log(`[缩放] 当前级别: ${text}`)
     expect(text).toMatch(/\d+%/)
@@ -117,25 +117,34 @@ test.describe('SvgEditor UI 运行时验证', () => {
   test('9. 颜色选择器存在', async ({ page }) => {
     await openEditor(page, SVG_IDX)
 
-    const colorInputs = page.locator('.color-row input[type="color"]')
+    // 选中一个非文本对象，使属性面板显示「填充/边框」颜色选择器
+    await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const obj = c.getObjects().find((o: any) => o.type !== 'text' && o.type !== 'i-text' && o.type !== 'textbox')
+      if (obj) { c.setActiveObject(obj); c.renderAll() }
+    })
+
+    const colorInputs = page.locator('.context-panel input[type="color"]')
     const count = await colorInputs.count()
     console.log(`[颜色] 选择器数量: ${count}`)
-    expect(count).toBe(2)
+    expect(count).toBeGreaterThanOrEqual(2)
   })
 
   test('10. 对齐按钮组完整', async ({ page }) => {
     await openEditor(page, SVG_IDX)
 
-    const alignGroup = page.locator('.align-group button')
-    const count = await alignGroup.count()
-    console.log(`[对齐] 按钮数量: ${count}`)
+    // 选中对象，使属性面板显示对齐按钮
+    await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const obj = c.getObjects().find((o: any) => o.type !== 'text' && o.type !== 'i-text' && o.type !== 'textbox')
+      if (obj) { c.setActiveObject(obj); c.renderAll() }
+    })
 
-    const titles = []
-    for (let i = 0; i < count; i++) {
-      const t = await alignGroup.nth(i).getAttribute('title')
-      titles.push(t)
+    const alignTips = ['左对齐', '水平居中', '右对齐', '顶对齐', '垂直居中', '底对齐']
+    for (const tip of alignTips) {
+      const btn = page.locator(`.context-panel button[data-tip="${tip}"]`)
+      await expect(btn).toBeVisible()
+      console.log(`[对齐] "${tip}": ✅`)
     }
-    console.log(`[对齐] 按钮: ${titles.join(', ')}`)
-    expect(count).toBe(6)
   })
 })

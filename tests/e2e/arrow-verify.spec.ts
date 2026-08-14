@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { navigateAndOpenEditor } from './helpers'
 
-const PAGE_VT = '/java-world/03-java-concurrency/chapter-12-virtual-thread'
-const PAGE_SEC = '/java-world/06-java-enterprise/chapter-08-security-deploy'
+const PAGE_VT = '/'
+const PAGE_SEC = '/features.html'
 
 async function getArrowGroups(page: any) {
   return page.evaluate(() => {

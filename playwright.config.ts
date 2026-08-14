@@ -12,14 +12,15 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'cd /data/home/lipingxie/project/java-world2/java-world && npm run dev',
+      // 开发服务器：examples/basic 自包含样例（不依赖外部文档站）
+      command: 'cd examples/basic && pnpm docs:dev',
       port: 5173,
       reuseExistingServer: true,
       timeout: 30000,
     },
     {
-      // build-preview.spec.ts 专用
-      command: 'cd /data/home/lipingxie/project/java-world2/java-world && npm run build && npm run preview',
+      // build-preview.spec.ts 专用：生产构建 + 预览
+      command: 'cd examples/basic && pnpm docs:build && pnpm docs:preview',
       port: 4173,
       reuseExistingServer: true,
       timeout: 60000,

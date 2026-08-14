@@ -7,7 +7,7 @@ import { openEditor } from './helpers'
 // build+preview 使用 4173 端口
 test.use({ baseURL: 'http://localhost:4173' })
 
-const PAGE_URL = '/java-world/01-java-language/chapter-01-type-system'
+const PAGE_URL = '/'
 const LOAD_TIMEOUT = 30000
 
 test.describe('生产构建预览 — 核心功能验证', () => {
@@ -112,7 +112,7 @@ test.describe('生产构建预览 — 核心功能验证', () => {
     const svg = page.locator('.svg-container svg').first()
     await expect(svg).toBeVisible()
 
-    await page.goto('/java-world/04-java-network/chapter-03-socket', { waitUntil: 'networkidle', timeout: LOAD_TIMEOUT })
+    await page.goto('/features.html', { waitUntil: 'networkidle', timeout: LOAD_TIMEOUT })
     await page.waitForSelector('.svg-container svg', { timeout: LOAD_TIMEOUT })
     await expect(page.locator('.svg-container svg').first()).toBeVisible()
 

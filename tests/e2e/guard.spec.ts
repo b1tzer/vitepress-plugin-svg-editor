@@ -10,7 +10,7 @@
  */
 import { test, expect } from '@playwright/test'
 
-const PAGE = '/java-world/04-java-network/chapter-03-socket'
+const PAGE = '/features.html'
 
 test.beforeEach(async ({ page }) => {
   page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))

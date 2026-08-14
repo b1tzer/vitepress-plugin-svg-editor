@@ -10,7 +10,7 @@ import { openEditor, screenshotCanvas } from './helpers'
 
 // ═══════════════════ 配置 ═══════════════════
 // 使用含有 CSS 变量的 SVG 所在页面
-const EDITOR_URL = '/java-world/01-java-language/chapter-01-type-system'
+const EDITOR_URL = '/'
 const SVG_IDX = 1
 
 // ═══════════════════ Tests ═══════════════════

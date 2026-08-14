@@ -37,7 +37,7 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install
-      - run: pnpm add -D vitepress@${{ matrix.vitepress }}
+      - run: pnpm --dir examples/basic add -D vitepress@${{ matrix.vitepress }}
       - run: npx playwright install --with-deps chromium firefox
       - run: pnpm test
 

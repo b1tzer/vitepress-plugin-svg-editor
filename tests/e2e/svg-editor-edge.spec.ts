@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { navigateAndOpenEditor, screenshotCanvas, addRect } from './helpers'
 
-const EDITOR_URL = '/java-world/01-java-language/chapter-01-type-system'
+const EDITOR_URL = '/'
 const SVG_IDX = 1
 const LOAD_TIMEOUT = 30000
 

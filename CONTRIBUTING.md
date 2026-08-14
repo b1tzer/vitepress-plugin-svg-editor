@@ -13,10 +13,10 @@ pnpm install
 # 2. 启动插件开发模式（watch 构建）
 pnpm dev
 
-# 3. 在测试 VitePress 项目中验证
-cd ../java-world
+# 3. 启动内置示例项目验证
+cd examples/basic
 pnpm docs:dev
-# 访问 http://localhost:5174 查看效果
+# 访问 http://localhost:5173 查看效果
 ```
 
 ## 项目结构

@@ -15,7 +15,7 @@
 
 import { test, expect } from '@playwright/test'
 
-const PAGE_URL = '/java-world/05-java-data-access/chapter-02-jdbc.html'
+const PAGE_URL = '/features.html'
 
 test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   test.beforeEach(async ({ page }) => {

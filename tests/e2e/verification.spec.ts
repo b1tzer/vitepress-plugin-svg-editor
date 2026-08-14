@@ -1,7 +1,7 @@
 import { test } from '@playwright/test'
 import { openEditor, analyzeSvg } from './helpers'
 
-const PAGE_URL = '/java-world/01-java-language/chapter-01-type-system'
+const PAGE_URL = '/'
 const SVG_IDX = 1
 
 test.describe('SVG 编辑器验证（SVG 1 - type-hierarchy）', () => {

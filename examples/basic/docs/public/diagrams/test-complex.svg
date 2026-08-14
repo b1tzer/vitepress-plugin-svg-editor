@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 260" font-family="'Noto Sans SC',sans-serif">
+  <defs>
+    <linearGradient id="cg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color: var(--vp-c-brand-1, #2563eb)"/>
+      <stop offset="100%" style="stop-color: #7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- 标题 -->
+  <text x="250" y="42" text-anchor="middle" font-size="18" font-weight="bold" fill="#1e293b">复杂示例 — CSS 变量与多元素</text>
+  <!-- 节点 1 -->
+  <rect x="60" y="90" width="120" height="60" rx="8" fill="var(--vp-c-brand-1, #2563eb)"/>
+  <text x="120" y="126" text-anchor="middle" font-size="13" fill="#fff" font-weight="bold">输入</text>
+  <!-- 节点 2 -->
+  <rect x="320" y="90" width="120" height="60" rx="8" fill="url(#cg1)"/>
+  <text x="380" y="126" text-anchor="middle" font-size="13" fill="#fff" font-weight="bold">处理</text>
+  <!-- 箭头 1 -->
+  <line x1="180" y1="120" x2="300" y2="120" stroke="#94a3b8" stroke-width="2"/>
+  <polygon points="300,116 308,120 300,124" fill="#94a3b8"/>
+  <!-- 节点 3 -->
+  <circle cx="190" cy="205" r="32" fill="var(--vp-c-brand-2, #7c3aed)"/>
+  <text x="190" y="210" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">输出</text>
+</svg>

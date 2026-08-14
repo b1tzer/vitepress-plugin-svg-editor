@@ -10,7 +10,7 @@ import { openEditor, addRect, getCanvasSummary } from './helpers'
 
 // ═══════════════════ 配置 ═══════════════════
 // 选一个有多张 SVG 的页面
-const EDITOR_URL = '/java-world/01-java-language/chapter-01-type-system'
+const EDITOR_URL = '/'
 
 // ═══════════════════ Tests ═══════════════════
 
