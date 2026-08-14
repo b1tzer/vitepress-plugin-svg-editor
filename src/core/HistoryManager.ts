@@ -14,6 +14,7 @@
 import type { Canvas } from 'fabric'
 import type { IHistoryManager } from './types'
 import type { ICommand } from './Command'
+import { ensureObjectInteractive } from './editor/Interactive'
 import { timed } from '../utils/perf'
 
 const MAX_STACK = 50
@@ -161,12 +162,7 @@ export class HistoryManager implements IHistoryManager {
   private _restoreInteractivity(canvas: Canvas): void {
     canvas.getObjects().forEach((o: any) => {
       if (o.excludeFromExport) return
-      o.set({ selectable: true, evented: true })
-      if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
-        if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {
-          o.set({ fill: 'rgba(0,0,0,0.001)' })
-        }
-      }
+      ensureObjectInteractive(o)
       o.setCoords()
     })
     canvas.renderAll()

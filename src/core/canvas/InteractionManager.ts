@@ -12,7 +12,8 @@
 
 import type { Canvas } from 'fabric'
 import type { IEventBus } from '../types'
-import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES } from '../FabricTypes'
+import { FABRIC_TYPE } from '../FabricTypes'
+import { ensureObjectInteractive } from '../editor/Interactive'
 import { MoveCommand, ResizeCommand, PropertyChangeCommand } from '../Command'
 import type { ICommand } from '../Command'
 
@@ -29,23 +30,8 @@ export class InteractionManager {
 
     // ── object:added — 确保所有对象可交互（跳过编辑器内部对象，如 workspace 背景）──
     fc.on('object:added', (e: any) => {
-      if (e.target) {
-        if (e.target.excludeFromExport) return
-        e.target.set({ selectable: true, evented: true })
-        // ⚠️ 关键：对于无填充的对象设置透明填充，使其可点击（Fabric.js 默认不处理 fill=none 的点击）
-        if (!e.target.fill || e.target.fill === 'none' || e.target.fill === 'transparent') {
-          if (HOLLOW_SHAPE_TYPES.includes(e.target.type)) {
-            e.target.set({ fill: 'rgba(0,0,0,0.001)' })
-          }
-        }
-        if (e.target._objects) e.target._objects.forEach((o: any) => {
-          o.set({ selectable: true, evented: true })
-          if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
-            if (HOLLOW_SHAPE_TYPES.includes(o.type)) {
-              o.set({ fill: 'rgba(0,0,0,0.001)' })
-            }
-          }
-        })
+      if (e.target && !e.target.excludeFromExport) {
+        ensureObjectInteractive(e.target)
       }
     })
 

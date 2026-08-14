@@ -29,7 +29,8 @@ import * as TextFormatPlugin from '../plugins/text-format.ts'
 import * as DistributePlugin from '../plugins/distribute.ts'
 import { applyGradient } from '../plugins/gradient.ts'
 import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
-import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES, TEXT_TYPES } from '../core/FabricTypes.ts'
+import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes.ts'
+import { ensureObjectInteractive } from '../core/editor/Interactive'
 import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
@@ -286,7 +287,7 @@ function addElement(type: string) {
     case 'textbox': obj = new fabric.Textbox('文本框', { left: centerX - 40, top: centerY - 15, width: 120, fontSize: 16, fill: '#000', fontFamily: 'sans-serif' }); break
   }
   if (obj) {
-    ensureInteractive(obj)
+    ensureObjectInteractive(obj)
     fc.add(obj)
     fc.setActiveObject(obj)
     fc.renderAll()
@@ -422,11 +423,10 @@ async function loadAndInit() {
     try {
       const merged = mergeArrows(objects)
       const converted = merged.map(convertToTextbox)
-      converted.forEach((obj: any) => { ensureInteractive(obj); fc.add(obj) })
+      converted.forEach((obj: any) => { ensureObjectInteractive(obj); fc.add(obj) })
       fc.getObjects().forEach((o: any) => {
         if (o.excludeFromExport) return
-        o.set({ selectable: true, evented: true })
-        if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true }))
+        ensureObjectInteractive(o)
       })
       canvasMgr.zoomFit()
       historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
@@ -468,7 +468,6 @@ function convertToTextbox(obj: any): any {
   if (obj._objects) obj._objects = obj._objects.map(convertToTextbox)
   return obj
 }
-function ensureInteractive(o: any): void { o.set({ selectable: true, evented: true, perPixelTargetFind: false }); if (!o.fill || o.fill === 'none' || o.fill === 'transparent') { if (HOLLOW_SHAPE_TYPES.includes(o.type)) o.set({ fill: 'rgba(0,0,0,0.001)' }) }; if (o._objects) o._objects.forEach(ensureInteractive) }
 
 onMounted(loadAndInit)
 onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
