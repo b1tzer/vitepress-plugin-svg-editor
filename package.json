@@ -12,27 +12,25 @@
     "fabricjs"
   ],
   "license": "MIT",
-  "author": "",
-  "main": "./src/node/index.ts",
-  "module": "./src/node/index.ts",
-  "types": "./src/node/index.ts",
+  "author": "b1tzer",
+  "main": "./dist/node/index.cjs",
+  "module": "./dist/node/index.mjs",
+  "types": "./dist/node/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/node/index.ts",
-      "import": "./src/node/index.ts"
+      "types": "./dist/node/index.d.ts",
+      "import": "./dist/node/index.mjs",
+      "require": "./dist/node/index.cjs"
     },
-    "./client": {
-      "types": "./src/client/index.ts",
-      "import": "./src/client/index.ts"
-    },
+    "./client": "./src/client/index.ts",
     "./plugins": {
-      "types": "./src/plugins/index.ts",
-      "import": "./src/plugins/index.ts"
+      "types": "./dist/plugins/index.d.ts",
+      "import": "./dist/plugins/index.mjs",
+      "require": "./dist/plugins/index.cjs"
     }
   },
   "files": [
     "dist",
-    "client.ts",
     "src"
   ],
   "scripts": {

@@ -1,0 +1,2 @@
+# 排除源码中的测试文件（子目录 .npmignore 可覆盖 package.json 的 files 白名单）
+*.test.ts

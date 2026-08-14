@@ -2,9 +2,10 @@ import { defineBuildConfig } from 'unbuild'
 
 export default defineBuildConfig({
   entries: [
-    { input: 'src/node/index', name: 'node/index' },
+    'src/node/index',
+    'src/plugins/index',
   ],
-  declaration: false,
+  declaration: true,
   clean: true,
   rollup: {
     emitCJS: true,

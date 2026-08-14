@@ -1,6 +1,3 @@
-# 源码（只发布 dist/）
-src/
-client.ts
 *.config.ts
 *.config.js
 
