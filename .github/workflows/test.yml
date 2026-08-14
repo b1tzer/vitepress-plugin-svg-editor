@@ -55,3 +55,19 @@ jobs:
       - run: pnpm build
       - run: npx playwright install --with-deps chromium firefox
       - run: pnpm test -- --project=build-preview-chromium --project=build-preview-firefox
+
+  # ═══════════════════ 性能回归（仅 Chromium） ═══════════════════
+  # 量化 100 对象场景下的单帧渲染 / 撤销快照(toJSON) / 导出(toSVG) 耗时，
+  # 对齐 design/11-non-functional.md「P0-4 性能基线」，防止运行时性能退化。
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: npx playwright install --with-deps chromium
+      - run: pnpm test:perf

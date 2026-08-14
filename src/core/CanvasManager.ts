@@ -58,6 +58,7 @@ export class CanvasManager {
     this.canvas = fc
     ;(window as any).__fabricCanvas = fc
     ;(window as any).__canvasMgr = this
+    ;(window as any).fabric = fabric
     return fc
   }
 

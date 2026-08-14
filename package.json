@@ -44,6 +44,7 @@
     "test:unit:watch": "vitest",
     "test:visual": "playwright test tests/e2e/visual/editor-layout-stability.spec.ts --project=chromium",
     "test:render": "playwright test tests/e2e/render-regression.spec.ts --project=chromium",
+    "test:perf": "playwright test tests/e2e/performance-regression.spec.ts --project=perf",
     "test:visual:update": "playwright test tests/e2e/visual/editor-layout-stability.spec.ts --project=chromium --update-snapshots",
     "cls:check": "lighthouse-ci --config=./.lighthouserc.json"
   },

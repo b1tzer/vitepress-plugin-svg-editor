@@ -28,6 +28,7 @@ import * as DistributePlugin from '../plugins/distribute.ts'
 import { applyGradient } from '../plugins/gradient.ts'
 import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
 import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES, TEXT_TYPES } from '../core/FabricTypes.ts'
+import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器 ──
 const storageAdapter = new VitePressSaveAdapter()
@@ -91,6 +92,7 @@ const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 let _keyHandlerFn: any = null
 let _keyUpHandler: any = null
+let _stopPerfMonitor: (() => void) | null = null
 
 canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
 canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
@@ -307,9 +309,12 @@ async function save() {
   if (wasDark) toggleTheme()
   try {
     const fc = canvasMgr.canvas!
-    let svgText = fc.toSVG()
-    svgText = cleanFabricSvg(svgText); svgText = rgbToHex(svgText)
-    svgText = restoreViewBox(svgText, originalViewBox.value); svgText = hexToCssVars(svgText)
+    let svgText = timed('export:toSVG', () => {
+      let s = fc.toSVG()
+      s = cleanFabricSvg(s); s = rgbToHex(s)
+      s = restoreViewBox(s, originalViewBox.value); s = hexToCssVars(s)
+      return s
+    })
     const result = await storageAdapter.save(svgText, props.src)
     if (result.success) { emit('saved'); emit('close') }
     else { alert('保存失败: ' + result.error) }
@@ -320,6 +325,7 @@ async function save() {
 // ── 主加载流程 ──
 async function loadAndInit() {
   loading.value = true
+  mark('svg:load:start')
   onUnmounted(() => {
     if (_keyHandlerFn) { document.removeEventListener('keydown', _keyHandlerFn); document.removeEventListener('keyup', _keyUpHandler!) }
     canvasMgr.dispose()
@@ -330,7 +336,7 @@ async function loadAndInit() {
   let svgText: string
   try { const resp = await fetch(url); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); svgText = await resp.text() }
   catch (e) { console.error('[SvgEditor] 获取 SVG 失败:', url, e); loading.value = false; return }
-  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = preprocessSvg(svgText, themeMode.value)
+  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = timed('svg:preprocess', () => preprocessSvg(svgText, themeMode.value))
   if (vb) originalViewBox.value = vb
   if (sw > 0) svgWidth.value = sw; else svgWidth.value = 800
   if (sh > 0) svgHeight.value = sh; else svgHeight.value = 500
@@ -358,8 +364,11 @@ async function loadAndInit() {
       canvasMgr.zoomFit()
       historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
     } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
-    finally { loading.value = false }
-  })
+    finally {
+      mark('svg:load:end')
+      measure('svg:load', 'svg:load:start', 'svg:load:end')
+      loading.value = false
+    }  })
   _keyHandlerFn = (e: KeyboardEvent) => {
     if (e.key === ' ' && !e.repeat) { e.preventDefault(); spacePressed.value = true; canvasMgr.setSpacePressed(true); fc.setCursor('grab'); return }
     if (e.ctrlKey || e.metaKey) {
@@ -395,6 +404,13 @@ function ensureInteractive(o: any): void { o.set({ selectable: true, evented: tr
 
 onMounted(loadAndInit)
 onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
+onMounted(() => {
+  // dev-only：启动 FPS + longtask 监测，实时观察编辑器运行时的卡顿与掉帧
+  _stopPerfMonitor = initPerfMonitor({
+    onFps: (fps) => { (window as any).__perfFps = fps },
+  })
+})
+onUnmounted(() => { _stopPerfMonitor?.() })
 </script>
 
 <template>

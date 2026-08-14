@@ -13,6 +13,7 @@
 
 import type { Canvas } from 'fabric'
 import type { IHistoryManager } from './types'
+import { timed } from '../utils/perf'
 
 const MAX_STACK = 50
 
@@ -28,7 +29,8 @@ export class HistoryManager implements IHistoryManager {
     if (!canvas) return
     if (beforeSave) beforeSave()
     // Fabric 6: toJSON() 不再接受参数
-    this._undoStack.push(canvas.toJSON() as unknown as object)
+    // 全量快照：对象越多，toJSON 序列化耗时越高（撤销/重做卡顿的主要来源）
+    this._undoStack.push(timed('history:save', () => canvas.toJSON() as unknown as object))
     if (this._undoStack.length > MAX_STACK) this._undoStack.shift()
     this._redoStack = []
     if (afterSave) afterSave()
