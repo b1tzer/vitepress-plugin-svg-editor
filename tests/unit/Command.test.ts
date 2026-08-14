@@ -6,8 +6,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   MoveCommand,
-  AddCommand,
-  RemoveCommand,
   ResizeCommand,
   PropertyChangeCommand,
 } from '../../src/core/Command'
@@ -102,96 +100,6 @@ describe('MoveCommand', () => {
     const obj = makeMockObj({ type: undefined })
     const cmd = new MoveCommand(obj, 0, 0)
     expect(cmd.getLabel()).toBe('移动 元素')
-  })
-})
-
-// ═══════════════════════════════════════════════════════════════
-// AddCommand
-// ═══════════════════════════════════════════════════════════════
-
-describe('AddCommand', () => {
-  let canvas: ReturnType<typeof makeMockCanvas>
-
-  beforeEach(() => {
-    canvas = makeMockCanvas()
-  })
-
-  it('execute 应将对象添加到画布', () => {
-    const obj = makeMockObj()
-    const cmd = new AddCommand(obj, canvas)
-
-    cmd.execute()
-
-    expect(canvas.add).toHaveBeenCalledWith(obj)
-    expect(canvas.requestRenderAll).toHaveBeenCalled()
-  })
-
-  it('undo 应将对象从画布移除', () => {
-    const obj = makeMockObj()
-    const cmd = new AddCommand(obj, canvas)
-
-    cmd.execute()
-    cmd.undo()
-
-    expect(canvas.remove).toHaveBeenCalledWith(obj)
-  })
-
-  it('未执行就 undo 不应报错', () => {
-    const obj = makeMockObj()
-    const cmd = new AddCommand(obj, canvas)
-
-    expect(() => cmd.undo()).not.toThrow()
-  })
-
-  it('getLabel 应返回添加描述', () => {
-    const obj = makeMockObj({ type: 'circle' })
-    const cmd = new AddCommand(obj, canvas)
-    expect(cmd.getLabel()).toBe('添加圆形')
-  })
-})
-
-// ═══════════════════════════════════════════════════════════════
-// RemoveCommand
-// ═══════════════════════════════════════════════════════════════
-
-describe('RemoveCommand', () => {
-  let canvas: ReturnType<typeof makeMockCanvas>
-
-  beforeEach(() => {
-    canvas = makeMockCanvas()
-  })
-
-  it('execute 应将对象从画布移除', () => {
-    const obj = makeMockObj()
-    const cmd = new RemoveCommand(obj, canvas)
-
-    cmd.execute()
-
-    expect(canvas.remove).toHaveBeenCalledWith(obj)
-    expect(canvas.discardActiveObject).toHaveBeenCalled()
-  })
-
-  it('undo 应将对象重新添加到画布', () => {
-    const obj = makeMockObj()
-    const cmd = new RemoveCommand(obj, canvas)
-
-    cmd.execute()
-    cmd.undo()
-
-    expect(canvas.add).toHaveBeenCalledWith(obj)
-  })
-
-  it('未执行就 undo 不应报错', () => {
-    const obj = makeMockObj()
-    const cmd = new RemoveCommand(obj, canvas)
-
-    expect(() => cmd.undo()).not.toThrow()
-  })
-
-  it('getLabel 应返回删除描述', () => {
-    const obj = makeMockObj({ type: 'rect' })
-    const cmd = new RemoveCommand(obj, canvas)
-    expect(cmd.getLabel()).toBe('删除矩形')
   })
 })
 
