@@ -33,6 +33,7 @@ import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes.ts'
 import { ensureObjectInteractive } from '../core/editor/Interactive'
 import { createShape, convertTextToTextbox } from '../core/editor/ObjectFactory'
 import { createKeyboardHandlers } from '../core/editor/KeyboardMap'
+import { useEditorState } from '../composables/useEditorState'
 import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
@@ -56,7 +57,6 @@ const canvasRef = ref<any>(null)
 const overlayRef = ref<HTMLDivElement | null>(null)
 const loading = ref(true)
 const saving = ref(false)
-const zoomLevel = ref(100)
 const svgWidth = ref(0)
 const svgHeight = ref(0)
 const selectionInfo = ref('')
@@ -84,13 +84,9 @@ const shadowOffsetY = ref(3)
 const originalViewBox = ref('')
 const spacePressed = ref(false)
 const isPanning = ref(false)
-/** viewportTransform 变化版本号（平移等不改变 zoom 的场景），驱动 EditorCanvas 重新投影手柄 */
-const viewportVersion = ref(0)
 const themeMode = ref(
   typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 )
-const canUndo = ref(false)
-const canRedo = ref(false)
 const panelCollapsed = ref(false)
 const leftPanelCollapsed = ref(false)
 const hasTextInSelection = ref(false)
@@ -109,11 +105,18 @@ let _keyHandlerFn: any = null
 let _keyUpHandler: any = null
 let _stopPerfMonitor: (() => void) | null = null
 
-canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
-canvasMgr.onViewportChange(() => { viewportVersion.value++ })
-canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
-canvasMgr.onModified((command) => { if (command) historyMgr.record(command); else historyMgr.save(canvasMgr.canvas!, () => {}, () => {}); refreshLayerList() })
-historyMgr.onStateChange(() => { canUndo.value = historyMgr.canUndo(); canRedo.value = historyMgr.canRedo() })
+const { zoomLevel, viewportVersion, canUndo, canRedo } = useEditorState(
+  canvasMgr,
+  historyMgr,
+  {
+    onSelectionChange: updateSelectionInfo,
+    onModified: (command) => {
+      if (command) historyMgr.record(command)
+      else historyMgr.save(canvasMgr.canvas!, () => {}, () => {})
+      refreshLayerList()
+    },
+  },
+)
 
 // ── 图层面板刷新 ──
 function refreshLayerList() {
