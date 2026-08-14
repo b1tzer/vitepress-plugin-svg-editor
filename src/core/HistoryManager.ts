@@ -106,6 +106,7 @@ export class HistoryManager implements IHistoryManager {
    */
   private _restoreInteractivity(canvas: Canvas): void {
     canvas.getObjects().forEach((o: any) => {
+      if (o.excludeFromExport) return
       o.set({ selectable: true, evented: true })
       if (!o.fill || o.fill === 'none' || o.fill === 'transparent') {
         if (['rect', 'path', 'polygon', 'circle', 'ellipse'].includes(o.type)) {

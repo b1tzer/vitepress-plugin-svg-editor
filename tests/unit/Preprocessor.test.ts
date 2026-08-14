@@ -61,4 +61,18 @@ describe('preprocessSvg', () => {
     // 原始 line 的 marker-end 已被移除
     expect(result.svg).not.toContain('marker-end')
   })
+
+  it('应移除全画布透明背景占位 rect（width/height=100%）', () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 442 408"><g><rect x="0" y="0" width="100%" height="100%" fill="transparent"></rect><rect x="10" y="10" width="100" height="50" fill="#FF0000"/></g></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).not.toContain('width="100%"')
+    expect(result.svg).toContain('fill="#FF0000"')
+  })
+
+  it('应移除 fill="none" 的不可见占位 rect', () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 510 289"><rect x="484" y="187" width="24" height="68" fill="none"/><rect x="51" y="41" width="85" height="31" fill="#333333" rx="3"/></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).not.toContain('fill="none"')
+    expect(result.svg).toContain('fill="#333333"')
+  })
 })

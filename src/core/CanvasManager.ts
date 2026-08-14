@@ -68,10 +68,16 @@ export class CanvasManager {
     const ws = this._workspaceRect
     if (!fc || !ws) return
     ws.set({ width: w, height: h, left: 0, top: 0 })
-    fc.clipPath = new fabric.Rect({
-      left: 0, top: 0, width: w, height: h,
-      selectable: false, evented: false, excludeFromExport: true,
-    })
+    // 复用 clipPath 对象，避免 resize 拖拽时高频创建新对象导致性能浪费
+    const cp = fc.clipPath
+    if (cp) {
+      cp.set({ width: w, height: h })
+    } else {
+      fc.clipPath = new fabric.Rect({
+        left: 0, top: 0, width: w, height: h,
+        selectable: false, evented: false, excludeFromExport: true,
+      })
+    }
     fc.requestRenderAll()
     this._zoomPan.setLogicalSize(w, h)
   }
@@ -126,7 +132,10 @@ export class CanvasManager {
       borderDashArray: [4, 2],
       padding: 8,
       perPixelTargetFind: false,
-      objectCaching: false,
+      // 开启对象缓存（Fabric 默认 true）：拖拽/旋转/缩放时用离屏缓存图 drawImage 贴图，
+      // 避免每次移动都重新光栅化复杂 Path/SVG 节点，显著消除拖拽抖动。
+      // 缩放过程中的短暂模糊会在 mouseup 时由 noScaleCache 机制自动重新生成高清缓存。
+      objectCaching: true,
     } as any)
   }
 
@@ -134,7 +143,14 @@ export class CanvasManager {
   _setupCanvasEvents(fc: any): void {
     fc.on('mouse:wheel', (opt: any) => {
       opt.e.preventDefault(); opt.e.stopPropagation()
-      this._zoomPan.handleWheel(opt.e.deltaY)
+      // 以鼠标指针位置为缩放锚点（对齐浏览器/地图/Figma 的滚轮缩放直觉）
+      // 注意：不能用 fc.getPointer（返回逻辑坐标），需手动换算为相对 canvas 左上角的物理坐标
+      const el = fc.upperCanvasEl || fc.lowerCanvasEl
+      const rect = el.getBoundingClientRect()
+      this._zoomPan.handleWheel(opt.e.deltaY, {
+        x: opt.e.clientX - rect.left,
+        y: opt.e.clientY - rect.top,
+      })
     })
     fc.on('mouse:down', (opt: any) => { this._zoomPan.handlePanMouseDown(opt.e, fc) })
     fc.on('mouse:move', (opt: any) => { this._zoomPan.handlePanMouseMove(opt.e, fc) })
@@ -186,5 +202,19 @@ export class CanvasManager {
     if (!el) return
     const ev = new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true })
     el.dispatchEvent(ev)
+  }
+
+  /**
+   * 注入中键平移事件（DOM 层驱动）
+   * Fabric 对中键（button===1）的 mouse:down 不触发，因此中键平移需由 DOM 层
+   * 捕获原生 mousedown/mousemove/mouseup 后，通过此方法转发给 ZoomPanController。
+   */
+  injectMiddlePan(type: 'mousedown' | 'mousemove' | 'mouseup', clientX: number, clientY: number): void {
+    const fc = this.canvas
+    if (!fc) return
+    const e = { clientX, clientY, button: 1 } as MouseEvent
+    if (type === 'mousedown') this._zoomPan.handlePanMouseDown(e, fc)
+    else if (type === 'mousemove') this._zoomPan.handlePanMouseMove(e, fc)
+    else this._zoomPan.handlePanMouseUp(fc)
   }
 }

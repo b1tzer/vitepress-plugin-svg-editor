@@ -239,10 +239,44 @@ function toggleLayerVisibility(id: string) {
 }
 
 // ── 画布尺寸调整 ──
-function handleResize(w: number, h: number) {
+/**
+ * 同步更新 originalViewBox 的宽高（保留 minX/minY）
+ * 保存时 restoreViewBox 会用此值覆盖 Fabric 输出，确保修改画布尺寸后 SVG 实际尺寸生效。
+ */
+function updateViewBox(w: number, h: number) {
+  const vb = originalViewBox.value
+  const ww = Math.max(1, Math.round(w))
+  const hh = Math.max(1, Math.round(h))
+  if (!vb) {
+    originalViewBox.value = `0 0 ${ww} ${hh}`
+    return
+  }
+  const parts = vb.split(/[\s,]+/).map(Number)
+  const minX = parts.length >= 2 && !isNaN(parts[0]) ? parts[0] : 0
+  const minY = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : 0
+  originalViewBox.value = `${minX} ${minY} ${ww} ${hh}`
+}
+
+function applyCanvasSize(w: number, h: number) {
   svgWidth.value = w
   svgHeight.value = h
   canvasMgr.setLogicalSize(w, h)
+}
+
+function handleResize(w: number, h: number) {
+  applyCanvasSize(w, h)
+  updateViewBox(w, h)
+}
+
+/** resize handle 拖拽过程中实时预览（只改视觉，不改 viewBox，避免高频字符串/状态抖动） */
+function onResizePreview(w: number, h: number) {
+  applyCanvasSize(w, h)
+}
+
+/** resize handle 拖拽结束提交（同步 viewBox，保存后 SVG 尺寸真正生效） */
+function onResizeCommit(w: number, h: number) {
+  applyCanvasSize(w, h)
+  updateViewBox(w, h)
 }
 
 // ── 主题切换 ──
@@ -316,7 +350,11 @@ async function loadAndInit() {
       const merged = mergeArrows(objects)
       const converted = merged.map(convertToTextbox)
       converted.forEach((obj: any) => { ensureInteractive(obj); fc.add(obj) })
-      fc.getObjects().forEach((o: any) => { o.set({ selectable: true, evented: true }); if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true })) })
+      fc.getObjects().forEach((o: any) => {
+        if (o.excludeFromExport) return
+        o.set({ selectable: true, evented: true })
+        if (o._objects) o._objects.forEach((c: any) => c.set({ selectable: true, evented: true }))
+      })
       canvasMgr.zoomFit()
       historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
     } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
@@ -406,7 +444,10 @@ onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
           :canvasWidth="svgWidth" :canvasHeight="svgHeight"
           :themeMode="themeMode"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
-          @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')" />
+          @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')"
+          @resizePreview="onResizePreview"
+          @resizeCommit="onResizeCommit"
+          @middlePan="(type: string, cx: number, cy: number) => canvasMgr.injectMiddlePan(type as 'mousedown' | 'mousemove' | 'mouseup', cx, cy)" />
 
         <!-- 右：属性面板 -->
         <EditorContextPanel

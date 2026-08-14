@@ -23,6 +23,7 @@ export class ZoomPanController {
   private _baseH: number = 600
   /** rAF 节流 */
   private _pendingZoom: number | null = null
+  private _pendingPoint: { x: number; y: number } | null = null
   private _zoomRafId: number | null = null
 
   constructor(eventBus: IEventBus) {
@@ -50,31 +51,44 @@ export class ZoomPanController {
 
   /**
    * 应用当前 zoom 到 viewportTransform
-   * canvas 物理尺寸 = viewport 尺寸（固定），仅变换 viewportTransform 矩阵
+   * 支持以任意锚点（canvas 物理坐标，相对 canvas 左上角）缩放：
+   * 保持缩放前后「锚点对应的逻辑坐标」不变，使锚点下方的内容被"钉"在指针下。
+   * - 未传 anchor → 以视口中心为锚点（工具栏 zoomIn/zoomOut 按钮场景）
+   * - 传入 anchor → 以鼠标所在位置为锚点（滚轮缩放场景，对齐浏览器/地图/Figma 直觉）
    */
-  private _applyZoom(): void {
+  private _applyZoom(anchor?: { x: number; y: number }): void {
     const fc = this._canvas
     if (!fc) return
     const z = this._zoomLevel / 100
     const vt = (fc as any).viewportTransform
+    const oldZ = (vt && vt.length >= 6 && vt[0]) ? vt[0] : 1
     const tx = (vt && vt.length >= 6) ? vt[4] : 0
     const ty = (vt && vt.length >= 6) ? vt[5] : 0
-    ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
+    const ax = anchor ? anchor.x : fc.getWidth() / 2
+    const ay = anchor ? anchor.y : fc.getHeight() / 2
+    const logicX = (ax - tx) / oldZ
+    const logicY = (ay - ty) / oldZ
+    const newTx = ax - logicX * z
+    const newTy = ay - logicY * z
+    ;(fc as any).viewportTransform = [z, 0, 0, z, newTx, newTy]
     const active = fc.getActiveObject()
     if (active) (active as any).setCoords()
     fc.requestRenderAll()
   }
 
-  /** 滚轮缩放（rAF 节流） */
-  handleWheel(deltaY: number): void {
+  /** 滚轮缩放（rAF 节流，以鼠标位置为锚点；无锚点时回退为视口中心） */
+  handleWheel(deltaY: number, point?: { x: number; y: number }): void {
     this._pendingZoom = Math.round(this._zoomLevel * (0.999 ** deltaY))
     this._pendingZoom = Math.min(Math.max(10, this._pendingZoom), 2000)
+    this._pendingPoint = point || null
     if (this._zoomRafId === null) {
       this._zoomRafId = requestAnimationFrame(() => {
         this._zoomLevel = this._pendingZoom!
         this._pendingZoom = null
+        const p = this._pendingPoint
+        this._pendingPoint = null
         this._zoomRafId = null
-        this._applyZoom()
+        this._applyZoom(p || undefined)
         this._eventBus.emit('zoomChange', this._zoomLevel)
       })
     }
@@ -142,7 +156,12 @@ export class ZoomPanController {
   isPanning(): boolean { return this._isPanning }
 
   handlePanMouseDown(e: MouseEvent, canvas: Canvas): boolean {
-    if (!this._spacePressed) return false
+    // 两种平移触发方式（行业通识）：
+    //   1. 空格键 + 左键拖拽
+    //   2. 鼠标中键拖拽（button === 1）
+    const isMiddle = e.button === 1
+    const isSpaceDrag = this._spacePressed && e.button === 0
+    if (!isMiddle && !isSpaceDrag) return false
     this._isPanning = true
     this._lastPanPoint = { x: e.clientX, y: e.clientY }
     canvas.selection = false
@@ -156,6 +175,8 @@ export class ZoomPanController {
     const dy = e.clientY - this._lastPanPoint.y
     canvas.relativePan(new Point(dx, dy))
     this._lastPanPoint = { x: e.clientX, y: e.clientY }
+    // 平移期间持续保持「抓取」光标，防止被 Fabric 的 hover/over 逻辑覆盖回 default/move
+    canvas.setCursor('grabbing')
     return true
   }
 

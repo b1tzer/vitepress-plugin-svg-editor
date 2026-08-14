@@ -35,6 +35,42 @@ function fixStopColors(svg: string): string {
 }
 
 /**
+ * 移除设计工具（Figma / Fabric 导出）生成的无用背景/占位 rect：
+ *   - 全画布背景占位：width 与 height 均为 "100%"
+ *   - fill="transparent" / fill="none" 的不可见占位（无可见描边）
+ *   - style 中 stroke:none 且 fill-opacity≈0 的不可见占位
+ *
+ * 背景：这些 rect 是设计工具为「透明画布 / 命中区域」生成的占位元素。
+ * Fabric.js 无法正确解析 width="100%" 这类百分比尺寸（会被 parseFloat 截断为 100px），
+ * 且它们在 SvgEditor 中被 ensureInteractive 转成 selectable 后，会变成可拖拽的
+ * 「幽灵」背景对象，干扰画布背景交互。编辑器已由 workspace Rect 统一提供背景，
+ * 因此在此直接剔除这些冗余占位。
+ */
+function removeBackgroundRects(svg: string): string {
+  let result = svg
+
+  // 1) 全画布背景占位：width / height 均为 100%（兼容自闭合与成对标签）
+  result = result.replace(
+    /<rect\b(?=[^>]*\bwidth\s*=\s*"100%")(?=[^>]*\bheight\s*=\s*"100%")[^>]*?\/?>\s*(?:<\/rect>)?/gi,
+    ''
+  )
+
+  // 2) fill 属性为 transparent / none 的不可见占位（排除带可见描边的形状）
+  result = result.replace(
+    /<rect\b(?=[^>]*\bfill\s*=\s*"(?:transparent|none)")(?![^>]*\bstroke\s*=\s*"(?!none)[^"]*")[^>]*?\/?>\s*(?:<\/rect>)?/gi,
+    ''
+  )
+
+  // 3) style 中 stroke:none 且 fill-opacity≈0 的不可见占位
+  result = result.replace(
+    /<rect\b(?=[^>]*style\s*=\s*"[^"]*stroke\s*:\s*none[^"]*")(?=[^>]*style\s*=\s*"[^"]*fill-opacity\s*:\s*0(?:\.0+1)?[^"]*")[^>]*?\/?>\s*(?:<\/rect>)?/gi,
+    ''
+  )
+
+  return result
+}
+
+/**
  * 提取原始 viewBox
  */
 function extractViewBox(svg: string): { viewBox: string; width: number; height: number } {
@@ -192,6 +228,9 @@ export function preprocessSvg(rawSvg: string, theme: ThemeMode = 'light'): SvgLo
 
   // 2. <stop style="stop-color:..."> → 直接属性
   svg = fixStopColors(svg)
+
+  // 移除设计工具生成的背景/占位 rect（全画布背景、透明填充占位）
+  svg = removeBackgroundRects(svg)
 
   // 3. Marker 解析 → 合成箭头三角形
   const markers = parseMarkers(svg)

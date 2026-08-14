@@ -25,9 +25,10 @@ export class InteractionManager {
   setupEvents(canvas: Canvas): void {
     const fc = canvas as any
 
-    // ── object:added — 确保所有对象可交互 ──
+    // ── object:added — 确保所有对象可交互（跳过编辑器内部对象，如 workspace 背景）──
     fc.on('object:added', (e: any) => {
       if (e.target) {
+        if (e.target.excludeFromExport) return
         e.target.set({ selectable: true, evented: true })
         // ⚠️ 关键：对于无填充的对象设置透明填充，使其可点击（Fabric.js 默认不处理 fill=none 的点击）
         if (!e.target.fill || e.target.fill === 'none' || e.target.fill === 'transparent') {
