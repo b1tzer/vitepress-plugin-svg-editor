@@ -43,6 +43,8 @@ export interface CanvasEvents {
   zoomChange: (zoomLevel: number) => void
   selectionChange: () => void
   modified: () => void
+  /** viewportTransform 已变化（平移等不改变 zoom 的场景），通知 UI 重新投影手柄等 */
+  viewportChange: () => void
 }
 
 // ═══════════════════════════════════════════════════════════════

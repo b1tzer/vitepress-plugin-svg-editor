@@ -73,6 +73,8 @@ const shadowOffsetY = ref(3)
 const originalViewBox = ref('')
 const spacePressed = ref(false)
 const isPanning = ref(false)
+/** viewportTransform 变化版本号（平移等不改变 zoom 的场景），驱动 EditorCanvas 重新投影手柄 */
+const viewportVersion = ref(0)
 const themeMode = ref(
   typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 )
@@ -90,11 +92,14 @@ const canvasObjects = ref<Array<{ id: string; type: string; name: string; visibl
 // 核心管理器
 const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
+// 暴露到 window，供 E2E 测试 helper 直接保存/撤销快照（测试侧 add 操作需走快照才能被撤销）
+;(window as any).__historyMgr = historyMgr
 let _keyHandlerFn: any = null
 let _keyUpHandler: any = null
 let _stopPerfMonitor: (() => void) | null = null
 
 canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
+canvasMgr.onViewportChange(() => { viewportVersion.value++ })
 canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
 canvasMgr.onModified(() => { historyMgr.save(canvasMgr.canvas!, () => {}, () => {}); refreshLayerList() })
 historyMgr.onStateChange(() => { canUndo.value = historyMgr.canUndo(); canRedo.value = historyMgr.canRedo() })
@@ -458,7 +463,7 @@ onUnmounted(() => { _stopPerfMonitor?.() })
         <!-- 中：画布 + 标尺 -->
         <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
           :canvasWidth="svgWidth" :canvasHeight="svgHeight"
-          :themeMode="themeMode"
+          :themeMode="themeMode" :viewportVersion="viewportVersion"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
           @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')"
           @resizePreview="onResizePreview"

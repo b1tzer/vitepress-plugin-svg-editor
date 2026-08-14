@@ -23,6 +23,7 @@ const props = withDefaults(defineProps<{
   canvasWidth: number
   canvasHeight: number
   themeMode: string
+  viewportVersion: number
 }>(), {
   canvasWidth: 800,
   canvasHeight: 600,
@@ -46,6 +47,8 @@ const RULER = 24
 let _ro: ResizeObserver | null = null
 let _af: number | null = null
 let _zw: ReturnType<typeof watch> | null = null
+let _cw: ReturnType<typeof watch> | null = null
+let _vw: ReturnType<typeof watch> | null = null
 let _lastRulerKey = ''
 
 defineExpose({ canvasAreaRef, scrollRef })
@@ -167,17 +170,16 @@ function onHandleMouseUp(e: MouseEvent) {
   if (size) emit('resizeCommit', size.w, size.h)
 }
 
-/** rAF 循环持续同步手柄位置（覆盖缩放、平移、尺寸变化等所有 viewportTransform 变更） */
-function startHandleLoop() {
+/** 按需调度手柄更新：脏标记 + 单次 rAF，合并同一帧内的多次触发（缩放/平移/尺寸变化） */
+function scheduleHandleUpdate() {
   if (_rafId !== null) return
-  const tick = () => {
+  _rafId = requestAnimationFrame(() => {
+    _rafId = null
     updateHandles()
-    _rafId = requestAnimationFrame(tick)
-  }
-  _rafId = requestAnimationFrame(tick)
+  })
 }
 
-function stopHandleLoop() {
+function cancelHandleUpdate() {
   if (_rafId !== null) { cancelAnimationFrame(_rafId); _rafId = null }
 }
 
@@ -295,12 +297,13 @@ function onCanvasOutsideMouseUp(e: MouseEvent) {
 onMounted(() => {
   _ro = new ResizeObserver(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   if (containerRef.value) _ro.observe(containerRef.value)
-  _zw = watch(() => props.zoomLevel, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
+  _zw = watch(() => props.zoomLevel, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler); scheduleHandleUpdate() })
   watch(() => props.themeMode, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
-  nextTick(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
-  startHandleLoop()
+  _cw = watch(() => [props.canvasWidth, props.canvasHeight], () => scheduleHandleUpdate())
+  _vw = watch(() => props.viewportVersion, () => scheduleHandleUpdate())
+  nextTick(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler); scheduleHandleUpdate() })
 })
-onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.(); stopHandleLoop() })
+onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.(); _cw?.(); _vw?.(); cancelHandleUpdate() })
 </script>
 
 <template>

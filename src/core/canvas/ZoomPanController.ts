@@ -25,6 +25,9 @@ export class ZoomPanController {
   private _pendingZoom: number | null = null
   private _pendingPoint: { x: number; y: number } | null = null
   private _zoomRafId: number | null = null
+  /** 平移 rAF 节流：累积多个 mousemove 增量，每帧合并为一次 relativePan */
+  private _panRafId: number | null = null
+  private _pendingPan: { x: number; y: number } = { x: 0, y: 0 }
 
   constructor(eventBus: IEventBus) {
     this._eventBus = eventBus
@@ -173,8 +176,22 @@ export class ZoomPanController {
     if (!this._isPanning) return false
     const dx = e.clientX - this._lastPanPoint.x
     const dy = e.clientY - this._lastPanPoint.y
-    canvas.relativePan(new Point(dx, dy))
     this._lastPanPoint = { x: e.clientX, y: e.clientY }
+    // 累积增量，rAF 节流合并多个 mousemove 为一次 relativePan（每帧最多一次）
+    this._pendingPan.x += dx
+    this._pendingPan.y += dy
+    if (this._panRafId === null) {
+      this._panRafId = requestAnimationFrame(() => {
+        this._panRafId = null
+        const { x, y } = this._pendingPan
+        this._pendingPan = { x: 0, y: 0 }
+        if (x !== 0 || y !== 0) {
+          canvas.relativePan(new Point(x, y))
+          // 平移改变了 viewportTransform（tx/ty），通知 UI 重新投影手柄
+          this._eventBus.emit('viewportChange')
+        }
+      })
+    }
     // 平移期间持续保持「抓取」光标，防止被 Fabric 的 hover/over 逻辑覆盖回 default/move
     canvas.setCursor('grabbing')
     return true
@@ -183,6 +200,12 @@ export class ZoomPanController {
   handlePanMouseUp(canvas: Canvas): boolean {
     if (!this._isPanning) return false
     this._isPanning = false
+    // 清理未执行的平移增量，避免松手后仍发生一次平移
+    if (this._panRafId !== null) {
+      cancelAnimationFrame(this._panRafId)
+      this._panRafId = null
+      this._pendingPan = { x: 0, y: 0 }
+    }
     canvas.selection = true
     canvas.setCursor('default')
     return true

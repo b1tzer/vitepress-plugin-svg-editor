@@ -47,14 +47,23 @@ export class InteractionManager {
       }
     })
 
-    // ── 悬停高亮 ──
+    // ── 悬停高亮（rAF 节流合并连续 over/out，避免快速移动时多次全量重绘） ──
+    let _hoverRafId: number | null = null
+    const scheduleHoverRender = () => {
+      if (_hoverRafId !== null) return
+      _hoverRafId = requestAnimationFrame(() => {
+        _hoverRafId = null
+        fc.requestRenderAll()
+      })
+    }
+
     fc.on('mouse:over', (e: any) => {
       if (e.target && e.target.selectable) {
         fc.setCursor('pointer')
         if (!fc.getActiveObject()) {
           e.target._origBorderColor = e.target.borderColor
           e.target.set({ borderColor: '#0078d4' })
-          fc.requestRenderAll()
+          scheduleHoverRender()
         }
       }
     })
@@ -63,7 +72,7 @@ export class InteractionManager {
       fc.setCursor('default')
       if (e.target && !fc.getActiveObject()) {
         e.target.set({ borderColor: e.target._origBorderColor || '#0078d4' })
-        fc.requestRenderAll()
+        scheduleHoverRender()
       }
     })
 

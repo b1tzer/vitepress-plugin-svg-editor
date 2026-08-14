@@ -168,6 +168,7 @@ export class CanvasManager {
   getZoomLevel(): number { return this._zoomPan.getZoomLevel() }
   setSpacePressed(pressed: boolean): void { this._zoomPan.setSpacePressed(pressed) }
   onZoomChange(fn: (z: number) => void): void { this._eventBus.on('zoomChange', fn) }
+  onViewportChange(fn: () => void): void { this._eventBus.on('viewportChange', fn) }
   onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
   onModified(fn: () => void): void { this._eventBus.on('modified', fn) }
   getEventBus(): EventBus { return this._eventBus }
