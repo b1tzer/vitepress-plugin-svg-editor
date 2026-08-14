@@ -31,6 +31,7 @@ import { applyGradient } from '../plugins/gradient.ts'
 import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
 import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes.ts'
 import { ensureObjectInteractive } from '../core/editor/Interactive'
+import { createShape, convertTextToTextbox } from '../core/editor/ObjectFactory'
 import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
@@ -272,20 +273,7 @@ function addElement(type: string) {
   if (!fc) return
   const centerX = svgWidth.value / 2
   const centerY = svgHeight.value / 2
-  let obj: any = null
-  switch (type) {
-    case 'rect': obj = new fabric.Rect({ left: centerX - 40, top: centerY - 30, width: 80, height: 60, fill: '#3b82f6', stroke: '', strokeWidth: 0, rx: 4, ry: 4 }); break
-    case 'circle': obj = new fabric.Circle({ left: centerX, top: centerY, radius: 35, fill: '#10b981', stroke: '', strokeWidth: 0 }); break
-    case 'triangle': obj = new fabric.Triangle({ left: centerX, top: centerY - 30, width: 70, height: 60, fill: '#f59e0b', stroke: '', strokeWidth: 0 }); break
-    case 'ellipse': obj = new fabric.Ellipse({ left: centerX, top: centerY, rx: 45, ry: 30, fill: '#8b5cf6', stroke: '', strokeWidth: 0 }); break
-    case 'line': {
-      const points = [centerX - 40, centerY, centerX + 40, centerY]
-      obj = new fabric.Line(points, { stroke: '#ef4444', strokeWidth: 2 })
-      break
-    }
-    case 'text': obj = new fabric.Text('文本', { left: centerX - 20, top: centerY - 10, fontSize: 24, fill: '#000', fontFamily: 'sans-serif' }); break
-    case 'textbox': obj = new fabric.Textbox('文本框', { left: centerX - 40, top: centerY - 15, width: 120, fontSize: 16, fill: '#000', fontFamily: 'sans-serif' }); break
-  }
+  const obj = createShape(type, centerX, centerY)
   if (obj) {
     ensureObjectInteractive(obj)
     fc.add(obj)
@@ -422,7 +410,7 @@ async function loadAndInit() {
   fabric.loadSVGFromString(svg).then(({ objects }: any) => {
     try {
       const merged = mergeArrows(objects)
-      const converted = merged.map(convertToTextbox)
+      const converted = merged.map(convertTextToTextbox)
       converted.forEach((obj: any) => { ensureObjectInteractive(obj); fc.add(obj) })
       fc.getObjects().forEach((o: any) => {
         if (o.excludeFromExport) return
@@ -460,13 +448,6 @@ async function loadAndInit() {
   }
   _keyUpHandler = (e: KeyboardEvent) => { if (e.key === ' ') { spacePressed.value = false; canvasMgr.setSpacePressed(false) } }
   document.addEventListener('keydown', _keyHandlerFn); document.addEventListener('keyup', _keyUpHandler)
-}
-
-function convertToTextbox(obj: any): any {
-  if (!obj) return obj
-  if (obj.type === FABRIC_TYPE.TEXT) { try { return new fabric.Textbox(obj.text || '', { left: obj.left||0, top: obj.top||0, width: Math.max((obj.width||80)+20,40), fontSize: obj.fontSize||12, fontFamily: obj.fontFamily||'sans-serif', fontWeight: obj.fontWeight||'normal', fontStyle: obj.fontStyle||'normal', fill: obj.fill||'#000', stroke: obj.stroke||'', strokeWidth: obj.strokeWidth||0, textAlign: obj.textAlign||'left', lineHeight: obj.lineHeight||1.16, charSpacing: obj.charSpacing||0, opacity: obj.opacity??1, angle: obj.angle||0, originX: obj.originX||'left', originY: obj.originY||'top', selectable: true, evented: true, editable: true, splitByGrapheme: true }) } catch (e) { return obj } }
-  if (obj._objects) obj._objects = obj._objects.map(convertToTextbox)
-  return obj
 }
 
 onMounted(loadAndInit)
