@@ -8,7 +8,7 @@
  * 右：EditorContextPanel（属性面板）
  * 顶：EditorToolbar（全局操作栏）
  */
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import * as fabric from 'fabric'
 import EditorToolbar from './sub/EditorToolbar.vue'
 import EditorCanvas from './sub/EditorCanvas.vue'
