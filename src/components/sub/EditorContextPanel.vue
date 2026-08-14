@@ -8,7 +8,7 @@
  */
 
 import { computed } from 'vue'
-import { ICONS } from '../../core/constants'
+import { ICONS } from '../../core/icons'
 
 const props = defineProps<{
   selectionInfo: string

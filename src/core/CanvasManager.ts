@@ -61,8 +61,6 @@ export class CanvasManager {
     return fc
   }
 
-  getWorkspaceRect(): fabric.Rect | null { return this._workspaceRect }
-
   updateWorkspaceSize(w: number, h: number): void {
     const fc = this.canvas
     const ws = this._workspaceRect
@@ -175,8 +173,6 @@ export class CanvasManager {
 
   // ── 委托 ──
   setLogicalSize(w: number, h: number): void { this.updateWorkspaceSize(w, h) }
-  getBaseWidth(): number { return this._zoomPan.getBaseWidth() }
-  getBaseHeight(): number { return this._zoomPan.getBaseHeight() }
   zoomIn(): void { this._zoomPan.zoomIn() }
   zoomOut(): void { this._zoomPan.zoomOut() }
   zoomFit(): void { this._zoomPan.zoomFit() }
@@ -189,16 +185,6 @@ export class CanvasManager {
   getEventBus(): EventBus { return this._eventBus }
   getZoomPanController(): ZoomPanController { return this._zoomPan }
   getInteractionManager(): InteractionManager { return this._interaction }
-
-  translateAllObjects(dx: number, dy: number): void {
-    if (!this.canvas) return
-    this.canvas.getObjects().forEach((obj: any) => {
-      if (obj.excludeFromExport) return
-      obj.set({ left: (obj.left || 0) + dx, top: (obj.top || 0) + dy })
-      obj.setCoords()
-    })
-    this.canvas.renderAll()
-  }
 
   dispose(): void {
     if (this.canvas) { this.canvas.dispose(); this.canvas = null }

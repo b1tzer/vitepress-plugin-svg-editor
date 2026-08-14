@@ -1,12 +1,9 @@
 /**
  * 内置编辑器插件 — 统一导出
  *
- * 所有插件遵循 EditorPlugin 接口（见 src/core/types.ts）：
- *   interface EditorPlugin {
- *     name: string           // 唯一标识名
- *     install(ctx): void     // 安装钩子
- *     uninstall?(): void     // 卸载钩子（可选）
- *   }
+ * 各插件为纯函数式工具模块，直接操作 Fabric.js 画布对象，无 install/uninstall 生命周期：
+ *   - align / layer / distribute / textFormat：命名空间导出
+ *   - gradient / shadow / arrow-merger：具名函数导出
  *
  * 使用方式：
  *   import { align, layer, textFormat, distribute, gradient, shadow, arrowMerger } from 'vitepress-plugin-svg-editor/plugins'

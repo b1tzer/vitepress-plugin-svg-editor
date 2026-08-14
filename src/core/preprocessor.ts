@@ -8,7 +8,7 @@
  *   4. 提取 viewBox / 宽高
  */
 
-import { THEME_VAR_TO_HEX } from './constants'
+import { THEME_VAR_TO_HEX } from './colors'
 import type { ThemeMode, SvgLoadResult, MarkerInfo } from './types'
 
 /**

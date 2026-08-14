@@ -68,6 +68,3 @@ for (const v of Object.keys(LIGHT_HEX)) {
 
 /** 兼容别名：CSS_COLORS = ALL_HEX_TO_VAR（用于 postprocessor 中的 hexToCssVars） */
 export const CSS_COLORS: Record<string, string> = ALL_HEX_TO_VAR
-
-/** 兼容别名：VAR_TO_HEX = LIGHT_HEX（用于 preprocessor 中的 replaceCssVars 默认值） */
-export const VAR_TO_HEX: Record<string, string> = LIGHT_HEX

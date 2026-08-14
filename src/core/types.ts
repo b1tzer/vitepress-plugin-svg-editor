@@ -5,7 +5,7 @@
  * 设计原则：
  *   - 只定义接口，不引入具体实现（避免循环依赖）
  *   - 所有类型对框架无关（不引用 vue / vitepress）
- *   - I* 前缀表示抽象接口，供 PluginContext 注入使用
+ *   - I* 前缀表示抽象接口
  */
 
 import type { Canvas } from 'fabric'
@@ -49,7 +49,7 @@ export interface CanvasEvents {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 抽象接口（供 PluginContext 注入，避免循环 import）
+// 抽象接口（避免循环 import）
 // ═══════════════════════════════════════════════════════════════
 
 /** 事件总线抽象接口 */
@@ -71,27 +71,6 @@ export interface IHistoryManager {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 插件系统类型
-// ═══════════════════════════════════════════════════════════════
-
-/** 插件安装上下文 */
-export interface PluginContext {
-  canvas: Canvas | null
-  eventBus: IEventBus
-  historyManager: IHistoryManager
-}
-
-/** 编辑器插件接口 */
-export interface IEditorPlugin {
-  /** 插件唯一标识名 */
-  name: string
-  /** 安装钩子：在 CanvasManager 初始化后调用 */
-  install(context: PluginContext): void
-  /** 卸载钩子（可选） */
-  uninstall?(): void
-}
-
-// ═══════════════════════════════════════════════════════════════
 // CanvasManager 初始化选项
 // ═══════════════════════════════════════════════════════════════
 
@@ -99,27 +78,4 @@ export interface CanvasManagerOptions {
   width: number
   height: number
   backgroundColor?: string
-}
-
-// ═══════════════════════════════════════════════════════════════
-// 适配器接口类型
-// ═══════════════════════════════════════════════════════════════
-
-/** 保存结果 */
-export interface SaveResult {
-  success: boolean
-  path?: string
-  error?: string
-}
-
-/** 存储适配器接口 */
-export interface IStorageAdapter {
-  save(svgText: string, sourcePath: string): Promise<SaveResult>
-  load(sourcePath: string): Promise<string>
-}
-
-/** 主题适配器接口 */
-export interface IThemeAdapter {
-  isDark(): boolean
-  onChange(callback: (isDark: boolean) => void): void
 }

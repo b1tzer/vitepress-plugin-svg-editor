@@ -58,11 +58,6 @@ describe('CanvasManager（精简版）', () => {
     expect(() => cm.setLogicalSize(100, 200)).not.toThrow()
   })
 
-  it('getBaseWidth / getBaseHeight 默认值应为 800×600', () => {
-    expect(cm.getBaseWidth()).toBe(800)
-    expect(cm.getBaseHeight()).toBe(600)
-  })
-
   // ── 回调委托 ──
   it('onZoomChange 应通过 EventBus 注册回调', () => {
     const fn = vi.fn()
