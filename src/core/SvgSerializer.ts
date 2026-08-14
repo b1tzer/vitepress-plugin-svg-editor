@@ -14,7 +14,6 @@
 
 import type { Canvas } from 'fabric'
 import { createPostprocessPipeline } from './pipeline/PostprocessPipeline'
-import type { IExportStrategy } from './strategies/HitTestStrategy'
 
 export interface SerializeOptions {
   /** 原始 SVG 的 viewBox（如 "0 0 800 600"），用于恢复 */
@@ -26,12 +25,7 @@ export interface SerializeOptions {
 }
 
 export class SvgSerializer {
-  private _exportStrategy: IExportStrategy | null = null
-
-  /** 设置导出策略（可选，默认用内置 Pipeline） */
-  setExportStrategy(strategy: IExportStrategy): void {
-    this._exportStrategy = strategy
-  }  /**
+  /**
    * 从 Fabric.js Canvas 序列化为干净 SVG 字符串
    * @param canvas           — Fabric.js Canvas 实例
    * @param options          — 序列化选项

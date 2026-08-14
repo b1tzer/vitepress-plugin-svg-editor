@@ -70,17 +70,6 @@ export interface IHistoryManager {
   reset(): void
 }
 
-/** 命令式历史管理器抽象接口（基于 ICommand 模式） */
-export interface ICommandHistory {
-  execute(cmd: ICommand): void
-  undo(): void
-  redo(): void
-  canUndo(): boolean
-  canRedo(): boolean
-  onStateChange(fn: () => void): void
-  reset(): void
-}
-
 // ═══════════════════════════════════════════════════════════════
 // 插件系统类型
 // ═══════════════════════════════════════════════════════════════

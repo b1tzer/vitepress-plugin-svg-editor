@@ -14,7 +14,6 @@ import type { Canvas } from 'fabric'
 import { EventBus } from './EventBus'
 import { ZoomPanController } from './canvas/ZoomPanController'
 import { InteractionManager } from './canvas/InteractionManager'
-import type { ModeManager } from './editor-mode/ModeManager'
 import type { ICommand } from './Command'
 
 export class CanvasManager {
@@ -22,7 +21,6 @@ export class CanvasManager {
   private _eventBus: EventBus
   private _zoomPan: ZoomPanController
   private _interaction: InteractionManager
-  private _modeManager: ModeManager | null = null
   private _workspaceRect: fabric.Rect | null = null
   private _themeMode: 'light' | 'dark' = 'light'
 
@@ -191,7 +189,6 @@ export class CanvasManager {
   getEventBus(): EventBus { return this._eventBus }
   getZoomPanController(): ZoomPanController { return this._zoomPan }
   getInteractionManager(): InteractionManager { return this._interaction }
-  setModeManager(mm: ModeManager): void { this._modeManager = mm; if (this.canvas) mm.setCanvas(this.canvas) }
 
   translateAllObjects(dx: number, dy: number): void {
     if (!this.canvas) return
