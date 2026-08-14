@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   clickByTip, createRects, multiSelect, readRects, readSelectedRects,
-} from './e2e/helpers'
+} from './helpers'
 
 const PAGE = '/features.html'
 

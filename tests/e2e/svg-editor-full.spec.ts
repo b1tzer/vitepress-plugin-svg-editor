@@ -4,7 +4,7 @@ import {
   addRect, addCircle, addText,
   getCanvas,
   screenshot as screenshotCanvas,
-} from './e2e/helpers'
+} from './helpers'
 
 const EDITOR_URL = '/'
 const SVG_IDX = 1

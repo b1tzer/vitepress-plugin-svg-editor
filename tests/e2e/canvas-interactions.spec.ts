@@ -13,7 +13,7 @@ import {
   clearCanvas, getZoom, setZoom,
   undo, redo, screenshotCanvas, addTestShapes, expectCanvasToHave,
   navigateAndOpenEditor,
-} from './e2e/helpers'
+} from './helpers'
 
 const EDITOR_URL = '/'
 const SVG_IDX = 1
