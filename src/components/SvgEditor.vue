@@ -32,6 +32,7 @@ import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
 import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes.ts'
 import { ensureObjectInteractive } from '../core/editor/Interactive'
 import { createShape, convertTextToTextbox } from '../core/editor/ObjectFactory'
+import { createKeyboardHandlers } from '../core/editor/KeyboardMap'
 import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
@@ -424,29 +425,25 @@ async function loadAndInit() {
       measure('svg:load', 'svg:load:start', 'svg:load:end')
       loading.value = false
     }  })
-  _keyHandlerFn = (e: KeyboardEvent) => {
-    if (e.key === ' ' && !e.repeat) { e.preventDefault(); spacePressed.value = true; canvasMgr.setSpacePressed(true); fc.setCursor('grab'); return }
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo() }
-      if (e.key === 'z' && e.shiftKey) { e.preventDefault(); redo() }
-      if (e.key === 'y') { e.preventDefault(); redo() }
-      if (e.key === 'c') { e.preventDefault(); copyObj() }
-      if (e.key === 'v') { e.preventDefault(); pasteObj() }
-      if (e.key === 's') { e.preventDefault(); save() }
-      if (e.key === 'a') { e.preventDefault(); selectAll() }
-      if (e.key === 'b') { e.preventDefault(); toggleBold() }
-      if (e.key === 'i') { e.preventDefault(); toggleItalic() }
-      if (e.key === 'u') { e.preventDefault(); toggleUnderline() }
-      if (e.key === '=' || e.key === '+') { e.preventDefault(); canvasMgr.zoomIn() }
-      if (e.key === '-') { e.preventDefault(); canvasMgr.zoomOut() }
-      if (e.key === '0') { e.preventDefault(); canvasMgr.zoomFit() }
-      if (e.key === 'g' && !e.shiftKey) { e.preventDefault(); groupSelected() }
-      if (e.key === 'g' && e.shiftKey) { e.preventDefault(); ungroupSelected() }
-    }
-    if (e.key === 'Delete' || e.key === 'Backspace') { if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') { e.preventDefault(); deleteObj() } }
-    if (e.key === 'Escape') { spacePressed.value = false; canvasMgr.setSpacePressed(false); emit('close') }
-  }
-  _keyUpHandler = (e: KeyboardEvent) => { if (e.key === ' ') { spacePressed.value = false; canvasMgr.setSpacePressed(false) } }
+  const keyboardHandlers = createKeyboardHandlers(
+    {
+      undo, redo,
+      copy: copyObj, paste: pasteObj,
+      save, selectAll,
+      bold: toggleBold, italic: toggleItalic, underline: toggleUnderline,
+      zoomIn: () => canvasMgr.zoomIn(), zoomOut: () => canvasMgr.zoomOut(), zoomFit: () => canvasMgr.zoomFit(),
+      group: groupSelected, ungroup: ungroupSelected,
+    },
+    {
+      onSpaceDown: () => { spacePressed.value = true; canvasMgr.setSpacePressed(true); fc.setCursor('grab') },
+      onSpaceUp: () => { spacePressed.value = false; canvasMgr.setSpacePressed(false) },
+      onEscape: () => { spacePressed.value = false; canvasMgr.setSpacePressed(false); emit('close') },
+      onDelete: deleteObj,
+      isEditableFocused: () => document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA',
+    },
+  )
+  _keyHandlerFn = keyboardHandlers.onKeyDown
+  _keyUpHandler = keyboardHandlers.onKeyUp
   document.addEventListener('keydown', _keyHandlerFn); document.addEventListener('keyup', _keyUpHandler)
 }
 
