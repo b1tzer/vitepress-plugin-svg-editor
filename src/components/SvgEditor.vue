@@ -175,8 +175,8 @@ function updateSelectionInfo() {
 
 // ── 工具栏操作 ──
 function withSave(fn: (fc: any) => void) { const fc = canvasMgr.canvas; if (!fc) return; fn(fc); historyMgr.save(fc, () => {}, () => {}); refreshLayerList() }
-function undo() { historyMgr.undo(canvasMgr.canvas!, () => {}); refreshLayerList() }
-function redo() { historyMgr.redo(canvasMgr.canvas!, () => {}); refreshLayerList() }
+function undo() { historyMgr.undo(canvasMgr.canvas!, () => { canvasMgr.rebuildWorkspace(svgWidth.value, svgHeight.value); refreshLayerList() }) }
+function redo() { historyMgr.redo(canvasMgr.canvas!, () => { canvasMgr.rebuildWorkspace(svgWidth.value, svgHeight.value); refreshLayerList() }) }
 function copyObj() { const a = canvasMgr.canvas?.getActiveObject(); if (a) (a as any).clone((c: any) => { window._clipboard = c }) }
 function pasteObj() { if (!window._clipboard) return; const fc = canvasMgr.canvas; window._clipboard.clone((c: any) => { c.set({ left: c.left + 20, top: c.top + 20 }); fc!.add(c); fc!.setActiveObject(c); fc!.renderAll(); withSave(() => {}) }) }
 function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
@@ -193,6 +193,18 @@ function toggleUnderline() { withSave((fc: any) => { currentUnderline.value = Te
 function applyRotation(angle: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.rotate(angle); currentRotation.value = angle; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
 function groupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== FABRIC_TYPE.ACTIVE_SELECTION) return; (a as any).toGroup(); fc!.renderAll(); withSave(() => {}) }
 function ungroupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== FABRIC_TYPE.GROUP) return; (a as any).toActiveSelection(); fc!.renderAll(); withSave(() => {}) }
+function selectAll() {
+  const fc = canvasMgr.canvas
+  if (!fc) return
+  // 排除 workspace 背景 / clipPath 等 excludeFromExport 的内部对象，只全选用户可见元素
+  const objs = fc.getObjects().filter((o: any) => !o.excludeFromExport)
+  if (!objs.length) return
+  fc.discardActiveObject()
+  const sel = new fabric.ActiveSelection(objs, { canvas: fc })
+  fc.setActiveObject(sel)
+  fc.renderAll()
+  updateSelectionInfo()
+}
 function applyOpacity(value: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.set('opacity', value / 100); currentOpacity.value = value; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
 function applyGradientUI() { const fc = canvasMgr.canvas; if (!fc) return; applyGradient(fc, { type: gradientType.value as any, angle: gradientAngle.value, color1: gradientColor1.value, color2: gradientColor2.value }); withSave(() => {}) }
 function toggleShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; shadowEnabled.value = toggleShadow(fc); withSave(() => {}) }
@@ -383,6 +395,7 @@ async function loadAndInit() {
       if (e.key === 'c') { e.preventDefault(); copyObj() }
       if (e.key === 'v') { e.preventDefault(); pasteObj() }
       if (e.key === 's') { e.preventDefault(); save() }
+      if (e.key === 'a') { e.preventDefault(); selectAll() }
       if (e.key === 'b') { e.preventDefault(); toggleBold() }
       if (e.key === 'i') { e.preventDefault(); toggleItalic() }
       if (e.key === 'u') { e.preventDefault(); toggleUnderline() }

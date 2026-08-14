@@ -155,6 +155,7 @@ export async function addRect(page: Page, opts: ShapeOptions = {}) {
     c.add(rect)
     c.setActiveObject(rect)
     c.renderAll()
+    ;(window as any).__historyMgr?.save(c)
     return c.getObjects().length - 1
   }, opts)
 }
@@ -172,6 +173,7 @@ export async function addCircle(page: Page, opts: ShapeOptions = {}) {
     c.add(circle)
     c.setActiveObject(circle)
     c.renderAll()
+    ;(window as any).__historyMgr?.save(c)
     return c.getObjects().length - 1
   }, opts)
 }
@@ -187,6 +189,7 @@ export async function addText(page: Page, text: string, opts: ShapeOptions = {})
     c.add(textObj)
     c.setActiveObject(textObj)
     c.renderAll()
+    ;(window as any).__historyMgr?.save(c)
     return c.getObjects().length - 1
   }, [text, opts] as const)
 }
@@ -200,6 +203,7 @@ export async function addLine(page: Page, x1: number, y1: number, x2: number, y2
     })
     c.add(line)
     c.renderAll()
+    ;(window as any).__historyMgr?.save(c)
     return c.getObjects().length - 1
   }, [x1, y1, x2, y2, opts] as const)
 }
@@ -443,7 +447,7 @@ export async function undo(page: Page) {
     const c = (window as any).__fabricCanvas
     const historyMgr = (window as any).__historyMgr
     if (historyMgr?.undo) {
-      historyMgr.undo()
+      historyMgr.undo(c)
       c.renderAll()
       return c.getObjects().length
     }
@@ -457,7 +461,7 @@ export async function redo(page: Page) {
     const c = (window as any).__fabricCanvas
     const historyMgr = (window as any).__historyMgr
     if (historyMgr?.redo) {
-      historyMgr.redo()
+      historyMgr.redo(c)
       c.renderAll()
       return c.getObjects().length
     }

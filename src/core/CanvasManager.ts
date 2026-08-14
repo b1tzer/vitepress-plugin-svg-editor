@@ -95,6 +95,22 @@ export class CanvasManager {
     this.canvas?.requestRenderAll()
   }
 
+  /**
+   * 重建 workspace 背景 Rect 和 clipPath。
+   * Fabric 的 canvas.toJSON() 会过滤 excludeFromExport 对象，undo/redo 的
+   * loadFromJSON 恢复后会丢失 workspace 与 clipPath，需在恢复后重新创建。
+   */
+  rebuildWorkspace(w: number, h: number): void {
+    const fc = this.canvas
+    if (!fc) return
+    // 移除残留的旧 workspace（loadFromJSON 后通常已不存在，但保留兜底）
+    if (this._workspaceRect) {
+      fc.remove(this._workspaceRect)
+      this._workspaceRect = null
+    }
+    this._createWorkspace(fc, w, h)
+  }
+
   private _createWorkspace(fc: Canvas, w: number, h: number): void {
     const isLight = this._themeMode === 'light'
     // workspace Rect 固定位于 (0,0)，与 SVG 逻辑坐标原点一致

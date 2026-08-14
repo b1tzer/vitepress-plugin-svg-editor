@@ -101,6 +101,9 @@ export class InteractionManager {
           fc.requestRenderAll()
         }
       }
+      // 对象交互修改完成（拖拽/缩放/旋转松手）后，通知保存撤销快照。
+      // Fabric 的 object:modified 仅在交互松手时触发一次，不会在 mousemove 期间高频触发。
+      this._eventBus.emit('modified')
     })
   }
 }
