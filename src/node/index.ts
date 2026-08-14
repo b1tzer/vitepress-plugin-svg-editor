@@ -21,7 +21,10 @@ export interface SvgEditorPluginOptions {
   /** 保存端点路径（仅 storage='vitepress' 时生效，默认 /__svg-save__） */
   saveEndpoint?: string
 
-  /** SVG 文件保存目录，相对于 VitePress 项目根（仅 storage='vitepress' 时生效，默认 docs/public/diagrams） */
+  /**
+   * @deprecated 保存目录已统一为 VitePress 的 docs/public（原路保存），此选项不再作为白名单使用。
+   * 保留仅为向后兼容，新代码无需设置。
+   */
   saveDir?: string
 
   /** 是否注册 markdown-it 图片拦截（默认 true） */
@@ -32,7 +35,6 @@ export interface SvgEditorPluginOptions {
 export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
   const storage = options.storage || 'vitepress'
   const saveEndpoint = options.saveEndpoint || '/__svg-save__'
-  const saveDir = options.saveDir || 'docs/public/diagrams'
 
   return {
     name: 'vitepress-plugin-svg-editor',
@@ -42,7 +44,8 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
       // 仅 VitePress 模式启动保存端点（localStorage 不需要服务端）
       if (storage !== 'vitepress') return
 
-      const diagramsDir = path.resolve(process.cwd(), saveDir)
+      // VitePress 默认 public 目录：保存边界统一到 docs/public 根目录（原路保存）
+      const publicDir = path.resolve(process.cwd(), 'docs/public')
       server.middlewares.use(saveEndpoint, (req: any, res: any, next: any) => {
         if (req.method !== 'POST') return next()
         let body = ''
@@ -50,14 +53,20 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
         req.on('end', () => {
           try {
             const { path: svgPath, content } = JSON.parse(body)
-            const fullPath = path.resolve(process.cwd(), 'docs/public', svgPath.replace(/^\//, ''))
 
-            // 安全校验：路径必须在 saveDir 白名单内 + 仅 .svg 后缀
-            if (!fullPath.startsWith(diagramsDir) || !fullPath.endsWith('.svg')) {
+            // 1. 去掉开头 /，交给 path.resolve 统一消解 . 和 ..
+            const relativePath = svgPath.replace(/^\/+/, '')
+            const fullPath = path.resolve(publicDir, relativePath)
+
+            // 2. 安全校验：最终路径必须仍在 publicDir 内 + 仅 .svg 后缀
+            if (!fullPath.startsWith(publicDir + path.sep) || !fullPath.endsWith('.svg')) {
               res.statusCode = 403
-              res.end('Forbidden: only SVG files in ' + saveDir + ' are allowed')
+              res.end('Forbidden: only SVG files under docs/public are allowed')
               return
             }
+
+            // 3. 确保父目录存在（支持保存到未预先创建的子目录）
+            fs.mkdirSync(path.dirname(fullPath), { recursive: true })
             fs.writeFileSync(fullPath, content, 'utf-8')
             res.setHeader('Content-Type', 'application/json')
             res.end(JSON.stringify({ ok: true, file: fullPath }))
@@ -73,6 +82,11 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
       return {
         optimizeDeps: {
           include: ['fabric'],
+        },
+        // 通过 Vite define 将 storage 模式注入到客户端运行时，
+        // 供 SvgEditor.vue 据此选择 VitePressSaveAdapter 或 LocalStorageAdapter
+        define: {
+          __SVG_EDITOR_STORAGE__: JSON.stringify(storage),
         },
       }
     },

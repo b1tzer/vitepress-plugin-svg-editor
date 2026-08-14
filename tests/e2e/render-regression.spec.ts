@@ -27,7 +27,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 1. SVG 容器 → 编辑器打开流程
   // ══════════════════════════════════════════════
   test('01. 点击 SVG 能正常打开编辑器 overlay', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await expect(container).toBeAttached({ timeout: 5000 })
     await container.hover()
     const editBtn = page.locator('.svg-edit-btn')
@@ -44,7 +44,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 2. 棋盘格背景可见（不是纯白）
   // ══════════════════════════════════════════════
   test('02. 操作区显示棋盘格背景（含 linear-gradient，非纯色）', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -65,7 +65,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 3. Fabric canvas 背景透明
   // ══════════════════════════════════════════════
   test('03. Fabric.js canvas backgroundColor 为 transparent', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -84,7 +84,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 4. workspace Rect 存在且尺寸与逻辑画布一致
   // ══════════════════════════════════════════════
   test('04. workspace Rect（Fabric 对象）存在且非零宽高', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -120,7 +120,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 5. workspace Rect 有可见边框（stroke 非透明，替代方案 C 前的 resize 手柄）
   // ══════════════════════════════════════════════
   test('05. workspace Rect 有可见边框线（stroke 非 transparent）', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -147,7 +147,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 6. canvas.clipPath 存在（方案 C 裁剪边界，替代旧 DOM outline）
   // ══════════════════════════════════════════════
   test('06. canvas.clipPath 存在且尺寸匹配 workspace Rect', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -189,7 +189,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 7. 标尺 canvas 已绘制（尺寸 > 0）
   // ══════════════════════════════════════════════
   test('07. 标尺 canvas 尺寸 > 0（已绘制坐标刻度）', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -209,7 +209,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 8. canvas-area 和 Fabric canvas 尺寸非零
   // ══════════════════════════════════════════════
   test('08. canvas-area 和 Fabric canvas 尺寸均 > 50px', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -237,7 +237,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 9. 折叠按钮为 20×64 直角竖条（非圆形）
   // ══════════════════════════════════════════════
   test('09. 折叠按钮为 20×64 直角竖条，无圆角无阴影', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })
@@ -263,7 +263,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   // 10. 左/中/右三栏均存在且宽度 > 0
   // ══════════════════════════════════════════════
   test('10. 三栏布局 DOM 存在且可见宽度 > 0', async ({ page }) => {
-    const container = page.locator('.svg-container')
+    const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
     await expect(page.locator('.editor-overlay')).toBeVisible({ timeout: 8000 })

@@ -30,8 +30,8 @@ describe('EditorToolbar', () => {
     const w = mount(EditorToolbar, { props: { ...defaultProps, zoomLevel: 150, selectionInfo: 'rect' } })
     expect(w.find('.title').text()).toContain('/diagrams/test.svg')
     expect(w.text()).toContain('150%')
-    expect(w.text()).toContain('800')
-    expect(w.text()).toContain('600')
+    expect((w.find('input[aria-label="画布宽度"]').element as HTMLInputElement).value).toBe('800')
+    expect((w.find('input[aria-label="画布高度"]').element as HTMLInputElement).value).toBe('600')
     expect(w.find('.info-selection').text()).toBe('rect')
   })
 

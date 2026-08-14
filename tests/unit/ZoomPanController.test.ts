@@ -16,6 +16,10 @@ function createMockCanvas(overrides: Record<string, any> = {}) {
     setCursor: vi.fn(),
     relativePan: vi.fn(),
     selection: true,
+    getWidth: vi.fn(() => 800),
+    getHeight: vi.fn(() => 600),
+    viewportTransform: [1, 0, 0, 1, 0, 0],
+    getActiveObject: vi.fn(() => null),
     ...overrides,
   }
 }
@@ -45,22 +49,21 @@ describe('ZoomPanController', () => {
   })
 
   // ═══ bindCanvas ═══
-  it('bindCanvas 后逻辑尺寸应更新为容器尺寸', () => {
+  it('bindCanvas 后应能正常设置逻辑尺寸', () => {
     const canvas = createMockCanvas()
-    controller.bindCanvas(canvas as any, 1200, 900)
+    controller.bindCanvas(canvas as any)
+    controller.setLogicalSize(1200, 900)
     expect(controller.getBaseWidth()).toBe(1200)
     expect(controller.getBaseHeight()).toBe(900)
   })
 
   // ═══ setLogicalSize ═══
-  it('setLogicalSize 应更新逻辑尺寸并触发 _syncCanvasSize', () => {
+  it('setLogicalSize 应更新逻辑尺寸', () => {
     const canvas = createMockCanvas()
-    controller.bindCanvas(canvas as any, 800, 600)
+    controller.bindCanvas(canvas as any)
     controller.setLogicalSize(1000, 800)
     expect(controller.getBaseWidth()).toBe(1000)
     expect(controller.getBaseHeight()).toBe(800)
-    expect(canvas.setWidth).toHaveBeenCalled()
-    expect(canvas.setHeight).toHaveBeenCalled()
   })
 
   // ═══ zoomIn / zoomOut ═══
@@ -108,7 +111,7 @@ describe('ZoomPanController', () => {
     const canvas = createMockCanvas()
     controller.setSpacePressed(true)
     const result = controller.handlePanMouseDown(
-      { clientX: 100, clientY: 200 } as MouseEvent,
+      { clientX: 100, clientY: 200, button: 0 } as MouseEvent,
       canvas as any,
     )
     expect(result).toBe(true)
@@ -116,22 +119,24 @@ describe('ZoomPanController', () => {
     expect(canvas.selection).toBe(false)
   })
 
-  it('平移中 handlePanMouseMove 应返回 true', () => {
+  it('平移中 handlePanMouseMove 应返回 true', async () => {
     const canvas = createMockCanvas()
     controller.setSpacePressed(true)
-    controller.handlePanMouseDown({ clientX: 100, clientY: 200 } as MouseEvent, canvas as any)
+    controller.handlePanMouseDown({ clientX: 100, clientY: 200, button: 0 } as MouseEvent, canvas as any)
     const result = controller.handlePanMouseMove(
       { clientX: 120, clientY: 210 } as MouseEvent,
       canvas as any,
     )
     expect(result).toBe(true)
+    // rAF 节流：等待一帧后 relativePan 才被调用
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(canvas.relativePan).toHaveBeenCalled()
   })
 
   it('handlePanMouseUp 应结束平移并恢复选择', () => {
     const canvas = createMockCanvas()
     controller.setSpacePressed(true)
-    controller.handlePanMouseDown({ clientX: 100, clientY: 200 } as MouseEvent, canvas as any)
+    controller.handlePanMouseDown({ clientX: 100, clientY: 200, button: 0 } as MouseEvent, canvas as any)
     const result = controller.handlePanMouseUp(canvas as any)
     expect(result).toBe(true)
     expect(controller.isPanning()).toBe(false)
@@ -148,12 +153,13 @@ describe('ZoomPanController', () => {
   })
 
   // ═══ handleWheel ═══
-  it('handleWheel 应调整缩放级别并发送事件', () => {
+  it('handleWheel 应调整缩放级别并发送事件', async () => {
     const handler = vi.fn()
     eventBus.on('zoomChange', handler)
     const canvas = createMockCanvas()
-    controller.bindCanvas(canvas as any, 800, 600)
+    controller.bindCanvas(canvas as any)
     controller.handleWheel(100) // 向下滚
+    await new Promise((r) => requestAnimationFrame(() => r(null)))
     expect(controller.getZoomLevel()).toBeLessThan(100)
     expect(handler).toHaveBeenCalled()
   })

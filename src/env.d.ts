@@ -19,3 +19,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv
 }
+
+// Vite define 注入的存储模式常量（由 svgEditorPlugin 的 storage 选项注入，
+// 供客户端 SvgEditor.vue 选择 VitePressSaveAdapter 或 LocalStorageAdapter）
+declare const __SVG_EDITOR_STORAGE__: 'vitepress' | 'localStorage' | undefined

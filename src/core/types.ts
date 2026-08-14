@@ -42,7 +42,8 @@ export interface SvgLoadResult {
 export interface CanvasEvents {
   zoomChange: (zoomLevel: number) => void
   selectionChange: () => void
-  modified: () => void
+  /** 对象交互修改完成（拖拽/缩放/旋转松手）。单对象变换时携带增量 Command，否则为 undefined（回退全量快照） */
+  modified: (command?: ICommand) => void
   /** viewportTransform 已变化（平移等不改变 zoom 的场景），通知 UI 重新投影手柄等 */
   viewportChange: () => void
 }

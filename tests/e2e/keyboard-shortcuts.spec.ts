@@ -17,6 +17,14 @@ test.describe('快捷键', () => {
 
   test.beforeEach(async ({ page }) => {
     page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+    // 拦截保存端点：避免测试真实写回样例 SVG 文件（污染源码），返回内存 mock 响应
+    await page.route('**/__svg-save__', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, file: '/__mock__/test.svg' }),
+      })
+    })
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
     await openEditor(page, SVG_IDX)
@@ -102,7 +110,7 @@ test.describe('快捷键', () => {
 
     const after = await getCanvasSummary(page)
     // 粘贴后对象数应增加
-    console.log(`  复制前: ${before.objectCount}, 复制后: ${after.objectCount}`)
+    expect(after.objectCount).toBeGreaterThan(before.objectCount)
   })
 
   test('K6: Escape 取消选择', async ({ page }) => {

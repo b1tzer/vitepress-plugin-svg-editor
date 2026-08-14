@@ -13,13 +13,19 @@
 
 import type { Canvas } from 'fabric'
 import type { IHistoryManager } from './types'
+import type { ICommand } from './Command'
 import { timed } from '../utils/perf'
 
 const MAX_STACK = 50
 
+/** 历史条目：全量快照或增量命令（渐进替换 Command 模式） */
+type HistoryEntry =
+  | { type: 'snapshot'; json: object }
+  | { type: 'command'; cmd: ICommand }
+
 export class HistoryManager implements IHistoryManager {
-  private _undoStack: object[] = []
-  private _redoStack: object[] = []
+  private _undoStack: HistoryEntry[] = []
+  private _redoStack: HistoryEntry[] = []
   private _onStateChange: (() => void) | null = null
 
   /**
@@ -29,11 +35,31 @@ export class HistoryManager implements IHistoryManager {
     if (!canvas) return
     if (beforeSave) beforeSave()
     // Fabric 6: toJSON() 不再接受参数
-    // 全量快照：对象越多，toJSON 序列化耗时越高（撤销/重做卡顿的主要来源）
-    this._undoStack.push(timed('history:save', () => canvas.toJSON() as unknown as object))
+    // 全量快照：作为复杂操作/初始锚点的兜底。
+    // 记录快照时折叠栈顶已有的增量命令（其效果已包含在新快照中），
+    // 保证快照条目在栈底连续、命令条目在栈顶连续，快照撤销语义自洽。
+    while (this._undoStack.length && this._undoStack[this._undoStack.length - 1].type === 'command') {
+      this._undoStack.pop()
+    }
+    const snapshot: HistoryEntry = {
+      type: 'snapshot',
+      json: timed('history:save', () => canvas.toJSON() as unknown as object),
+    }
+    this._undoStack.push(snapshot)
     if (this._undoStack.length > MAX_STACK) this._undoStack.shift()
     this._redoStack = []
     if (afterSave) afterSave()
+    this._notify()
+  }
+
+  /**
+   * 记录增量命令（对象拖拽/缩放/旋转等可精确还原的操作），
+   * 避免 canvas.toJSON() 全量序列化带来的性能开销。
+   */
+  record(cmd: ICommand): void {
+    this._undoStack.push({ type: 'command', cmd })
+    if (this._undoStack.length > MAX_STACK) this._undoStack.shift()
+    this._redoStack = []
     this._notify()
   }
 
@@ -43,26 +69,28 @@ export class HistoryManager implements IHistoryManager {
   undo(canvas: Canvas, afterLoad?: () => void): void {
     if (!canvas || this._undoStack.length < 2) return
 
-    const currentState = this._undoStack.pop()!
-    this._redoStack.push(currentState)
-    const prevState = this._undoStack[this._undoStack.length - 1]
+    const entry = this._undoStack.pop()!
+    this._redoStack.push(entry)
 
-    // Fabric 6: loadFromJSON 返回 Promise
-    canvas.clear()
-    ;(canvas as any)
-      .loadFromJSON(prevState)
-      .then(() => {
-        this._restoreInteractivity(canvas)
-        if (afterLoad) afterLoad()
-      })
-      .catch((err: any) => {
-        console.error('[HistoryManager] undo 加载状态失败，恢复当前状态', err)
-        // 失败兜底：把弹出状态重新放回
-        this._redoStack.pop()
-        this._undoStack.push(currentState)
-        canvas.renderAll()
-      })
-    this._notify()
+    if (entry.type === 'command') {
+      // 增量命令：同步撤销，无需 loadFromJSON
+      entry.cmd.undo()
+      canvas.requestRenderAll()
+      if (afterLoad) afterLoad()
+      this._notify()
+      return
+    }
+
+    // 快照：恢复到前一个快照（栈底连续，prevEntry 必为 snapshot）
+    const prevEntry = this._undoStack[this._undoStack.length - 1]
+    if (prevEntry && prevEntry.type === 'snapshot') {
+      this._restoreSnapshot(canvas, prevEntry.json, afterLoad, entry, false)
+    } else {
+      // 理论不可达（栈底始终保留初始快照锚点）；兜底放回
+      this._redoStack.pop()
+      this._undoStack.push(entry)
+      this._notify()
+    }
   }
 
   /**
@@ -71,23 +99,20 @@ export class HistoryManager implements IHistoryManager {
   redo(canvas: Canvas, afterLoad?: () => void): void {
     if (!canvas || !this._redoStack.length) return
 
-    const nextState = this._redoStack.pop()!
-    this._undoStack.push(nextState)
+    const entry = this._redoStack.pop()!
+    this._undoStack.push(entry)
 
-    canvas.clear()
-    ;(canvas as any)
-      .loadFromJSON(nextState)
-      .then(() => {
-        this._restoreInteractivity(canvas)
-        if (afterLoad) afterLoad()
-      })
-      .catch((err: any) => {
-        console.error('[HistoryManager] redo 加载状态失败，恢复', err)
-        this._undoStack.pop()
-        this._redoStack.push(nextState)
-        canvas.renderAll()
-      })
-    this._notify()
+    if (entry.type === 'command') {
+      // 增量命令：同步重做，无需 loadFromJSON
+      entry.cmd.execute()
+      canvas.requestRenderAll()
+      if (afterLoad) afterLoad()
+      this._notify()
+      return
+    }
+
+    // 快照：loadFromJSON 恢复
+    this._restoreSnapshot(canvas, entry.json, afterLoad, entry, true)
   }
 
   canUndo(): boolean { return this._undoStack.length >= 2 }
@@ -98,6 +123,33 @@ export class HistoryManager implements IHistoryManager {
   reset(): void {
     this._undoStack = []
     this._redoStack = []
+  }
+
+  /**
+   * 异步恢复快照（Fabric loadFromJSON 返回 Promise）。
+   * 失败时把已弹出的条目放回原栈，保证历史栈一致性。
+   */
+  private _restoreSnapshot(canvas: Canvas, json: object, afterLoad: (() => void) | undefined, entry: HistoryEntry, isRedo: boolean): void {
+    canvas.clear()
+    ;(canvas as any)
+      .loadFromJSON(json)
+      .then(() => {
+        this._restoreInteractivity(canvas)
+        if (afterLoad) afterLoad()
+        this._notify()
+      })
+      .catch((err: any) => {
+        console.error(`[HistoryManager] ${isRedo ? 'redo' : 'undo'} 加载状态失败，恢复`, err)
+        if (isRedo) {
+          this._undoStack.pop()
+          this._redoStack.push(entry)
+        } else {
+          this._redoStack.pop()
+          this._undoStack.push(entry)
+        }
+        canvas.renderAll()
+        this._notify()
+      })
   }
 
   private _notify(): void { if (this._onStateChange) this._onStateChange() }

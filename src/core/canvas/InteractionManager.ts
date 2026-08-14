@@ -13,6 +13,8 @@
 import type { Canvas } from 'fabric'
 import type { IEventBus } from '../types'
 import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES } from '../FabricTypes'
+import { MoveCommand, ResizeCommand, PropertyChangeCommand } from '../Command'
+import type { ICommand } from '../Command'
 
 export class InteractionManager {
   private _eventBus: IEventBus
@@ -101,9 +103,63 @@ export class InteractionManager {
           fc.requestRenderAll()
         }
       }
-      // 对象交互修改完成（拖拽/缩放/旋转松手）后，通知保存撤销快照。
+      // 对象交互修改完成（拖拽/缩放/旋转松手）后：
+      // 单对象变换构造增量 Command（避免全量 toJSON），否则回退全量快照。
       // Fabric 的 object:modified 仅在交互松手时触发一次，不会在 mousemove 期间高频触发。
-      this._eventBus.emit('modified')
+      const command = this._buildTransformCommand(obj, e)
+      this._eventBus.emit('modified', command)
     })
+  }
+
+  /**
+   * 根据 Fabric 的 object:modified 事件构造增量命令。
+   *
+   * 仅处理单对象（非 ActiveSelection / Group）的变换，将拖拽/缩放/旋转
+   * 分别映射为 MoveCommand / ResizeCommand / PropertyChangeCommand，从而避免
+   * 每次松手都执行 canvas.toJSON() 全量快照（撤销/重做性能瓶颈）。
+   *
+   * 无法识别（多选、缺失 transform.original、或属性无变化）时返回 undefined，
+   * 由调用方回退到全量快照兜底。
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private _buildTransformCommand(obj: any, e: any): ICommand | undefined {
+    if (!obj || obj.type === FABRIC_TYPE.ACTIVE_SELECTION || obj.type === FABRIC_TYPE.GROUP) return undefined
+    const orig = e?.transform?.original
+    if (!orig) return undefined
+
+    const scaleChanged =
+      (orig.scaleX ?? 1) !== (obj.scaleX ?? 1) ||
+      (orig.scaleY ?? 1) !== (obj.scaleY ?? 1) ||
+      (orig.width ?? 0) !== (obj.width ?? 0) ||
+      (orig.height ?? 0) !== (obj.height ?? 0)
+
+    if (scaleChanged) {
+      const oldState = {
+        left: orig.left || 0, top: orig.top || 0,
+        scaleX: orig.scaleX ?? 1, scaleY: orig.scaleY ?? 1,
+        width: orig.width || 0, height: orig.height || 0,
+      }
+      const newState = {
+        left: obj.left || 0, top: obj.top || 0,
+        scaleX: obj.scaleX ?? 1, scaleY: obj.scaleY ?? 1,
+        width: obj.width || 0, height: obj.height || 0,
+      }
+      return new ResizeCommand(obj, oldState, newState)
+    }
+
+    const leftChanged = (orig.left || 0) !== (obj.left || 0)
+    const topChanged = (orig.top || 0) !== (obj.top || 0)
+    if (leftChanged || topChanged) {
+      const dx = (obj.left || 0) - (orig.left || 0)
+      const dy = (obj.top || 0) - (orig.top || 0)
+      return new MoveCommand(obj, dx, dy)
+    }
+
+    const angleChanged = (orig.angle ?? 0) !== (obj.angle ?? 0)
+    if (angleChanged) {
+      return new PropertyChangeCommand(obj, { angle: orig.angle ?? 0 }, { angle: obj.angle ?? 0 })
+    }
+
+    return undefined
   }
 }

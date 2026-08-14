@@ -20,7 +20,9 @@ function setupCanvasMock() {
         closePath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(), arc: vi.fn(),
         fill: vi.fn(), stroke: vi.fn(), fillText: vi.fn(), measureText: () => ({ width: 50 }),
         setLineDash: vi.fn(), getLineDash: () => [], createLinearGradient: () => ({}),
-        rect: vi.fn(), isPointInPath: () => false,
+        rect: vi.fn(), isPointInPath: () => false, drawImage: vi.fn(),
+        transform: vi.fn(), setTransform: vi.fn(),
+        getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
       } as any
     }
     return null as any

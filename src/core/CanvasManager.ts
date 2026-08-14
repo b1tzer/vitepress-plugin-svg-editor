@@ -15,6 +15,7 @@ import { EventBus } from './EventBus'
 import { ZoomPanController } from './canvas/ZoomPanController'
 import { InteractionManager } from './canvas/InteractionManager'
 import type { ModeManager } from './editor-mode/ModeManager'
+import type { ICommand } from './Command'
 
 export class CanvasManager {
   canvas: Canvas | null = null
@@ -186,7 +187,7 @@ export class CanvasManager {
   onZoomChange(fn: (z: number) => void): void { this._eventBus.on('zoomChange', fn) }
   onViewportChange(fn: () => void): void { this._eventBus.on('viewportChange', fn) }
   onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
-  onModified(fn: () => void): void { this._eventBus.on('modified', fn) }
+  onModified(fn: (command?: ICommand) => void): void { this._eventBus.on('modified', fn) }
   getEventBus(): EventBus { return this._eventBus }
   getZoomPanController(): ZoomPanController { return this._zoomPan }
   getInteractionManager(): InteractionManager { return this._interaction }

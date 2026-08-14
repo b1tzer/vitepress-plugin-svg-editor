@@ -25,6 +25,8 @@ function setupCanvasMock() {
         measureText: () => ({ width: 50 }), clip: vi.fn(), drawImage: vi.fn(),
         setLineDash: vi.fn(), getLineDash: () => [], createLinearGradient: () => ({}),
         rect: vi.fn(), isPointInPath: () => false,
+        transform: vi.fn(), setTransform: vi.fn(),
+        getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
       } as any
     }
     return null as any
@@ -111,7 +113,7 @@ describe('PanMode', () => {
     mode.onEnter(canvas)
 
     mode.onMouseDown(new MouseEvent('mousedown', { clientX: 100, clientY: 200 }), canvas)
-    mode.onMouseUp(canvas)
+    mode.onMouseUp(new MouseEvent('mouseup', { clientX: 100, clientY: 200 }), canvas)
     expect(mode.isPanning()).toBe(false)
   })
 

@@ -21,6 +21,8 @@ import { CanvasManager } from '../core/CanvasManager.ts'
 import { HistoryManager } from '../core/HistoryManager.ts'
 import { mergeArrows } from '../plugins/arrow-merger.ts'
 import { VitePressSaveAdapter } from '../adapters/storage/VitePressSaveAdapter'
+import { LocalStorageAdapter } from '../adapters/storage/LocalStorageAdapter'
+import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
 import * as AlignPlugin from '../plugins/align.ts'
 import * as LayerPlugin from '../plugins/layer.ts'
 import * as TextFormatPlugin from '../plugins/text-format.ts'
@@ -30,8 +32,10 @@ import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
 import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES, TEXT_TYPES } from '../core/FabricTypes.ts'
 import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 
-// ── 存储适配器 ──
-const storageAdapter = new VitePressSaveAdapter()
+// ── 存储适配器（根据插件配置的 storage 模式选择）──
+const storageAdapter: IStorageAdapter = (typeof __SVG_EDITOR_STORAGE__ !== 'undefined' && __SVG_EDITOR_STORAGE__ === 'localStorage')
+  ? new LocalStorageAdapter()
+  : new VitePressSaveAdapter()
 // ── 序列化器（统一后处理链，复用 SvgSerializer 而非手写）──
 const serializer = new SvgSerializer()
 
@@ -103,7 +107,7 @@ let _stopPerfMonitor: (() => void) | null = null
 canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
 canvasMgr.onViewportChange(() => { viewportVersion.value++ })
 canvasMgr.onSelectionChange(() => { updateSelectionInfo() })
-canvasMgr.onModified(() => { historyMgr.save(canvasMgr.canvas!, () => {}, () => {}); refreshLayerList() })
+canvasMgr.onModified((command) => { if (command) historyMgr.record(command); else historyMgr.save(canvasMgr.canvas!, () => {}, () => {}); refreshLayerList() })
 historyMgr.onStateChange(() => { canUndo.value = historyMgr.canUndo(); canRedo.value = historyMgr.canRedo() })
 
 // ── 图层面板刷新 ──
@@ -179,8 +183,55 @@ function updateSelectionInfo() {
 function withSave(fn: (fc: any) => void) { const fc = canvasMgr.canvas; if (!fc) return; fn(fc); historyMgr.save(fc, () => {}, () => {}); refreshLayerList() }
 function undo() { historyMgr.undo(canvasMgr.canvas!, () => { canvasMgr.rebuildWorkspace(svgWidth.value, svgHeight.value); refreshLayerList() }) }
 function redo() { historyMgr.redo(canvasMgr.canvas!, () => { canvasMgr.rebuildWorkspace(svgWidth.value, svgHeight.value); refreshLayerList() }) }
-function copyObj() { const a = canvasMgr.canvas?.getActiveObject(); if (a) (a as any).clone((c: any) => { window._clipboard = c }) }
-function pasteObj() { if (!window._clipboard) return; const fc = canvasMgr.canvas; window._clipboard.clone((c: any) => { c.set({ left: c.left + 20, top: c.top + 20 }); fc!.add(c); fc!.setActiveObject(c); fc!.renderAll(); withSave(() => {}) }) }
+function copyObj() {
+  const a = canvasMgr.canvas?.getActiveObject()
+  if (!a) return
+  if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) {
+    // 多选（ActiveSelection）：保存子对象引用（粘贴时逐个 clone），
+    // 避免对 ActiveSelection 本身二次 clone 触发 t2 is not iterable
+    window._clipboard = (a as any).getObjects()
+  } else {
+    ;(a as any).clone((c: any) => { window._clipboard = c })
+  }
+}
+function pasteObj() {
+  if (!window._clipboard) return
+  const fc = canvasMgr.canvas
+  if (!fc) return
+  const clipboard = window._clipboard
+
+  const addAndSelect = (objs: any[]) => {
+    if (!objs.length) return
+    fc.discardActiveObject()
+    objs.forEach((c: any) => {
+      c.set({ left: (c.left || 0) + 20, top: (c.top || 0) + 20 })
+      fc.add(c)
+    })
+    if (objs.length > 1) {
+      fc.setActiveObject(new fabric.ActiveSelection(objs, { canvas: fc }))
+    } else {
+      fc.setActiveObject(objs[0])
+    }
+    fc.renderAll()
+    withSave(() => {})
+  }
+
+  if (Array.isArray(clipboard)) {
+    const sources = clipboard.filter((o: any) => !!o)
+    if (!sources.length) return
+    const clones: any[] = []
+    let pending = sources.length
+    sources.forEach((o: any) => {
+      ;(o as any).clone((c: any) => {
+        clones.push(c)
+        pending -= 1
+        if (pending === 0) addAndSelect(clones)
+      })
+    })
+  } else {
+    ;(clipboard as any).clone((c: any) => addAndSelect([c]))
+  }
+}
 function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
 function align(type: string) { withSave((fc: any) => (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)) }
 function applyFill(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('fill', hex) }) }
