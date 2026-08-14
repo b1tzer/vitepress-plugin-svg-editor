@@ -43,7 +43,7 @@ export class PanMode implements IEditorMode {
     this._lastPoint = { x: e.clientX, y: e.clientY }
   }
 
-  onMouseUp(canvas: Canvas): void {
+  onMouseUp(_e: MouseEvent, canvas: Canvas): void {
     if (!this._isPanning) return
     this._isPanning = false
     canvas.setCursor('grab')

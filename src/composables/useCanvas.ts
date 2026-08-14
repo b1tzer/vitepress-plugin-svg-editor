@@ -9,9 +9,9 @@
 
 import { ref, computed, type Ref } from 'vue'
 import * as fabric from 'fabric'
-import type { DIContainer } from '../../di/container'
-import { preprocessSvg } from '../../core/preprocessor'
-import { mergeArrows } from '../../plugins/arrow-merger'
+import type { DIContainer } from '../di/container'
+import { preprocessSvg } from '../core/preprocessor'
+import { mergeArrows } from '../plugins/arrow-merger'
 import { FABRIC_TYPE, HOLLOW_SHAPE_TYPES, TEXT_TYPES } from '../core/FabricTypes'
 
 export function useCanvas(container: DIContainer) {
