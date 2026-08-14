@@ -14,8 +14,8 @@ import EditorToolbar from './sub/EditorToolbar.vue'
 import EditorCanvas from './sub/EditorCanvas.vue'
 import EditorLeftPanel from './sub/EditorLeftPanel.vue'
 import EditorContextPanel from './sub/EditorContextPanel.vue'
-import { ICONS, LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/constants.ts'
-import { preprocessSvg } from '../core/preprocessor.ts'
+import { LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/colors'
+import { SvgLoader } from '../core/SvgLoader'
 import { SvgSerializer } from '../core/SvgSerializer'
 import { CanvasManager } from '../core/CanvasManager.ts'
 import { HistoryManager } from '../core/HistoryManager.ts'
@@ -38,6 +38,8 @@ const storageAdapter: IStorageAdapter = (typeof __SVG_EDITOR_STORAGE__ !== 'unde
   : new VitePressSaveAdapter()
 // ── 序列化器（统一后处理链，复用 SvgSerializer 而非手写）──
 const serializer = new SvgSerializer()
+// ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验，复用 SvgLoader 而非直接 preprocessSvg）──
+const svgLoader = new SvgLoader()
 
 const props = defineProps({
   src: { type: String, required: true },
@@ -401,7 +403,7 @@ async function loadAndInit() {
   let svgText: string
   try { const resp = await fetch(url); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); svgText = await resp.text() }
   catch (e) { console.error('[SvgEditor] 获取 SVG 失败:', url, e); loading.value = false; return }
-  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = timed('svg:preprocess', () => preprocessSvg(svgText, themeMode.value))
+  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = timed('svg:preprocess', () => svgLoader.load(svgText, themeMode.value))
   if (vb) originalViewBox.value = vb
   if (sw > 0) svgWidth.value = sw; else svgWidth.value = 800
   if (sh > 0) svgHeight.value = sh; else svgHeight.value = 500
