@@ -58,7 +58,7 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
     })
     expect(bg).not.toBeNull()
     expect(bg!.backgroundImage).toContain('linear-gradient')
-    expect(bg!.backgroundSize).toContain('20px')
+    expect(bg!.backgroundSize).toContain('35px')
   })
 
   // ══════════════════════════════════════════════
