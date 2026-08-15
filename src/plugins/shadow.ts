@@ -5,7 +5,6 @@
 
 import * as fabric from 'fabric'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function toggleShadow(canvas: any) {
   const a = canvas.getActiveObject()
   if (!a) return false
@@ -21,7 +20,6 @@ export function toggleShadow(canvas: any) {
   return true
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function applyShadow(canvas: any, { color, blur, offsetX, offsetY }: any) {
   const a = canvas.getActiveObject()
   if (!a || !a.shadow) return

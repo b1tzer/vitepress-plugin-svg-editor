@@ -66,7 +66,6 @@ export class MoveCommand implements ICommand {
     return `移动 ${this._getTypeName()}`
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _getTypeName(): string {
     const typeMap: Record<string, string> = {
       rect: '矩形', circle: '圆形', triangle: '三角形',
@@ -141,15 +140,14 @@ export class ResizeCommand implements ICommand {
 
 export class PropertyChangeCommand implements ICommand {
   private _obj: FabricObject
-  private _oldProps: Record<string, any>   // eslint-disable-line @typescript-eslint/no-explicit-any
-  private _newProps: Record<string, any>   // eslint-disable-line @typescript-eslint/no-explicit-any
+  private _oldProps: Record<string, any>
+  private _newProps: Record<string, any>
 
   /**
    * @param obj      目标 Fabric 对象
    * @param oldProps 修改前的属性集合
    * @param newProps 修改后的属性集合
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(obj: FabricObject, oldProps: Record<string, any>, newProps: Record<string, any>) {
     this._obj = obj
     this._oldProps = { ...oldProps }

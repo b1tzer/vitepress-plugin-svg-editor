@@ -5,8 +5,6 @@
  * 注意：fabric 已改为纯 ESM import，不再挂载到 window
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 declare global {
   interface Window {
     __fabricCanvas: any

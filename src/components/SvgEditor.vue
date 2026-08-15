@@ -52,7 +52,6 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 // ── Vue 响应式状态 ──
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const canvasRef = ref<any>(null)
 const overlayRef = ref<HTMLDivElement | null>(null)
 const loading = ref(true)

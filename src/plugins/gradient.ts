@@ -5,7 +5,6 @@
 
 import * as fabric from 'fabric'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function applyGradient(canvas: any, { type, angle, color1, color2 }: any) {
   const a = canvas.getActiveObject()
   if (!a) return

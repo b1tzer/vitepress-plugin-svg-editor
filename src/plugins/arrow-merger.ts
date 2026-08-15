@@ -6,7 +6,6 @@
 import * as fabric from 'fabric'
 import { FABRIC_TYPE } from '../core/FabricTypes'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeArrows(objects: any[]) {
   const result: any[] = []
   const used = new Set<number>()

@@ -133,7 +133,6 @@ export class CanvasManager {
     fc.requestRenderAll()
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupControls(): void {
     Object.assign(fabric.Object.ownDefaults, {
       transparentCorners: false,
@@ -153,7 +152,6 @@ export class CanvasManager {
     } as any)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   _setupCanvasEvents(fc: any): void {
     fc.on('mouse:wheel', (opt: any) => {
       opt.e.preventDefault(); opt.e.stopPropagation()

@@ -22,7 +22,10 @@
       "import": "./dist/node/index.mjs",
       "require": "./dist/node/index.cjs"
     },
-    "./client": "./src/client/index.ts",
+    "./client": {
+      "types": "./src/client/index.ts",
+      "import": "./src/client/index.ts"
+    },
     "./plugins": {
       "types": "./dist/plugins/index.d.ts",
       "import": "./dist/plugins/index.mjs",
@@ -33,10 +36,13 @@
     "dist",
     "src"
   ],
+  "sideEffects": [
+    "**/*.vue",
+    "**/*.css"
+  ],
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
-    "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:ui": "playwright test --ui",

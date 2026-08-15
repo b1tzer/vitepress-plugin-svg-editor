@@ -63,7 +63,6 @@ export function resolveSafeSvgPath(publicDir: string, svgPath: string): string |
   return fullPath
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
   const storage = options.storage || 'vitepress'
   const saveEndpoint = options.saveEndpoint || '/__svg-save__'
@@ -71,7 +70,6 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
   return {
     name: 'vitepress-plugin-svg-editor',
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     configureServer(server: any) {
       // 仅 VitePress 模式启动保存端点（localStorage 不需要服务端）
       if (storage !== 'vitepress') return
@@ -156,7 +154,6 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function svgDiagramMarkdownPlugin(md: any, options: { markdownSyntax?: boolean } = {}) {
   if (options.markdownSyntax === false) return
 

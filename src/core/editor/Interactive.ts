@@ -16,7 +16,6 @@ import { HOLLOW_SHAPE_TYPES } from '../FabricTypes'
  * 确保单个 Fabric 对象（及其子对象）可交互
  * @param obj Fabric 对象实例（含 Group 等可递归结构）
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ensureObjectInteractive(obj: any): void {
   if (!obj) return
   obj.set({ selectable: true, evented: true })

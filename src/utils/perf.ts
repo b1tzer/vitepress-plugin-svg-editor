@@ -73,7 +73,6 @@ export function timed<T>(name: string, fn: () => T): T {
     performance.mark(end)
     const duration = measure(name, start, end)
     if (duration !== undefined) {
-      // eslint-disable-next-line no-console
       console.debug(`[perf] ${name} = ${duration.toFixed(1)}ms`)
     }
   }
@@ -94,7 +93,6 @@ export async function timedAsync<T>(name: string, fn: () => Promise<T>): Promise
     performance.mark(end)
     const duration = measure(name, start, end)
     if (duration !== undefined) {
-      // eslint-disable-next-line no-console
       console.debug(`[perf] ${name} = ${duration.toFixed(1)}ms`)
     }
   }
@@ -122,7 +120,6 @@ export function startLongTaskMonitor(opts: LongTaskMonitorOptions = {}): () => v
   const observer = new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
       if (entry.duration < threshold) continue
-      // eslint-disable-next-line no-console
       console.warn(`[perf] longtask ${entry.duration.toFixed(1)}ms（主线程阻塞）`)
       onLongTask?.(entry.duration)
     }
@@ -161,7 +158,6 @@ export function startFpsMonitor(opts: FpsMonitorOptions = {}): () => void {
       const fps = Math.round((frames * 1000) / (now - last))
       frames = 0
       last = now
-      // eslint-disable-next-line no-console
       console.debug(`[perf] fps = ${fps}`)
       onFps?.(fps)
     }

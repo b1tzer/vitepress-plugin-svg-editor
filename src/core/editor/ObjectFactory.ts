@@ -18,7 +18,6 @@ import { FABRIC_TYPE } from '../FabricTypes'
  * @param centerY 画布逻辑中心 Y
  * @returns Fabric 对象，未知类型返回 null
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createShape(type: string, centerX: number, centerY: number): any {
   switch (type) {
     case 'rect':
@@ -48,7 +47,6 @@ export function createShape(type: string, centerX: number, centerY: number): any
  * @param obj Fabric 对象
  * @returns 转换后的对象（非 Text 类型原样返回）
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function convertTextToTextbox(obj: any): any {
   if (!obj) return obj
   if (obj.type === FABRIC_TYPE.TEXT) {

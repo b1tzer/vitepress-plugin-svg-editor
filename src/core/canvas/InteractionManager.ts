@@ -107,7 +107,6 @@ export class InteractionManager {
    * 无法识别（多选、缺失 transform.original、或属性无变化）时返回 undefined，
    * 由调用方回退到全量快照兜底。
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _buildTransformCommand(obj: any, e: any): ICommand | undefined {
     if (!obj || obj.type === FABRIC_TYPE.ACTIVE_SELECTION || obj.type === FABRIC_TYPE.GROUP) return undefined
     const orig = e?.transform?.original
