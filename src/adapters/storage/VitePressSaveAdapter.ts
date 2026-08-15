@@ -13,11 +13,9 @@ import type { IStorageAdapter, SaveResult } from './StorageAdapter'
 
 export class VitePressSaveAdapter implements IStorageAdapter {
   private saveEndpoint: string
-  private saveDir: string
 
-  constructor(saveEndpoint: string = '/__svg-save__', saveDir: string = 'docs/public/diagrams') {
+  constructor(saveEndpoint: string = '/__svg-save__') {
     this.saveEndpoint = saveEndpoint
-    this.saveDir = saveDir
   }
 
   async save(svgText: string, sourcePath: string): Promise<SaveResult> {

@@ -5,7 +5,7 @@ describe('VitePressSaveAdapter', () => {
   let adapter: VitePressSaveAdapter
 
   beforeEach(() => {
-    adapter = new VitePressSaveAdapter('/__svg-save__', 'docs/public/diagrams')
+    adapter = new VitePressSaveAdapter('/__svg-save__')
     vi.restoreAllMocks()
   })
 

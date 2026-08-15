@@ -39,7 +39,7 @@ import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
 const storageAdapter: IStorageAdapter = (typeof __SVG_EDITOR_STORAGE__ !== 'undefined' && __SVG_EDITOR_STORAGE__ === 'localStorage')
   ? new LocalStorageAdapter()
-  : new VitePressSaveAdapter()
+  : new VitePressSaveAdapter(typeof __SVG_EDITOR_SAVE_ENDPOINT__ === 'string' ? __SVG_EDITOR_SAVE_ENDPOINT__ : '/__svg-save__')
 // ── 序列化器（统一后处理链，复用 SvgSerializer 而非手写）──
 const serializer = new SvgSerializer()
 // ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验，复用 SvgLoader 而非直接 preprocessSvg）──
@@ -50,6 +50,10 @@ const props = defineProps({
   showThemeToggle: { type: Boolean, default: true },
 })
 const emit = defineEmits(['close', 'saved'])
+
+// ── 默认画布尺寸（当 SVG 无 viewBox 或宽高时兜底）──
+const DEFAULT_SVG_WIDTH = 800
+const DEFAULT_SVG_HEIGHT = 500
 
 // ── Vue 响应式状态 ──
 const canvasRef = ref<any>(null)
@@ -89,6 +93,13 @@ const themeMode = ref(
 const panelCollapsed = ref(false)
 const leftPanelCollapsed = ref(false)
 const hasTextInSelection = ref(false)
+const errorMessage = ref('')
+let _errorTimer: ReturnType<typeof setTimeout> | null = null
+function showError(msg: string) {
+  errorMessage.value = msg
+  if (_errorTimer) clearTimeout(_errorTimer)
+  _errorTimer = setTimeout(() => { errorMessage.value = '' }, 4000)
+}
 function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
 function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
 
@@ -369,16 +380,14 @@ function toggleTheme() {
 async function save() {
   if (!canvasMgr.canvas) return
   saving.value = true
-  const wasDark = themeMode.value === 'dark'
-  if (wasDark) toggleTheme()
   try {
     const fc = canvasMgr.canvas!
     const svgText = timed('export:toSVG', () => serializer.serialize(fc, { originalViewBox: originalViewBox.value }))
     const result = await storageAdapter.save(svgText, props.src)
     if (result.success) { emit('saved'); emit('close') }
-    else { alert('保存失败: ' + result.error) }
-  } catch (e: any) { alert('保存失败: ' + e.message) }
-  finally { if (wasDark) toggleTheme(); saving.value = false }
+    else { showError('保存失败: ' + result.error) }
+  } catch (e: any) { showError('保存失败: ' + e.message) }
+  finally { saving.value = false }
 }
 
 // ── 主加载流程 ──
@@ -394,18 +403,18 @@ async function loadAndInit() {
   const url = props.src.startsWith('/') ? base + props.src.slice(1) : props.src
   let svgText: string
   try { const resp = await fetch(url); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); svgText = await resp.text() }
-  catch (e) { console.error('[SvgEditor] 获取 SVG 失败:', url, e); loading.value = false; return }
+  catch (e) { console.error('[SvgEditor] 获取 SVG 失败:', url, e); loading.value = false; showError('加载 SVG 失败，请检查文件是否存在'); return }
   const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = timed('svg:preprocess', () => svgLoader.load(svgText, themeMode.value))
   if (vb) originalViewBox.value = vb
-  if (sw > 0) svgWidth.value = sw; else svgWidth.value = 800
-  if (sh > 0) svgHeight.value = sh; else svgHeight.value = 500
+  if (sw > 0) svgWidth.value = sw; else svgWidth.value = DEFAULT_SVG_WIDTH
+  if (sh > 0) svgHeight.value = sh; else svgHeight.value = DEFAULT_SVG_HEIGHT
   const area = canvasRef.value?.canvasAreaRef
   if (!area) return
   await new Promise(r => requestAnimationFrame(r))
   await new Promise(r => requestAnimationFrame(r))
   // canvas 物理尺寸由 CanvasManager.init 根据 viewport 容器自适应
-  const w = svgWidth.value || 800
-  const h = svgHeight.value || 500
+  const w = svgWidth.value || DEFAULT_SVG_WIDTH
+  const h = svgHeight.value || DEFAULT_SVG_HEIGHT
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
   const fc = canvasMgr.init(canvasEl, w, h, themeMode.value as 'light' | 'dark')
@@ -463,6 +472,10 @@ onUnmounted(() => { _stopPerfMonitor?.() })
 <template>
   <div class="editor-overlay" @click.self="emit('close')" @keydown.escape="emit('close')" tabindex="-1" ref="overlayRef">
     <div class="editor-app" :class="themeMode === 'light' ? 'theme-light' : 'theme-dark'">
+      <!-- 错误提示 toast -->
+      <Transition name="toast-fade">
+        <div v-if="errorMessage" class="editor-error-toast" role="alert">{{ errorMessage }}</div>
+      </Transition>
       <!-- 顶栏 -->
       <EditorToolbar
         :src="props.src"
@@ -604,5 +617,31 @@ onUnmounted(() => { _stopPerfMonitor?.() })
   flex-direction: row;
   overflow: hidden;
   min-height: 0;
+}
+
+/* ── 错误提示 toast ── */
+.editor-error-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10001;
+  max-width: 80vw;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: #d32f2f;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-8px);
 }
 </style>

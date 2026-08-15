@@ -144,10 +144,12 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
         optimizeDeps: {
           include: ['fabric'],
         },
-        // 通过 Vite define 将 storage 模式注入到客户端运行时，
-        // 供 SvgEditor.vue 据此选择 VitePressSaveAdapter 或 LocalStorageAdapter
+        // 通过 Vite define 将 storage 模式与保存端点注入到客户端运行时，
+        // 供 SvgEditor.vue 据此选择 VitePressSaveAdapter / LocalStorageAdapter
+        // 及构造正确的保存端点（修复 saveEndpoint 自定义后客户端仍请求默认端点的问题）
         define: {
           __SVG_EDITOR_STORAGE__: JSON.stringify(storage),
+          __SVG_EDITOR_SAVE_ENDPOINT__: JSON.stringify(saveEndpoint),
         },
       }
     },

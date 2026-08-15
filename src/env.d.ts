@@ -23,3 +23,7 @@ interface ImportMeta {
 // Vite define 注入的存储模式常量（由 svgEditorPlugin 的 storage 选项注入，
 // 供客户端 SvgEditor.vue 选择 VitePressSaveAdapter 或 LocalStorageAdapter）
 declare const __SVG_EDITOR_STORAGE__: 'vitepress' | 'localStorage' | undefined
+
+// Vite define 注入的保存端点（由 svgEditorPlugin 的 saveEndpoint 选项注入，
+// 供客户端 SvgEditor.vue 构造 VitePressSaveAdapter，避免自定义端点后保存失败）
+declare const __SVG_EDITOR_SAVE_ENDPOINT__: string | undefined
