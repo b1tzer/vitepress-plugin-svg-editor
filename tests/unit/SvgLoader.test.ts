@@ -1,5 +1,23 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { SvgLoader } from '../../src/core/SvgLoader'
+
+// DOMPurify 依赖浏览器原生 DOM 解析器做 SVG 命名空间解析；happy-dom 的
+// DOM 解析器对 SVG 支持不完整，DOMPurify 官方明确不建议与 happy-dom 组合。
+// 因此单测中 mock DOMPurify，聚焦验证 SvgLoader 的编排逻辑（大小校验 →
+// 清洗 → 预处理链）。DOMPurify 的真实清洗效果由 E2E（真实浏览器）验证。
+vi.mock('dompurify', () => {
+  return {
+    default: {
+      sanitize: (dirty: string) =>
+        dirty
+          // 模拟 DOMPurify 在真实浏览器中对 SVG 的清洗结果
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
+          .replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
+          .replace(/@import\s+url\s*\([^)]*\)\s*;?/gi, ''),
+    },
+  }
+})
 
 // 最小合法 SVG
 const baseSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#FF0000"/></svg>'
@@ -53,7 +71,7 @@ describe('SvgLoader', () => {
     expect(result.svgHeight).toBe(300)
   })
 
-  // 🔒 安全测试
+  // 🔒 安全测试（验证 SvgLoader 将清洗结果用于预处理链）
   it('应移除 <script> 标签防止 XSS', () => {
     const malicious = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><script>alert("xss")</script><rect/></svg>'
     const result = loader.load(malicious, 'light')

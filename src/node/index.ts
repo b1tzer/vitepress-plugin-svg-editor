@@ -31,6 +31,38 @@ export interface SvgEditorPluginOptions {
   markdownSyntax?: boolean
 }
 
+/** 最大请求体大小（与 SvgLoader 的 10MB 上限对齐），防止内存 DoS */
+const MAX_BODY_SIZE = 10 * 1024 * 1024 // 10MB
+
+/**
+ * 校验并解析 SVG 保存路径，返回安全的绝对路径。
+ *
+ * 使用 `path.relative` 做路径遍历检测（而非 `startsWith(publicDir + path.sep)`），
+ * 避免 Windows 盘符 / 分隔符差异及 `publicDir` 恰好为根路径等边界导致的绕过。
+ *
+ * @param publicDir 保存边界目录（绝对路径）
+ * @param svgPath   客户端提交的目标路径（可能含开头的 / 或 ../ 等）
+ * @returns 合法的绝对路径；若越界或后缀非 .svg，返回 null
+ */
+export function resolveSafeSvgPath(publicDir: string, svgPath: string): string | null {
+  // 去掉开头 /，交给 path.resolve 统一消解 . 和 ..
+  const relativePath = svgPath.replace(/^\/+/, '')
+  const fullPath = path.resolve(publicDir, relativePath)
+
+  // 路径遍历防护：相对路径以 .. 开头或为绝对路径，说明越出 publicDir
+  const rel = path.relative(publicDir, fullPath)
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return null
+  }
+
+  // 仅允许 .svg 后缀
+  if (!fullPath.endsWith('.svg')) {
+    return null
+  }
+
+  return fullPath
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
   const storage = options.storage || 'vitepress'
@@ -48,24 +80,55 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): any {
       const publicDir = path.resolve(process.cwd(), 'docs/public')
       server.middlewares.use(saveEndpoint, (req: any, res: any, next: any) => {
         if (req.method !== 'POST') return next()
-        let body = ''
-        req.on('data', (chunk: Buffer) => (body += chunk.toString()))
+
+        // 🔒 仅接受 JSON 请求体
+        const contentType = String(req.headers['content-type'] || '').split(';')[0].trim()
+        if (contentType !== 'application/json') {
+          res.statusCode = 415
+          res.end('Unsupported Media Type: only application/json is allowed')
+          return
+        }
+
+        // 🔒 流式读取并限制请求体大小，超过上限立即拒绝（不继续累积内存）
+        const chunks: Buffer[] = []
+        let bodySize = 0
+        let tooLarge = false
+        req.on('data', (chunk: Buffer) => {
+          if (tooLarge) return
+          bodySize += chunk.length
+          if (bodySize > MAX_BODY_SIZE) {
+            tooLarge = true
+            return
+          }
+          chunks.push(chunk)
+        })
         req.on('end', () => {
+          if (tooLarge) {
+            res.statusCode = 413
+            res.end('Payload Too Large: SVG content exceeds 10MB limit')
+            return
+          }
+
           try {
+            const body = Buffer.concat(chunks).toString('utf-8')
             const { path: svgPath, content } = JSON.parse(body)
 
-            // 1. 去掉开头 /，交给 path.resolve 统一消解 . 和 ..
-            const relativePath = svgPath.replace(/^\/+/, '')
-            const fullPath = path.resolve(publicDir, relativePath)
+            // 🔒 校验字段类型，避免非法负载
+            if (typeof svgPath !== 'string' || typeof content !== 'string') {
+              res.statusCode = 400
+              res.end('Bad Request: path and content must be strings')
+              return
+            }
 
-            // 2. 安全校验：最终路径必须仍在 publicDir 内 + 仅 .svg 后缀
-            if (!fullPath.startsWith(publicDir + path.sep) || !fullPath.endsWith('.svg')) {
+            // 🔒 路径校验：必须仍在 publicDir 内 + 仅 .svg 后缀
+            const fullPath = resolveSafeSvgPath(publicDir, svgPath)
+            if (!fullPath) {
               res.statusCode = 403
               res.end('Forbidden: only SVG files under docs/public are allowed')
               return
             }
 
-            // 3. 确保父目录存在（支持保存到未预先创建的子目录）
+            // 确保父目录存在（支持保存到未预先创建的子目录）
             fs.mkdirSync(path.dirname(fullPath), { recursive: true })
             fs.writeFileSync(fullPath, content, 'utf-8')
             res.setHeader('Content-Type', 'application/json')

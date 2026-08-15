@@ -4,7 +4,7 @@
  * 职责：
  *   - 封装预处理链（CSS 变量 → hex、marker → polygon、清洗非法属性）
  *   - 返回标准化结果，供 CanvasManager 消费
- *   - 框架无关（不依赖 Vue / VitePress / DOM）
+ *   - 框架无关（不依赖 Vue / VitePress；清洗依赖 DOMPurify，需 DOM 环境）
  *
  * 使用方式：
  *   const loader = new SvgLoader()
@@ -14,6 +14,7 @@
 
 import { preprocessSvg } from './preprocessor'
 import type { SvgLoadResult, ThemeMode } from './types'
+import DOMPurify from 'dompurify'
 
 /** 安全配置 */
 const SECURITY = {
@@ -22,21 +23,23 @@ const SECURITY = {
 }
 
 /**
- * 移除 SVG 中的危险内容：
- *   - <script> 标签及其内容
- *   - 事件处理器属性（onclick, onload 等）
- *   - CSS @import url() 外部资源引用
+ * 移除 SVG 中的危险内容。
+ *
+ * 基于 DOMPurify（Cure53 维护）做白名单清洗，替代早期的手写正则。
+ * 正则无法覆盖 javascript:/data: URL、<foreignObject> 内嵌 HTML、
+ * 无引号/大小写/编码混淆的事件属性等注入向量；DOMPurify 通过浏览器
+ * 原生 DOM 解析 + 白名单机制，能可靠拦截这些攻击面。
+ *
+ * 配置说明：
+ *   - USE_PROFILES: { svg: true, svgFilters: true } 仅保留安全 SVG 元素
+ *     与 SVG 滤镜，不保留 HTML / MathML，避免 <foreignObject> 内嵌 HTML。
+ *   - 默认配置即会移除 <script>、on* 事件属性、javascript: 伪协议、
+ *     以及 CSS 中的 @import 外部引用。
  */
 function sanitizeSvg(svg: string): string {
-  let s = svg
-  // 移除 <script>...</script> 标签
-  s = s.replace(/<script[\s\S]*?<\/script>/gi, '')
-  // 移除内联事件处理器
-  s = s.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
-  s = s.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
-  // 移除 CSS @import 外部引用
-  s = s.replace(/@import\s+url\s*\([^)]*\)\s*;?/gi, '')
-  return s
+  return DOMPurify.sanitize(svg, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+  })
 }
 
 export class SvgLoader {
