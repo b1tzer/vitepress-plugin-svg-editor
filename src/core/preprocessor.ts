@@ -12,6 +12,23 @@ import { THEME_VAR_TO_HEX } from './colors'
 import type { ThemeMode, SvgLoadResult, MarkerInfo } from './types'
 
 /**
+ * 用 DOMParser 将 SVG 解析为 DOM 文档（仅用于只读结构化信息提取）
+ *
+ * - 返回 null 表示当前环境无 DOMParser 或解析失败（含 <parsererror>）
+ * - 不用于整体序列化回字符串，避免破坏原始输出格式与 Fabric 解析行为
+ */
+function parseSvgDom(svg: string): Document | null {
+  if (typeof DOMParser === 'undefined') return null
+  try {
+    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    if (doc.querySelector('parsererror')) return null
+    return doc
+  } catch {
+    return null
+  }
+}
+
+/**
  * 将 CSS 变量替换为 hex 色值
  */
 function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
@@ -61,9 +78,10 @@ function removeBackgroundRects(svg: string): string {
     ''
   )
 
-  // 3) style 中 stroke:none 且 fill-opacity≈0 的不可见占位
+  // 3) style 中 stroke:none 且 fill-opacity 精确为 0（含 0.0）的不可见占位
+  //    用 (?![.\d]) 防止把 fill-opacity:0.5 / 0.02 等可见透明度误判为 0 而误删
   result = result.replace(
-    /<rect\b(?=[^>]*style\s*=\s*"[^"]*stroke\s*:\s*none[^"]*")(?=[^>]*style\s*=\s*"[^"]*fill-opacity\s*:\s*0(?:\.0+1)?[^"]*")[^>]*?\/?>\s*(?:<\/rect>)?/gi,
+    /<rect\b(?=[^>]*style\s*=\s*"[^"]*stroke\s*:\s*none[^"]*")(?=[^>]*style\s*=\s*"[^"]*fill-opacity\s*:\s*0(?:\.0+)?(?![.\d])[^"]*")[^>]*?\/?>\s*(?:<\/rect>)?/gi,
     ''
   )
 
@@ -72,9 +90,24 @@ function removeBackgroundRects(svg: string): string {
 
 /**
  * 提取原始 viewBox
+ *
+ * 优先用 DOMParser 结构化读取（兼容单引号/双引号、属性顺序变化），
+ * 解析失败或无 DOMParser 环境时回退正则（仅兜底，覆盖常见双引号/单引号写法）。
  */
 function extractViewBox(svg: string): { viewBox: string; width: number; height: number } {
-  const match = svg.match(/viewBox="([^"]+)"/)
+  const doc = parseSvgDom(svg)
+  const vb = doc?.documentElement?.getAttribute('viewBox')
+  if (vb) {
+    const parts = vb.split(/[\s,]+/).map(Number)
+    return {
+      viewBox: vb,
+      width: parts.length >= 4 ? Math.round(parts[2]) : 0,
+      height: parts.length >= 4 ? Math.round(parts[3]) : 0,
+    }
+  }
+
+  // 回退正则（无 DOMParser 环境，如极少数 Node 构建场景）
+  const match = svg.match(/viewBox\s*=\s*["']([^"']+)["']/)
   if (!match) return { viewBox: '', width: 0, height: 0 }
   const parts = match[1].split(/[\s,]+/).map(Number)
   return {
@@ -86,10 +119,45 @@ function extractViewBox(svg: string): { viewBox: string; width: number; height: 
 
 /**
  * 从 marker 定义中提取关键参数
+ *
+ * 优先用 DOMParser 遍历 <marker> 元素（getAttribute 兼容任意属性顺序），
+ * 解析失败或无 DOMParser 环境时回退正则。
  */
 function parseMarkers(svg: string): Record<string, MarkerInfo> {
   const markers: Record<string, MarkerInfo> = {}
 
+  const doc = parseSvgDom(svg)
+  if (doc) {
+    doc.querySelectorAll('marker').forEach((m) => {
+      const id = m.getAttribute('id')
+      if (!id) return
+      const mw = parseFloat(m.getAttribute('markerWidth') || '0')
+      const mh = parseFloat(m.getAttribute('markerHeight') || '0')
+      const refX = parseFloat(m.getAttribute('refX') || '0')
+
+      // marker 内可能是 <polygon> 或 <path>，分别提取「箭头尖端最远 x」与填充色
+      const poly = m.querySelector('polygon')
+      const path = m.querySelector('path')
+      let fill = '#000'
+      let tipX = 0
+      if (poly) {
+        fill = poly.getAttribute('fill') || '#000'
+        const xs = (poly.getAttribute('points') || '')
+          .split(/[\s,]+/).filter((_, i) => i % 2 === 0).map(Number)
+        if (xs.length) tipX = Math.max(...xs)
+      } else if (path) {
+        fill = path.getAttribute('fill') || '#000'
+        const nums = (path.getAttribute('d') || '').match(/[\d.]+/g)?.map(Number) || []
+        const xs = nums.filter((_, i) => i % 2 === 0)
+        if (xs.length) tipX = Math.max(...xs)
+      }
+
+      markers[id] = { fill, refX, tipOffset: tipX - refX, markerW: mw, markerH: mh }
+    })
+    return markers
+  }
+
+  // ── 回退正则（无 DOMParser 环境）──
   // polygon 形式
   const polyRe = /<marker\s+id="([^"]+)"[^>]*markerWidth="([^"]+)"[^>]*markerHeight="([^"]+)"[^>]*refX="([^"]+)"[^>]*refY="([^"]+)"[^>]*>\s*<polygon\s+[^>]*points="([^"]+)"[^>]*fill="([^"]+)"[^>]*\/>\s*<\/marker>/g
   let m
@@ -113,18 +181,38 @@ function parseMarkers(svg: string): Record<string, MarkerInfo> {
 
 /**
  * 从 <style> 中解析 CSS 类级 marker-end 规则
+ *
+ * <style> 文本用 DOMParser 提取（兼容 <style> 标签的属性顺序/引号变化）；
+ * CSS 规则本身仍用正则解析（CSS 非 XML 结构，DOMParser 无法解析声明块），
+ * 但放宽到支持 marker-end 冒号/url 两侧的空格（如 url( #id ) / url(#id)）。
  */
 function parseClassMarkers(svg: string): Record<string, string> {
   const classMarkers: Record<string, string> = {}
-  const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi
-  let sm
-  while ((sm = styleRe.exec(svg)) !== null) {
-    const ruleRe = /\.([\w-]+)\s*\{[^}]*marker-end:\s*url\(#([^)]+)\)[^}]*\}/g
+
+  // 提取 <style> 文本：优先 DOMParser，回退正则
+  const styleTexts: string[] = []
+  const doc = parseSvgDom(svg)
+  if (doc) {
+    doc.querySelectorAll('style').forEach((s) => {
+      const t = s.textContent
+      if (t) styleTexts.push(t)
+    })
+  } else {
+    const styleRe = /<style[^>]*>([\s\S]*?)<\/style>/gi
+    let sm
+    while ((sm = styleRe.exec(svg)) !== null) styleTexts.push(sm[1])
+  }
+
+  // 解析 CSS 规则：.cls { ... marker-end: url(#id) ... }
+  // 支持 marker-end 冒号/url 两侧的空格（如 url( #id ) / url(#id)）
+  for (const css of styleTexts) {
+    const ruleRe = /\.([\w-]+)\s*\{[^}]*marker-end\s*:\s*url\(\s*#([^)\s]+)\s*\)[^}]*\}/g
     let rm
-    while ((rm = ruleRe.exec(sm[1])) !== null) {
+    while ((rm = ruleRe.exec(css)) !== null) {
       classMarkers[rm[1]] = rm[2]
     }
   }
+
   return classMarkers
 }
 
