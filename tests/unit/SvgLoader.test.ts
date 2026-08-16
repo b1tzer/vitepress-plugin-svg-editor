@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { SvgLoader } from '../../src/core/serialization/SvgLoader'
 
 // DOMPurify 依赖浏览器原生 DOM 解析器做 SVG 命名空间解析；happy-dom 的
@@ -95,5 +95,41 @@ describe('SvgLoader', () => {
   it('应拒绝超过 10MB 的 SVG 文件', () => {
     const hugeSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' + 'A'.repeat(11 * 1024 * 1024) + '</svg>'
     expect(() => loader.load(hugeSvg, 'light')).toThrow(/过大/)
+  })
+})
+
+// ── loadFromUrl：封装 fetch + 清洗 + 预处理（issue #19 P1）──
+describe('SvgLoader.loadFromUrl', () => {
+  const loader = new SvgLoader()
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('应从 URL 拉取并加载 SVG', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: vi.fn().mockResolvedValue(baseSvg),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await loader.loadFromUrl('/diagrams/foo.svg', 'light')
+    expect(fetchMock).toHaveBeenCalledWith('/diagrams/foo.svg')
+    expect(result.svg).toContain('<svg')
+    expect(result.svgWidth).toBe(100)
+    expect(result.svgHeight).toBe(100)
+  })
+
+  it('HTTP 非 2xx 时应抛出错误', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }))
+    await expect(loader.loadFromUrl('/missing.svg', 'light')).rejects.toThrow(/404/)
+  })
+
+  it('应将 theme 参数透传给 load', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, text: vi.fn().mockResolvedValue(baseSvg) }))
+    const loadSpy = vi.spyOn(loader, 'load')
+    await loader.loadFromUrl('/diagrams/foo.svg', 'dark')
+    expect(loadSpy).toHaveBeenCalledWith(baseSvg, 'dark')
+    loadSpy.mockRestore()
   })
 })
