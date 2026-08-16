@@ -135,8 +135,8 @@ test.describe('Editor Layout Stability (CLS Prevention)', () => {
     const contextPanel = page.locator('.context-panel')
 
     for (const el of [topBar, bottomBar, contextPanel]) {
-      const display = await el.evaluate((node: HTMLElement) =>
-        window.getComputedStyle(node).display
+      const display = await el.evaluate(
+        (node: HTMLElement) => window.getComputedStyle(node).display
       )
       expect(display).not.toBe('none')
     }

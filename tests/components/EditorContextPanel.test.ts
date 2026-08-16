@@ -3,14 +3,30 @@ import { mount } from '@vue/test-utils'
 import EditorContextPanel from '../../src/components/sub/EditorContextPanel.vue'
 
 const makeProps = (overrides: Record<string, any> = {}) => ({
-  selectionInfo: '', currentFill: '#ff0000', currentStroke: '#000000',
-  currentFontSize: 12, currentFontWeight: 'normal', currentFontStyle: 'normal',
-  currentUnderline: false, currentTextAlign: 'left', currentTextFill: '#000000',
-  currentStrokeWidth: 1, currentStrokeDash: false, currentRotation: 0,
-  currentOpacity: 100, gradientType: 'none', gradientAngle: 0,
-  gradientColor1: '#1565C0', gradientColor2: '#E3F2FD',
-  shadowEnabled: false, shadowColor: '#000000', shadowBlur: 5,
-  shadowOffsetX: 3, shadowOffsetY: 3, themeMode: 'dark', collapsed: false,
+  selectionInfo: '',
+  currentFill: '#ff0000',
+  currentStroke: '#000000',
+  currentFontSize: 12,
+  currentFontWeight: 'normal',
+  currentFontStyle: 'normal',
+  currentUnderline: false,
+  currentTextAlign: 'left',
+  currentTextFill: '#000000',
+  currentStrokeWidth: 1,
+  currentStrokeDash: false,
+  currentRotation: 0,
+  currentOpacity: 100,
+  gradientType: 'none',
+  gradientAngle: 0,
+  gradientColor1: '#1565C0',
+  gradientColor2: '#E3F2FD',
+  shadowEnabled: false,
+  shadowColor: '#000000',
+  shadowBlur: 5,
+  shadowOffsetX: 3,
+  shadowOffsetY: 3,
+  themeMode: 'dark',
+  collapsed: false,
   hasTextInSelection: false,
   ...overrides,
 })
@@ -57,8 +73,8 @@ describe('EditorContextPanel', () => {
     const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect' }) })
     const btns = ['左对齐', '水平居中', '上移一层', '置顶', '水平等间距分布']
     const combo = ['组合 (']
-    btns.forEach(t => expect(w.find(`[data-tip="${t}"]`).exists()).toBe(true))
-    combo.forEach(t => expect(w.find(`[data-tip*="${t}"]`).exists()).toBe(true))
+    btns.forEach((t) => expect(w.find(`[data-tip="${t}"]`).exists()).toBe(true))
+    combo.forEach((t) => expect(w.find(`[data-tip*="${t}"]`).exists()).toBe(true))
   })
 
   // ══════════════════════════════════════════════════════
@@ -74,7 +90,9 @@ describe('EditorContextPanel', () => {
   })
 
   it('选中文字时显示字号/加粗/斜体/下划线/对齐/颜色，不显示形状工具', () => {
-    const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'textbox', hasTextInSelection: true }) })
+    const w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'textbox', hasTextInSelection: true }),
+    })
     expect(w.find('[aria-label="字号"]').exists()).toBe(true)
     expect(w.find('[data-tip="加粗"]').exists()).toBe(true)
     expect(w.find('[data-tip="斜体"]').exists()).toBe(true)
@@ -98,15 +116,21 @@ describe('EditorContextPanel', () => {
   // 5. 渐变控件条件展示
   // ══════════════════════════════════════════════════════
   it('渐变类型切换时应正确显示/隐藏颜色和角度输入', () => {
-    let w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect', gradientType: 'none' }) })
+    let w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'rect', gradientType: 'none' }),
+    })
     expect(w.find('[aria-label="渐变颜色1"]').exists()).toBe(false)
 
-    w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect', gradientType: 'linear' }) })
+    w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'rect', gradientType: 'linear' }),
+    })
     expect(w.find('[aria-label="渐变颜色1"]').exists()).toBe(true)
     expect(w.find('[aria-label="渐变颜色2"]').exists()).toBe(true)
     expect(w.find('[aria-label="渐变角度"]').exists()).toBe(true)
 
-    w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect', gradientType: 'radial' }) })
+    w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'rect', gradientType: 'radial' }),
+    })
     expect(w.find('[aria-label="渐变角度"]').exists()).toBe(false)
   })
 
@@ -114,10 +138,14 @@ describe('EditorContextPanel', () => {
   // 6. 阴影控件条件展示
   // ══════════════════════════════════════════════════════
   it('阴影开关控制配置项显隐，点击触发 toggleShadow', async () => {
-    let w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect', shadowEnabled: false }) })
+    let w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'rect', shadowEnabled: false }),
+    })
     expect(w.find('[aria-label="阴影颜色"]').exists()).toBe(false)
 
-    w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect', shadowEnabled: true }) })
+    w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'rect', shadowEnabled: true }),
+    })
     expect(w.find('[aria-label="阴影颜色"]').exists()).toBe(true)
     expect(w.find('[aria-label="阴影模糊"]').exists()).toBe(true)
 
@@ -130,10 +158,22 @@ describe('EditorContextPanel', () => {
   // ══════════════════════════════════════════════════════
   it('激活状态的工具按钮应有 .active 类', () => {
     const cases: Array<[string, string, Record<string, any>]> = [
-      ['bold',   '[data-tip="加粗"]',   { selectionInfo: 'textbox', hasTextInSelection: true, currentFontWeight: 'bold' }],
-      ['italic', '[data-tip="斜体"]',   { selectionInfo: 'textbox', hasTextInSelection: true, currentFontStyle: 'italic' }],
-      ['underline', '[data-tip="下划线"]', { selectionInfo: 'textbox', hasTextInSelection: true, currentUnderline: true }],
-      ['dash',   '[aria-label="切换虚线"]', { selectionInfo: 'rect', currentStrokeDash: true }],
+      [
+        'bold',
+        '[data-tip="加粗"]',
+        { selectionInfo: 'textbox', hasTextInSelection: true, currentFontWeight: 'bold' },
+      ],
+      [
+        'italic',
+        '[data-tip="斜体"]',
+        { selectionInfo: 'textbox', hasTextInSelection: true, currentFontStyle: 'italic' },
+      ],
+      [
+        'underline',
+        '[data-tip="下划线"]',
+        { selectionInfo: 'textbox', hasTextInSelection: true, currentUnderline: true },
+      ],
+      ['dash', '[aria-label="切换虚线"]', { selectionInfo: 'rect', currentStrokeDash: true }],
       ['shadow', '[aria-label="切换阴影"]', { selectionInfo: 'rect', shadowEnabled: true }],
     ]
     cases.forEach(([name, sel, overrides]) => {
@@ -147,7 +187,7 @@ describe('EditorContextPanel', () => {
   // ══════════════════════════════════════════════════════
   it('点击对齐/层级/分布/组合按钮应触发相应 emit', async () => {
     const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect' }) })
-    
+
     await w.find('[data-tip="左对齐"]').trigger('click')
     expect(w.emitted('align')?.[0]).toEqual(['left'])
 
@@ -172,16 +212,20 @@ describe('EditorContextPanel', () => {
   it('旋转/透明度变更应触发 rotation/opacity emit', async () => {
     const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'rect' }) })
     const rot = w.find('[aria-label="旋转角度"]')
-    await rot.setValue('90'); await rot.trigger('change')
+    await rot.setValue('90')
+    await rot.trigger('change')
     expect(w.emitted('rotation')).toBeTruthy()
 
     const op = w.find('[aria-label="透明度"]')
-    await op.setValue(50); await op.trigger('input')
+    await op.setValue(50)
+    await op.trigger('input')
     expect(w.emitted('opacity')).toBeTruthy()
   })
 
   it('字号/加粗/下划线变更应触发对应 emit', async () => {
-    const w = mount(EditorContextPanel, { props: makeProps({ selectionInfo: 'textbox', hasTextInSelection: true }) })
+    const w = mount(EditorContextPanel, {
+      props: makeProps({ selectionInfo: 'textbox', hasTextInSelection: true }),
+    })
     await w.find('[aria-label="字号"]').setValue('18')
     await w.find('[aria-label="字号"]').trigger('change')
     expect(w.emitted('fontSize')).toBeTruthy()

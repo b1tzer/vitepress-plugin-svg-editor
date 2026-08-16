@@ -24,16 +24,16 @@
 
 **目标**：内核层每个模块独立可测，不依赖 DOM、Canvas、VitePress。
 
-| 测试对象 | 测试内容 | 工具 | 示例 case |
-|---------|---------|------|----------|
-| `EventBus` | emit/on/off/once，事件顺序，错误隔离 | Vitest | 注册 3 个监听器，emit 后按顺序触发；一个抛异常不影响其他 |
-| `HistoryManager` | push/undo/redo，栈上限，空栈操作 | Vitest | push 60 步后 undo 50 步，验证栈顶正确 |
-| `SvgLoader` | 加载合法 SVG、非法 SVG、空字符串、超大 SVG | Vitest | `<svg>...</svg>` 正确解析；`"not svg"` 抛错 |
-| `SvgSerializer` | `canvas.toSVG()` 输出转换为标准 SVG | Vitest (mock canvas) | 移除 `data-fabric-*` 属性；CSS 变量还原 |
-| `PluginSystem` | 注册/卸载/调度插件，插件加载顺序 | Vitest | 注册 3 个插件，验证 `install` 回调按序触发 |
-| `StorageAdapter` 实现 | VitePressSaveAdapter.save/load, LocalStorageAdapter | Vitest + tmp dir | save 写入文件，load 读回内容一致 |
-| `ThemeAdapter` 实现 | VitePressThemeAdapter.isDark(), onChange | Vitest (mock ref) | 切换 isDark → onChange 回调触发 |
-| preprocessor / postprocessor | 链式调用、异常处理、空函数透传 | Vitest | `preprocess: svg → svg` 链式调用；一个抛错不影响链 |
+| 测试对象                     | 测试内容                                            | 工具                 | 示例 case                                                |
+| ---------------------------- | --------------------------------------------------- | -------------------- | -------------------------------------------------------- |
+| `EventBus`                   | emit/on/off/once，事件顺序，错误隔离                | Vitest               | 注册 3 个监听器，emit 后按顺序触发；一个抛异常不影响其他 |
+| `HistoryManager`             | push/undo/redo，栈上限，空栈操作                    | Vitest               | push 60 步后 undo 50 步，验证栈顶正确                    |
+| `SvgLoader`                  | 加载合法 SVG、非法 SVG、空字符串、超大 SVG          | Vitest               | `<svg>...</svg>` 正确解析；`"not svg"` 抛错              |
+| `SvgSerializer`              | `canvas.toSVG()` 输出转换为标准 SVG                 | Vitest (mock canvas) | 移除 `data-fabric-*` 属性；CSS 变量还原                  |
+| `PluginSystem`               | 注册/卸载/调度插件，插件加载顺序                    | Vitest               | 注册 3 个插件，验证 `install` 回调按序触发               |
+| `StorageAdapter` 实现        | VitePressSaveAdapter.save/load, LocalStorageAdapter | Vitest + tmp dir     | save 写入文件，load 读回内容一致                         |
+| `ThemeAdapter` 实现          | VitePressThemeAdapter.isDark(), onChange            | Vitest (mock ref)    | 切换 isDark → onChange 回调触发                          |
+| preprocessor / postprocessor | 链式调用、异常处理、空函数透传                      | Vitest               | `preprocess: svg → svg` 链式调用；一个抛错不影响链       |
 
 **单元测试覆盖目标**：`core/` 目录代码覆盖率 ≥ 80%。
 
@@ -41,12 +41,12 @@
 
 **目标**：Vue 组件在隔离环境中可渲染、可交互。
 
-| 测试对象 | 测试内容 | 工具 | 示例 case |
-|---------|---------|------|----------|
-| `SvgDiagram.vue` | props 传递、v-html 渲染、hover 按钮出现、点击触发 | Vitest + @vue/test-utils | 传入 src，验证 `<div v-html>` 内容非空 |
-| `SvgEditor.vue` | 弹窗打开/关闭、loading 态、Teleport 目标 | Vitest + @vue/test-utils | `showEditor=true` → `.editor-overlay` 存在 |
-| `EditorToolbar.vue` | 按钮渲染、disabled 状态、点击 emit | Vitest + @vue/test-utils | 无选中对象时对齐按钮 disabled |
-| `EditorStatusbar.vue` | 缩放级别显示、坐标显示 | Vitest + @vue/test-utils | 缩放 150% → 显示 "150%" |
+| 测试对象              | 测试内容                                          | 工具                     | 示例 case                                  |
+| --------------------- | ------------------------------------------------- | ------------------------ | ------------------------------------------ |
+| `SvgDiagram.vue`      | props 传递、v-html 渲染、hover 按钮出现、点击触发 | Vitest + @vue/test-utils | 传入 src，验证 `<div v-html>` 内容非空     |
+| `SvgEditor.vue`       | 弹窗打开/关闭、loading 态、Teleport 目标          | Vitest + @vue/test-utils | `showEditor=true` → `.editor-overlay` 存在 |
+| `EditorToolbar.vue`   | 按钮渲染、disabled 状态、点击 emit                | Vitest + @vue/test-utils | 无选中对象时对齐按钮 disabled              |
+| `EditorStatusbar.vue` | 缩放级别显示、坐标显示                            | Vitest + @vue/test-utils | 缩放 150% → 显示 "150%"                    |
 
 **注意**：组件测试中 Fabric.js Canvas 不可用（jsdom 不支持），因此需 mock `CanvasManager` 或仅在测试中验证 DOM 结构，不做 Canvas 交互测试。
 
@@ -54,12 +54,12 @@
 
 **目标**：多个模块协同工作的完整链路。
 
-| 测试链路 | 测试内容 | 工具 | 示例 case |
-|---------|---------|------|----------|
-| load → edit → save | 完整闭环，使用 mock canvas | Vitest + jsdom + fabric mock | 加载 SVG → 模拟选中对象 → 修改属性 → 序列化 → 验证输出 |
-| undo/redo 完整链路 | 多步操作后 undo 恢复到初始状态 | Vitest | 执行 5 步操作 → undo 5 次 → 与初始状态 diff 为零 |
-| 插件加载 → 工具栏渲染 | 注册插件后工具栏按钮正确出现 | Vitest | 注册 align 插件 → 工具栏出现对齐按钮 |
-| ThemeAdapter 集成 | isDark 变化 → 编辑器重新加载 SVG | Vitest | 切换暗色 → canvas 中颜色值从亮色映射变为暗色映射 |
+| 测试链路              | 测试内容                         | 工具                         | 示例 case                                              |
+| --------------------- | -------------------------------- | ---------------------------- | ------------------------------------------------------ |
+| load → edit → save    | 完整闭环，使用 mock canvas       | Vitest + jsdom + fabric mock | 加载 SVG → 模拟选中对象 → 修改属性 → 序列化 → 验证输出 |
+| undo/redo 完整链路    | 多步操作后 undo 恢复到初始状态   | Vitest                       | 执行 5 步操作 → undo 5 次 → 与初始状态 diff 为零       |
+| 插件加载 → 工具栏渲染 | 注册插件后工具栏按钮正确出现     | Vitest                       | 注册 align 插件 → 工具栏出现对齐按钮                   |
+| ThemeAdapter 集成     | isDark 变化 → 编辑器重新加载 SVG | Vitest                       | 切换暗色 → canvas 中颜色值从亮色映射变为暗色映射       |
 
 ### 2.4 E2E 测试（End-to-End Tests）
 
@@ -69,34 +69,34 @@
 
 **环境**：需要先 `vitepress build && vitepress preview`（或 `vitepress dev`）
 
-| 测试 spec | 覆盖功能 | 核心步骤 |
-|-----------|---------|---------|
-| `basic.spec.ts` | F1（加载）, F2（选中拖拽） | 打开含 SVG 的页面 → 确认 SVG 可见且尺寸>0 → 点击编辑按钮 → 确认 Canvas 渲染 |
-| `edit-save.spec.ts` | F5（保存）, F15（预处理）, F16（保存确认） | 打开编辑器 → 移动一个矩形 → 点击保存 → 等待关闭 → 刷新页面 → 确认 SVG 已改变 |
-| `theme-toggle.spec.ts` | F8（主题切换） | 打开编辑器 → 截图亮色 → 切换主题 → 截图暗色 → 像素比较有差异 |
-| `undo-redo.spec.ts` | F4（undo/redo） | 移动对象 → Ctrl+Z → 位置恢复 → Ctrl+Y → 位置回来 |
-| `text-edit.spec.ts` | F6（文字编辑）, F9（文字格式） | 双击文字 → 修改内容 → Ctrl+B 加粗 → 保存 → 验证 Bold 生效 |
-| `layer-control.spec.ts` | F10（层级） | 创建 2 个矩形 → 发送到后面 → 验证 z-index 变化 |
-| `align.spec.ts` | F11（对齐） | 选中 2 个对象 → 左对齐 → 验证两者 left 坐标一致 |
-| `distribute.spec.ts` | F12（等距） | 选中 3 个对象 → 水平等距 → 验证间距相等 |
-| `keyboard-shortcuts.spec.ts` | F14（快捷键） | 验证 Ctrl+Z/Y/S/Delete/Del/Ctrl+A 全部生效 |
-| `arrow-marker.spec.ts` | F7（箭头） | 打开含 marker 的 SVG → 确认箭头三角形存在 → 拖动线条 → 箭头跟随 |
-| `css-variables.spec.ts` | F1（CSS变量解析） | 打开含 `var(--vp-c-brand-1)` 的 SVG → Canvas 中颜色为对应 hex 值 |
-| `markdown-syntax.spec.ts` | Markdown 原生语法 | `![alt](test.svg)` 在页面中被渲染为可编辑的 SVG 容器 |
-| `multiple-svg.spec.ts` | 多 SVG 页面 | 含 5 张 SVG 的页面 → 逐个打开编辑器 → 无内存泄漏 |
-| `edge-cases.spec.ts` | 边界情况 | 空白 SVG、超大 SVG（>1MB）、损坏 SVG、无 viewBox 的 SVG |
-| `build-preview.spec.ts` | build+preview 验证 | `vitepress build && vitepress preview` → 所有核心 E2E case 重新跑一遍 |
+| 测试 spec                    | 覆盖功能                                   | 核心步骤                                                                     |
+| ---------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| `basic.spec.ts`              | F1（加载）, F2（选中拖拽）                 | 打开含 SVG 的页面 → 确认 SVG 可见且尺寸>0 → 点击编辑按钮 → 确认 Canvas 渲染  |
+| `edit-save.spec.ts`          | F5（保存）, F15（预处理）, F16（保存确认） | 打开编辑器 → 移动一个矩形 → 点击保存 → 等待关闭 → 刷新页面 → 确认 SVG 已改变 |
+| `theme-toggle.spec.ts`       | F8（主题切换）                             | 打开编辑器 → 截图亮色 → 切换主题 → 截图暗色 → 像素比较有差异                 |
+| `undo-redo.spec.ts`          | F4（undo/redo）                            | 移动对象 → Ctrl+Z → 位置恢复 → Ctrl+Y → 位置回来                             |
+| `text-edit.spec.ts`          | F6（文字编辑）, F9（文字格式）             | 双击文字 → 修改内容 → Ctrl+B 加粗 → 保存 → 验证 Bold 生效                    |
+| `layer-control.spec.ts`      | F10（层级）                                | 创建 2 个矩形 → 发送到后面 → 验证 z-index 变化                               |
+| `align.spec.ts`              | F11（对齐）                                | 选中 2 个对象 → 左对齐 → 验证两者 left 坐标一致                              |
+| `distribute.spec.ts`         | F12（等距）                                | 选中 3 个对象 → 水平等距 → 验证间距相等                                      |
+| `keyboard-shortcuts.spec.ts` | F14（快捷键）                              | 验证 Ctrl+Z/Y/S/Delete/Del/Ctrl+A 全部生效                                   |
+| `arrow-marker.spec.ts`       | F7（箭头）                                 | 打开含 marker 的 SVG → 确认箭头三角形存在 → 拖动线条 → 箭头跟随              |
+| `css-variables.spec.ts`      | F1（CSS变量解析）                          | 打开含 `var(--vp-c-brand-1)` 的 SVG → Canvas 中颜色为对应 hex 值             |
+| `markdown-syntax.spec.ts`    | Markdown 原生语法                          | `![alt](test.svg)` 在页面中被渲染为可编辑的 SVG 容器                         |
+| `multiple-svg.spec.ts`       | 多 SVG 页面                                | 含 5 张 SVG 的页面 → 逐个打开编辑器 → 无内存泄漏                             |
+| `edge-cases.spec.ts`         | 边界情况                                   | 空白 SVG、超大 SVG（>1MB）、损坏 SVG、无 viewBox 的 SVG                      |
+| `build-preview.spec.ts`      | build+preview 验证                         | `vitepress build && vitepress preview` → 所有核心 E2E case 重新跑一遍        |
 
 ### 2.5 兼容性矩阵测试
 
 **目标**：确保在不同环境组合下插件正常工作。
 
-| 维度 | 变体 | 测试方式 |
-|------|------|---------|
-| VitePress 版本 | 1.0.x, 1.3.x, 1.6.x | CI Matrix，每个版本跑核心 E2E case |
-| Node.js 版本 | 18 LTS, 20 LTS, 22 LTS | CI Matrix |
-| 浏览器 | Chromium, Firefox | Playwright projects（每个 spec 跑两次） |
-| 包管理器 | pnpm, yarn, npm | CI 中分别 install + build |
+| 维度           | 变体                   | 测试方式                                |
+| -------------- | ---------------------- | --------------------------------------- |
+| VitePress 版本 | 1.0.x, 1.3.x, 1.6.x    | CI Matrix，每个版本跑核心 E2E case      |
+| Node.js 版本   | 18 LTS, 20 LTS, 22 LTS | CI Matrix                               |
+| 浏览器         | Chromium, Firefox      | Playwright projects（每个 spec 跑两次） |
+| 包管理器       | pnpm, yarn, npm        | CI 中分别 install + build               |
 
 ## 三、测试基础设施
 
@@ -150,27 +150,29 @@ packages/vitepress-plugin-svg-editor/
 ### 3.2 关键配置
 
 **vitest.config.ts**:
+
 ```ts
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',          // 组件测试需要 DOM
+    environment: 'jsdom', // 组件测试需要 DOM
     include: ['tests/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      include: ['src/core/**'],    // 只统计内核覆盖率
+      include: ['src/core/**'], // 只统计内核覆盖率
       thresholds: {
         lines: 80,
         functions: 80,
         branches: 70,
-      }
-    }
-  }
+      },
+    },
+  },
 })
 ```
 
 **playwright.config.ts**:
+
 ```ts
 import { defineConfig } from '@playwright/test'
 
@@ -190,11 +192,12 @@ export default defineConfig({
     },
     {
       // build-preview.spec.ts 专用
-      command: 'pnpm --filter test-vitepress-site build && pnpm --filter test-vitepress-site preview',
+      command:
+        'pnpm --filter test-vitepress-site build && pnpm --filter test-vitepress-site preview',
       port: 4173,
       reuseExistingServer: true,
-    }
-  ]
+    },
+  ],
 })
 ```
 

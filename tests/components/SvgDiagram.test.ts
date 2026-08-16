@@ -4,7 +4,8 @@ import { nextTick, h, defineComponent } from 'vue'
 import SvgDiagram from '../../src/components/SvgDiagram.vue'
 
 // Mock fetch 避免真实网络请求
-const mockSvgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>'
+const mockSvgContent =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>'
 
 global.fetch = vi.fn(() =>
   Promise.resolve({
@@ -21,11 +22,13 @@ vi.mock('vitepress', () => ({
   defineClientComponent: (importFn: () => Promise<any>) => {
     // 同步加载并返回简单包装组件
     let resolvedComp: any = null
-    importFn().then((mod: any) => { resolvedComp = mod.default || mod })
+    importFn().then((mod: any) => {
+      resolvedComp = mod.default || mod
+    })
     return defineComponent({
       name: 'ClientOnlyWrapper',
       setup(props: any, { attrs }: any) {
-        return () => resolvedComp ? h(resolvedComp, { ...attrs }) : null
+        return () => (resolvedComp ? h(resolvedComp, { ...attrs }) : null)
       },
     })
   },

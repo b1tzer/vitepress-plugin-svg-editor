@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test'
-import {
-  clickByTip, createRects, multiSelect, readRects, readSelectedRects,
-} from './helpers'
+import { clickByTip, createRects, multiSelect, readRects, readSelectedRects } from './helpers'
 
 const PAGE = '/features.html'
 
 test.beforeEach(async ({ page }) => {
-  page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+  page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
   await page.goto(PAGE, { waitUntil: 'networkidle', timeout: 30000 })
   await page.waitForSelector('.svg-container', { timeout: 15000 })
-  await page.evaluate(() => document.querySelectorAll('.svg-container')[1]?.scrollIntoView({ block: 'center' }))
+  await page.evaluate(() =>
+    document.querySelectorAll('.svg-container')[1]?.scrollIntoView({ block: 'center' })
+  )
   await page.waitForTimeout(300)
   const container = page.locator('.svg-container').nth(1)
   await container.hover()
@@ -21,7 +21,10 @@ test.beforeEach(async ({ page }) => {
 async function resetCanvas(page: any) {
   await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
-    if (c) { c.discardActiveObject(); c.setViewportTransform([1, 0, 0, 1, 0, 0]) }
+    if (c) {
+      c.discardActiveObject()
+      c.setViewportTransform([1, 0, 0, 1, 0, 0])
+    }
   })
 }
 
@@ -54,11 +57,24 @@ test('Group 2: 6种对齐—逐个验证坐标变化', async ({ page }) => {
     await multiSelect(page, ['align-0', 'align-1'])
     const before = await readSelectedRects(page, 'align')
     const btnIdx = await clickByTip(page, tip)
-    if (btnIdx < 0) { console.log(`  ⚠️ 未找到 "${tip}"`); continue }
-    await page.evaluate(() => { const c = (window as any).__fabricCanvas; const s = c.getActiveObject(); if (s && s._objects) { s.destroy(); c.discardActiveObject(); c.renderAll() } })
+    if (btnIdx < 0) {
+      console.log(`  ⚠️ 未找到 "${tip}"`)
+      continue
+    }
+    await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const s = c.getActiveObject()
+      if (s && s._objects) {
+        s.destroy()
+        c.discardActiveObject()
+        c.renderAll()
+      }
+    })
     const after = await readRects(page, 'align')
     const changed = before[0]?.left !== after[0]?.left || before[0]?.top !== after[0]?.top
-    console.log(`  ${tip}: ${changed ? '✅' : '❌'} [${before[0]?.left},${before[0]?.top}]→[${after[0]?.left},${after[0]?.top}]`)
+    console.log(
+      `  ${tip}: ${changed ? '✅' : '❌'} [${before[0]?.left},${before[0]?.top}]→[${after[0]?.left},${after[0]?.top}]`
+    )
     expect(changed, `${tip} 应导致坐标变化`).toBe(true)
   }
   console.log('✅ 6种对齐全通过')
@@ -78,7 +94,20 @@ test('Group 3: 撤销/重做/删除/复制', async ({ page }) => {
   console.log(`撤销: ${afterUndo} ${afterUndo >= before ? '✅' : '⚠️'}`)
   await clickByTip(page, '重做')
   console.log('重做: ✅')
-  await page.evaluate(() => { const c = (window as any).__fabricCanvas; const r = new ((window as any).fabric.Rect)({ left: 200, top: 200, width: 80, height: 50, fill: '#1565C0', id: 'copy-test' }); c.add(r); c.setActiveObject(r); c.renderAll() })
+  await page.evaluate(() => {
+    const c = (window as any).__fabricCanvas
+    const r = new (window as any).fabric.Rect({
+      left: 200,
+      top: 200,
+      width: 80,
+      height: 50,
+      fill: '#1565C0',
+      id: 'copy-test',
+    })
+    c.add(r)
+    c.setActiveObject(r)
+    c.renderAll()
+  })
   await clickByTip(page, '复制')
   console.log('复制: ✅')
   console.log('✅ 编辑按钮全通过')
@@ -100,7 +129,9 @@ test('Group 5: 组合/取消组合', async ({ page }) => {
   await createRects(page, 2, 'group')
   await multiSelect(page, ['group-0', 'group-1'])
   await clickByTip(page, '组合 (Ctrl+G)')
-  const hasGroup = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects().some((o: any) => o.type === 'group'))
+  const hasGroup = await page.evaluate(() =>
+    (window as any).__fabricCanvas?.getObjects().some((o: any) => o.type === 'group')
+  )
   console.log(`组合: ${hasGroup ? '✅' : '⚠️(可能变成activeselection)'}`)
   await clickByTip(page, '取消组合 (Ctrl+Shift+G)')
   console.log('取消组合: ✅')
@@ -109,7 +140,15 @@ test('Group 5: 组合/取消组合', async ({ page }) => {
 
 test('Group 6: 分布与样式按钮存在性', async ({ page }) => {
   await resetCanvas(page)
-  for (const tip of ['水平等间距分布', '垂直等间距分布', '阴影', '虚线', '加粗', '斜体', '下划线']) {
+  for (const tip of [
+    '水平等间距分布',
+    '垂直等间距分布',
+    '阴影',
+    '虚线',
+    '加粗',
+    '斜体',
+    '下划线',
+  ]) {
     const idx = await clickByTip(page, tip)
     console.log(`${tip}: ${idx >= 0 ? '✅' : '❌'}`)
   }
@@ -119,7 +158,10 @@ test('Group 6: 分布与样式按钮存在性', async ({ page }) => {
 test('Group 7: Canvas框选与拖拽', async ({ page }) => {
   await resetCanvas(page)
   await createRects(page, 3, 'drag')
-  const box = await page.locator('.editor-canvas .lower-canvas').boundingBox().catch(() => null)
+  const box = await page
+    .locator('.editor-canvas .lower-canvas')
+    .boundingBox()
+    .catch(() => null)
   if (box && box.width > 50) {
     console.log(`Canvas: ${Math.round(box.width)}×${Math.round(box.height)}`)
     await page.mouse.move(box.x + 30, box.y + 30)

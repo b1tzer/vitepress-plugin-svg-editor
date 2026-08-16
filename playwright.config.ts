@@ -22,6 +22,10 @@ export default defineConfig({
   projects: [
     { name: 'chromium', testIgnore: /performance-regression\.spec\.ts/ },
     { name: 'firefox', testIgnore: /performance-regression\.spec\.ts/ },
-    { name: 'perf', use: { browserName: 'chromium' }, testMatch: /performance-regression\.spec\.ts/ },
+    {
+      name: 'perf',
+      use: { browserName: 'chromium' },
+      testMatch: /performance-regression\.spec\.ts/,
+    },
   ],
 })

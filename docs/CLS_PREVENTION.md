@@ -6,12 +6,12 @@
 
 ## 一、为什么 CLS 比功能 Bug 更严重
 
-| 维度 | 功能 Bug | CLS 问题 |
-|------|---------|---------|
-| **用户感知** | 点击无效 / 报错 | 页面跳动、误点击、视觉眩晕 |
+| 维度         | 功能 Bug          | CLS 问题                     |
+| ------------ | ----------------- | ---------------------------- |
+| **用户感知** | 点击无效 / 报错   | 页面跳动、误点击、视觉眩晕   |
 | **发现时机** | 单测 / E2E 可覆盖 | 肉眼才察觉，容易上线后才发现 |
-| **谷歌评分** | 不影响 | CLS 占 Lighthouse 25% 权重 |
-| **修复成本** | 定位到函数 | 需重构 DOM 结构 |
+| **谷歌评分** | 不影响            | CLS 占 Lighthouse 25% 权重   |
+| **修复成本** | 定位到函数        | 需重构 DOM 结构              |
 
 > Google Core Web Vitals 标准：CLS ≤ 0.05 为优秀，≤ 0.1 为需改善，> 0.1 为差。
 
@@ -26,10 +26,12 @@
 <template>
   <div class="toolbar">
     <div class="top">...</div>
-    <div v-if="hasSelection" class="context">  <!-- v-if 导致高度塌陷 -->
+    <div v-if="hasSelection" class="context">
+      <!-- v-if 导致高度塌陷 -->
       ...
     </div>
-    <div class="canvas">...</div>  <!-- 画布上移 -->
+    <div class="canvas">...</div>
+    <!-- 画布上移 -->
   </div>
 </template>
 ```
@@ -38,7 +40,7 @@
 
 ```html
 <!-- ❌ 错误：图片加载后撑开布局 -->
-<img src="banner.png" alt="banner">
+<img src="banner.png" alt="banner" />
 
 <!-- ❌ 错误：iframe/embed/视频 无预留空间 -->
 <iframe src="https://..." />
@@ -55,11 +57,17 @@ container.innerHTML = '<div>新内容...</div>'
 
 ```css
 /* ❌ 错误：动画修改 height 必触发布局重排 */
-.element { transition: height 0.3s; }
-.element.open { height: 200px; }
+.element {
+  transition: height 0.3s;
+}
+.element.open {
+  height: 200px;
+}
 
 /* ❌ 错误：动画修改 margin/padding */
-.element { transition: margin-top 0.3s; }
+.element {
+  transition: margin-top 0.3s;
+}
 ```
 
 ---
@@ -84,7 +92,7 @@ container.innerHTML = '<div>新内容...</div>'
 
 ```html
 <!-- ✅ 正确 -->
-<img src="banner.png" width="800" height="400" alt="banner">
+<img src="banner.png" width="800" height="400" alt="banner" />
 <div style="aspect-ratio: 16/9">
   <iframe src="..." width="100%" height="100%" />
 </div>
@@ -106,8 +114,15 @@ container.innerHTML = '<div>新内容...</div>'
 
 ```css
 /* ✅ 正确：GPU 合成，不触发 Layout */
-.element { transition: transform 0.3s, opacity 0.3s; }
-.element.open { transform: translateY(-10px); opacity: 1; }
+.element {
+  transition:
+    transform 0.3s,
+    opacity 0.3s;
+}
+.element.open {
+  transform: translateY(-10px);
+  opacity: 1;
+}
 ```
 
 ---
@@ -116,10 +131,10 @@ container.innerHTML = '<div>新内容...</div>'
 
 ### 开发阶段（实时）
 
-| 工具 | 位置 | 触发方式 |
-|------|------|----------|
-| **cls-monitor.ts** | `src/utils/cls-monitor.ts` | dev 模式下自动 console.warn |
-| **Chrome DevTools** | Rendering → Layout Shift Regions | 手动勾选 |
+| 工具                | 位置                             | 触发方式                    |
+| ------------------- | -------------------------------- | --------------------------- |
+| **cls-monitor.ts**  | `src/utils/cls-monitor.ts`       | dev 模式下自动 console.warn |
+| **Chrome DevTools** | Rendering → Layout Shift Regions | 手动勾选                    |
 
 在 `App.vue` 的 `onMounted` 中加入：
 
@@ -134,11 +149,11 @@ onMounted(() => {
 
 ### PR 阶段（自动）
 
-| 工具 | 配置文件 | 门禁 |
-|------|----------|------|
-| **单元测试（布局稳定性）** | `tests/components/EditorToolbar.test.ts` | vitest 自动运行 |
-| **Playwright 视觉回归** | `tests/visual/editor-layout-stability.spec.ts` | `pnpm test:visual` |
-| **Lighthouse CI** | `.lighthouserc.json` | CLS > 0.05 → ❌ 阻止合并 |
+| 工具                       | 配置文件                                       | 门禁                     |
+| -------------------------- | ---------------------------------------------- | ------------------------ |
+| **单元测试（布局稳定性）** | `tests/components/EditorToolbar.test.ts`       | vitest 自动运行          |
+| **Playwright 视觉回归**    | `tests/visual/editor-layout-stability.spec.ts` | `pnpm test:visual`       |
+| **Lighthouse CI**          | `.lighthouserc.json`                           | CLS > 0.05 → ❌ 阻止合并 |
 
 ### CLS 监控工具 API
 
@@ -156,8 +171,8 @@ const stop = initClsMonitor(
 )
 
 // 查询累计分数
-console.log(getClsScore())   // 0.023
-console.log(getClsRating())  // 'good'
+console.log(getClsScore()) // 0.023
+console.log(getClsRating()) // 'good'
 ```
 
 ---
@@ -178,14 +193,14 @@ console.log(getClsRating())  // 'good'
 
 ## 六、常见错误模式速查
 
-| 代码模式 | 风险 | 修复方式 |
-|----------|------|----------|
-| `<div v-if="x">` 作为 flex 子元素 | 高 — 兄弟元素位移 | 改为固定容器 + 内部 v-if |
-| `<img src="...">` 无宽高 | 高 — 加载后撑开 | 加 width/height |
-| `el.style.height = 'auto'` | 高 — 强制 reflow | 用 CSS transition + transform |
-| `element.innerHTML = ...` | 中 — 内容高度不可控 | 先 min-height 占位，再替换 |
-| `@font-face { font-display: swap }` | 中 — 字体切换跳变 | 添加 size-adjust 对齐 fallback 字体 |
-| `el.offsetHeight` 后立即 `el.style.xxx` | 中 — 强制同步 layout | 先读后写分离 |
+| 代码模式                                | 风险                 | 修复方式                            |
+| --------------------------------------- | -------------------- | ----------------------------------- |
+| `<div v-if="x">` 作为 flex 子元素       | 高 — 兄弟元素位移    | 改为固定容器 + 内部 v-if            |
+| `<img src="...">` 无宽高                | 高 — 加载后撑开      | 加 width/height                     |
+| `el.style.height = 'auto'`              | 高 — 强制 reflow     | 用 CSS transition + transform       |
+| `element.innerHTML = ...`               | 中 — 内容高度不可控  | 先 min-height 占位，再替换          |
+| `@font-face { font-display: swap }`     | 中 — 字体切换跳变    | 添加 size-adjust 对齐 fallback 字体 |
+| `el.offsetHeight` 后立即 `el.style.xxx` | 中 — 强制同步 layout | 先读后写分离                        |
 
 ---
 

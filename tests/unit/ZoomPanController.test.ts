@@ -102,7 +102,7 @@ describe('ZoomPanController', () => {
     const canvas = createMockCanvas()
     const result = controller.handlePanMouseDown(
       { clientX: 100, clientY: 200 } as MouseEvent,
-      canvas as any,
+      canvas as any
     )
     expect(result).toBe(false)
   })
@@ -112,7 +112,7 @@ describe('ZoomPanController', () => {
     controller.setSpacePressed(true)
     const result = controller.handlePanMouseDown(
       { clientX: 100, clientY: 200, button: 0 } as MouseEvent,
-      canvas as any,
+      canvas as any
     )
     expect(result).toBe(true)
     expect(controller.isPanning()).toBe(true)
@@ -122,10 +122,13 @@ describe('ZoomPanController', () => {
   it('平移中 handlePanMouseMove 应返回 true', async () => {
     const canvas = createMockCanvas()
     controller.setSpacePressed(true)
-    controller.handlePanMouseDown({ clientX: 100, clientY: 200, button: 0 } as MouseEvent, canvas as any)
+    controller.handlePanMouseDown(
+      { clientX: 100, clientY: 200, button: 0 } as MouseEvent,
+      canvas as any
+    )
     const result = controller.handlePanMouseMove(
       { clientX: 120, clientY: 210 } as MouseEvent,
-      canvas as any,
+      canvas as any
     )
     expect(result).toBe(true)
     // rAF 节流：等待一帧后 relativePan 才被调用
@@ -136,7 +139,10 @@ describe('ZoomPanController', () => {
   it('handlePanMouseUp 应结束平移并恢复选择', () => {
     const canvas = createMockCanvas()
     controller.setSpacePressed(true)
-    controller.handlePanMouseDown({ clientX: 100, clientY: 200, button: 0 } as MouseEvent, canvas as any)
+    controller.handlePanMouseDown(
+      { clientX: 100, clientY: 200, button: 0 } as MouseEvent,
+      canvas as any
+    )
     const result = controller.handlePanMouseUp(canvas as any)
     expect(result).toBe(true)
     expect(controller.isPanning()).toBe(false)

@@ -42,7 +42,10 @@ const FULL_REDRAW_BUDGET_MS = 100
 // ── 辅助函数 ──
 
 /** 获取画布中可拖拽对象的屏幕中心坐标（可指定 id，否则取第一个非文本可拖拽对象） */
-async function getDraggableTarget(page: Page, id?: string): Promise<{ sx: number; sy: number } | null> {
+async function getDraggableTarget(
+  page: Page,
+  id?: string
+): Promise<{ sx: number; sy: number } | null> {
   return page.evaluate((targetId) => {
     const c = (window as any).__fabricCanvas
     if (!c) return null
@@ -57,8 +60,8 @@ async function getDraggableTarget(page: Page, id?: string): Promise<{ sx: number
     const el = document.querySelector('.editor-canvas .lower-canvas') as HTMLElement
     if (!el) return null
     const r = el.getBoundingClientRect()
-    const cx = obj.left + (obj.width || 0) * (obj.scaleX || 1) / 2
-    const cy = obj.top + (obj.height || 0) * (obj.scaleY || 1) / 2
+    const cx = obj.left + ((obj.width || 0) * (obj.scaleX || 1)) / 2
+    const cy = obj.top + ((obj.height || 0) * (obj.scaleY || 1)) / 2
     return {
       sx: r.left + cx * vt[0] + vt[4],
       sy: r.top + cy * vt[0] + vt[5],
@@ -72,7 +75,7 @@ async function measureDragFps(
   sx: number,
   sy: number,
   dx: number,
-  dy: number,
+  dy: number
 ): Promise<{ fps: number; frameCount: number; validFrameCount: number; avgIntervalMs: number }> {
   // 启动 rAF 帧间隔测量
   await page.evaluate(() => {
@@ -97,7 +100,8 @@ async function measureDragFps(
     const frames = (window as any).__frames as number[]
     const intervals: number[] = []
     for (let i = 1; i < frames.length; i++) intervals.push(frames[i] - frames[i - 1])
-    if (intervals.length < 2) return { fps: 0, frameCount: intervals.length, validFrameCount: 0, avgIntervalMs: 0 }
+    if (intervals.length < 2)
+      return { fps: 0, frameCount: intervals.length, validFrameCount: 0, avgIntervalMs: 0 }
     // 过滤异常大间隔（>100ms，可能是 GC / 事件间隙），取稳定帧
     const valid = intervals.filter((x) => x < 100)
     const avg = valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : 0
@@ -130,12 +134,17 @@ test.describe('性能回归', () => {
       c.renderOnAddRemove = false
       const R = fabricNS.Rect
       for (let i = 0; i < count; i++) {
-        c.add(new R({
-          left: 50 + (i % 10) * 60,
-          top: 50 + Math.floor(i / 10) * 60,
-          width: 40, height: 30,
-          fill: '#2196F3', stroke: '#1565C0', strokeWidth: 1,
-        }))
+        c.add(
+          new R({
+            left: 50 + (i % 10) * 60,
+            top: 50 + Math.floor(i / 10) * 60,
+            width: 40,
+            height: 30,
+            fill: '#2196F3',
+            stroke: '#1565C0',
+            strokeWidth: 1,
+          })
+        )
       }
       c.renderOnAddRemove = prevRenderOnAddRemove
       c.renderAll()
@@ -262,17 +271,24 @@ test.describe('性能回归', () => {
       await page.evaluate((count) => {
         const c = (window as any).__fabricCanvas
         const R = (window as any).fabric.Rect
-        c.getObjects().filter((o: any) => o.id?.startsWith('perf-')).forEach((o: any) => c.remove(o))
+        c.getObjects()
+          .filter((o: any) => o.id?.startsWith('perf-'))
+          .forEach((o: any) => c.remove(o))
         const prev = c.renderOnAddRemove
         c.renderOnAddRemove = false
         for (let i = 0; i < count; i++) {
-          c.add(new R({
-            id: `perf-${i}`,
-            left: 100 + (i % 10) * 50,
-            top: 100 + Math.floor(i / 10) * 40,
-            width: 30, height: 20,
-            fill: '#2196F3', stroke: '#1565C0', strokeWidth: 1,
-          }))
+          c.add(
+            new R({
+              id: `perf-${i}`,
+              left: 100 + (i % 10) * 50,
+              top: 100 + Math.floor(i / 10) * 40,
+              width: 30,
+              height: 20,
+              fill: '#2196F3',
+              stroke: '#1565C0',
+              strokeWidth: 1,
+            })
+          )
         }
         c.renderOnAddRemove = prev
         c.renderAll()
@@ -286,7 +302,9 @@ test.describe('性能回归', () => {
       // 同规模下记录 toJSON 耗时（撤销/重做全量快照成本）
       const toJsonMs = await page.evaluate(() => {
         const c = (window as any).__fabricCanvas
-        const t = performance.now(); c.toJSON(); return performance.now() - t
+        const t = performance.now()
+        c.toJSON()
+        return performance.now() - t
       })
 
       rows.push({ count: n, fps: result.fps, toJsonMs: Math.round(toJsonMs * 100) / 100 })
@@ -296,7 +314,7 @@ test.describe('性能回归', () => {
     console.log('[性能·压力] 帧率/快照随对象数变化:', JSON.stringify(rows, null, 2))
 
     // 对齐设计文档：100 对象场景帧率 ≥ 30fps
-    const at100 = rows.find(r => r.count === 100)
+    const at100 = rows.find((r) => r.count === 100)
     expect(at100).toBeDefined()
     expect(at100!.fps).toBeGreaterThanOrEqual(DRAG_FPS_BUDGET)
   })
@@ -305,9 +323,12 @@ test.describe('性能回归', () => {
     const SCALES = [10, 50, 100, 200, 400]
     const rows: Array<{
       count: number
-      zoomMs: number; zoomFps: number
-      panMs: number; panFps: number
-      dragAllMs: number; dragAllFps: number
+      zoomMs: number
+      zoomFps: number
+      panMs: number
+      panFps: number
+      dragAllMs: number
+      dragAllFps: number
     }> = []
 
     for (const n of SCALES) {
@@ -315,17 +336,24 @@ test.describe('性能回归', () => {
       await page.evaluate((count) => {
         const c = (window as any).__fabricCanvas
         const R = (window as any).fabric.Rect
-        c.getObjects().filter((o: any) => o.id?.startsWith('perf-')).forEach((o: any) => c.remove(o))
+        c.getObjects()
+          .filter((o: any) => o.id?.startsWith('perf-'))
+          .forEach((o: any) => c.remove(o))
         const prev = c.renderOnAddRemove
         c.renderOnAddRemove = false
         for (let i = 0; i < count; i++) {
-          c.add(new R({
-            id: `perf-${i}`,
-            left: 100 + (i % 10) * 50,
-            top: 100 + Math.floor(i / 10) * 40,
-            width: 30, height: 20,
-            fill: '#2196F3', stroke: '#1565C0', strokeWidth: 1,
-          }))
+          c.add(
+            new R({
+              id: `perf-${i}`,
+              left: 100 + (i % 10) * 50,
+              top: 100 + Math.floor(i / 10) * 40,
+              width: 30,
+              height: 20,
+              fill: '#2196F3',
+              stroke: '#1565C0',
+              strokeWidth: 1,
+            })
+          )
         }
         c.renderOnAddRemove = prev
         c.renderAll()
@@ -384,20 +412,25 @@ test.describe('性能回归', () => {
     console.log('[性能·全量重绘] 缩放/平移/全选拖拽随对象数变化:', JSON.stringify(rows, null, 2))
 
     // 对齐设计文档：100 对象场景下，缩放/平移/全选拖拽单次 < 33ms（等效 30fps）
-    const at100 = rows.find(r => r.count === 100)
+    const at100 = rows.find((r) => r.count === 100)
     expect(at100).toBeDefined()
     expect(at100!.zoomMs).toBeLessThan(FULL_REDRAW_BUDGET_MS)
     expect(at100!.panMs).toBeLessThan(FULL_REDRAW_BUDGET_MS)
     expect(at100!.dragAllMs).toBeLessThan(FULL_REDRAW_BUDGET_MS)
   })
 
-  test('P6. 真实 SVG 对象全量重绘压力（clone 复杂对象：rect/textbox/group/circle）', async ({ page }) => {
+  test('P6. 真实 SVG 对象全量重绘压力（clone 复杂对象：rect/textbox/group/circle）', async ({
+    page,
+  }) => {
     const SCALES = [10, 50, 100, 200, 400]
     const rows: Array<{
       count: number
-      zoomMs: number; zoomFps: number
-      panMs: number; panFps: number
-      dragAllMs: number; dragAllFps: number
+      zoomMs: number
+      zoomFps: number
+      panMs: number
+      panFps: number
+      dragAllMs: number
+      dragAllFps: number
     }> = []
 
     for (const n of SCALES) {
@@ -406,10 +439,14 @@ test.describe('性能回归', () => {
       const row = await page.evaluate(async (count) => {
         const c = (window as any).__fabricCanvas
         // 清理上一轮的 perf- 克隆对象
-        c.getObjects().filter((o: any) => o.id?.startsWith('perf-')).forEach((o: any) => c.remove(o))
+        c.getObjects()
+          .filter((o: any) => o.id?.startsWith('perf-'))
+          .forEach((o: any) => c.remove(o))
 
         // 真实种子对象（排除 workspace / excludeFromExport 的背景与裁剪对象）
-        const seeds = c.getObjects().filter((o: any) => !o.excludeFromExport && o.id !== 'workspace')
+        const seeds = c
+          .getObjects()
+          .filter((o: any) => !o.excludeFromExport && o.id !== 'workspace')
         if (!seeds.length) throw new Error('未找到真实种子对象')
 
         // 克隆填充到目标总数（seeds 本身计入 count）
@@ -460,7 +497,9 @@ test.describe('性能回归', () => {
 
         return {
           realObjectCount: c.getObjects().filter((o: any) => !o.excludeFromExport).length,
-          zoomMs, panMs, dragAllMs,
+          zoomMs,
+          panMs,
+          dragAllMs,
         }
       }, n)
 
@@ -476,10 +515,13 @@ test.describe('性能回归', () => {
     }
 
     // eslint-disable-next-line no-console
-    console.log('[性能·真实对象全量重绘] 缩放/平移/全选拖拽随对象数变化:', JSON.stringify(rows, null, 2))
+    console.log(
+      '[性能·真实对象全量重绘] 缩放/平移/全选拖拽随对象数变化:',
+      JSON.stringify(rows, null, 2)
+    )
 
     // 对齐设计文档：100 个真实对象场景下，缩放/平移/全选拖拽单次 < 阈值
-    const at100 = rows.find(r => r.count === 100)
+    const at100 = rows.find((r) => r.count === 100)
     expect(at100).toBeDefined()
     expect(at100!.zoomMs).toBeLessThan(FULL_REDRAW_BUDGET_MS)
     expect(at100!.panMs).toBeLessThan(FULL_REDRAW_BUDGET_MS)

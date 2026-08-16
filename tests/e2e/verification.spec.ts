@@ -5,7 +5,6 @@ const PAGE_URL = '/'
 const SVG_IDX = 1
 
 test.describe('SVG 编辑器验证（SVG 1 - type-hierarchy）', () => {
-
   test('1. 保存前后结构对比', async ({ page }) => {
     await page.goto(PAGE_URL)
     await page.waitForSelector('.svg-container svg', { timeout: 15000 })
@@ -19,7 +18,9 @@ test.describe('SVG 编辑器验证（SVG 1 - type-hierarchy）', () => {
 
     await openEditor(page, SVG_IDX)
     await page.locator('.btn-save').click()
-    await page.waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 }).catch(() => {})
+    await page
+      .waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 })
+      .catch(() => {})
     await page.waitForTimeout(1500)
 
     const afterHtml = await page.evaluate(() => {
@@ -49,7 +50,9 @@ test.describe('SVG 编辑器验证（SVG 1 - type-hierarchy）', () => {
     for (let i = 1; i <= 3; i++) {
       await openEditor(page, SVG_IDX)
       await page.locator('.btn-save').click()
-      await page.waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 }).catch(() => {})
+      await page
+        .waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 })
+        .catch(() => {})
       await page.waitForTimeout(1500)
 
       const html = await page.evaluate(() => {

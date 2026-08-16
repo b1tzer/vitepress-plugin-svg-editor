@@ -29,12 +29,12 @@ import { svgEditorPlugin, svgDiagramMarkdownPlugin } from 'vitepress-plugin-svg-
 export default defineConfig({
   markdown: {
     config(md) {
-      md.use(svgDiagramMarkdownPlugin)   // ← 让 Markdown 中的 .svg 图片变为可编辑的
+      md.use(svgDiagramMarkdownPlugin) // ← 让 Markdown 中的 .svg 图片变为可编辑的
     },
   },
   vite: {
     plugins: [
-      svgEditorPlugin({ saveDir: 'docs/public/diagrams' }),  // ← 注册保存端点
+      svgEditorPlugin({ saveDir: 'docs/public/diagrams' }), // ← 注册保存端点
     ],
   },
 })
@@ -54,7 +54,7 @@ export default {
   enhanceApp({ app }) {
     app.component('SvgDiagram', SvgDiagram)
     app.component('SvgEditor', SvgEditor)
-  }
+  },
 }
 ```
 

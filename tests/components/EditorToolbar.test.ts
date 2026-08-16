@@ -3,9 +3,16 @@ import { mount } from '@vue/test-utils'
 import EditorToolbar from '../../src/components/sub/EditorToolbar.vue'
 
 const defaultProps = {
-  src: '/diagrams/test.svg', zoomLevel: 100, svgWidth: 800, svgHeight: 600,
-  selectionInfo: '', showThemeToggle: true, themeMode: 'light',
-  saving: false, canUndo: false, canRedo: false,
+  src: '/diagrams/test.svg',
+  zoomLevel: 100,
+  svgWidth: 800,
+  svgHeight: 600,
+  selectionInfo: '',
+  showThemeToggle: true,
+  themeMode: 'light',
+  saving: false,
+  canUndo: false,
+  canRedo: false,
 }
 
 describe('EditorToolbar', () => {
@@ -27,7 +34,9 @@ describe('EditorToolbar', () => {
   // 2. 信息显示：文件名、缩放、尺寸、选中状态
   // ══════════════════════════════════════════════════════
   it('应正确显示文件名、缩放比例、画布尺寸和选中信息', () => {
-    const w = mount(EditorToolbar, { props: { ...defaultProps, zoomLevel: 150, selectionInfo: 'rect' } })
+    const w = mount(EditorToolbar, {
+      props: { ...defaultProps, zoomLevel: 150, selectionInfo: 'rect' },
+    })
     expect(w.find('.title').text()).toContain('/diagrams/test.svg')
     expect(w.text()).toContain('150%')
     expect((w.find('input[aria-label="画布宽度"]').element as HTMLInputElement).value).toBe('800')
@@ -59,9 +68,24 @@ describe('EditorToolbar', () => {
   // ══════════════════════════════════════════════════════
   // 4. 按钮 emit 验证（参数化）
   // ══════════════════════════════════════════════════════
-  const emitCases: Array<{ name: string; selector: string; event: string; props?: Record<string, any> }> = [
-    { name: '撤销', selector: '[aria-label="撤销 Ctrl+Z"]', event: 'undo', props: { canUndo: true } },
-    { name: '重做', selector: '[aria-label="重做 Ctrl+Y"]', event: 'redo', props: { canRedo: true } },
+  const emitCases: Array<{
+    name: string
+    selector: string
+    event: string
+    props?: Record<string, any>
+  }> = [
+    {
+      name: '撤销',
+      selector: '[aria-label="撤销 Ctrl+Z"]',
+      event: 'undo',
+      props: { canUndo: true },
+    },
+    {
+      name: '重做',
+      selector: '[aria-label="重做 Ctrl+Y"]',
+      event: 'redo',
+      props: { canRedo: true },
+    },
     { name: '复制', selector: '[aria-label="复制 Ctrl+C"]', event: 'copy' },
     { name: '粘贴', selector: '[aria-label="粘贴 Ctrl+V"]', event: 'paste' },
     { name: '删除', selector: '[aria-label="删除 Delete"]', event: 'delete' },

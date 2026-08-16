@@ -7,7 +7,12 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./tests/setup/canvas-mock.ts'],
-    include: ['tests/unit/**/*.test.ts', 'tests/components/**/*.test.ts', 'tests/integration/**/*.test.ts', 'src/adapters/**/*.test.ts'],
+    include: [
+      'tests/unit/**/*.test.ts',
+      'tests/components/**/*.test.ts',
+      'tests/integration/**/*.test.ts',
+      'src/adapters/**/*.test.ts',
+    ],
     exclude: ['tests/*.spec.ts', 'tests/**/screenshots/**', 'node_modules/**', 'dist/**'],
     deps: {
       inline: ['vitepress'],

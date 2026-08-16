@@ -26,20 +26,25 @@ describe('postprocessor', () => {
 
   // ── cleanFabricSvg ──
   it('cleanFabricSvg 应移除 XML 声明和 DOCTYPE', () => {
-    const result = cleanFabricSvg('<?xml version="1.0"?><!DOCTYPE svg><svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>')
+    const result = cleanFabricSvg(
+      '<?xml version="1.0"?><!DOCTYPE svg><svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>'
+    )
     expect(result).not.toContain('<?xml')
     expect(result).not.toContain('<!DOCTYPE')
   })
 
   it('cleanFabricSvg 应移除冗余头信息', () => {
-    const result = cleanFabricSvg('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://xlink" version="1.1" xml:space="preserve"><rect/></svg>')
+    const result = cleanFabricSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://xlink" version="1.1" xml:space="preserve"><rect/></svg>'
+    )
     expect(result).not.toContain('xmlns:xlink')
     expect(result).not.toContain('version=')
     expect(result).not.toContain('xml:space="preserve"')
   })
 
   it('cleanFabricSvg 应展开 Group transform', () => {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg">' +
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg">' +
       '<g transform="matrix(1 0 0 1 10 20)">' +
       '<rect x="5" y="5" style="test"/></g></svg>'
     const result = cleanFabricSvg(svg)
@@ -48,7 +53,9 @@ describe('postprocessor', () => {
   })
 
   it('cleanFabricSvg 应移除空 <defs>', () => {
-    const result = cleanFabricSvg('<svg xmlns="http://www.w3.org/2000/svg"><defs></defs><rect/></svg>')
+    const result = cleanFabricSvg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><defs></defs><rect/></svg>'
+    )
     expect(result).not.toContain('<defs>')
   })
 
@@ -77,7 +84,9 @@ describe('postprocessor', () => {
 
   // ── removeCanvasBg ──
   it('removeCanvasBg 应移除 Fabric.js 画布背景 rect', () => {
-    const result = removeCanvasBg('<svg xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="100%" height="100%" fill="#F5F5F5"/><rect fill="#ff0000"/></svg>')
+    const result = removeCanvasBg(
+      '<svg xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="100%" height="100%" fill="#F5F5F5"/><rect fill="#ff0000"/></svg>'
+    )
     expect(result).not.toContain('#F5F5F5')
     expect(result).toContain('#ff0000')
   })

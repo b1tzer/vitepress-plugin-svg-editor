@@ -15,18 +15,15 @@ const EDITOR_URL = '/'
 // ═══════════════════ Tests ═══════════════════
 
 test.describe('多 SVG 页面', () => {
-
   test('M1: 同一页面多张 SVG — 逐张打开编辑器不报错', async ({ page }) => {
     const errors: string[] = []
-    page.on('pageerror', e => errors.push(e.message))
+    page.on('pageerror', (e) => errors.push(e.message))
 
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
 
     // 统计页面上的 SVG 数量
-    const svgCount = await page.evaluate(() =>
-      document.querySelectorAll('.svg-container').length
-    )
+    const svgCount = await page.evaluate(() => document.querySelectorAll('.svg-container').length)
     console.log(`  页面 SVG 数量: ${svgCount}`)
 
     // 逐张打开编辑器（最多 3 张，避免耗时过长）
@@ -48,7 +45,9 @@ test.describe('多 SVG 页面', () => {
       console.log(`    第 ${i} 张: objects=${summary.objectCount}, zoom=${summary.zoom}`)
 
       // 关闭编辑器
-      const closeBtn = page.locator('.editor-overlay .close-btn, .editor-overlay [aria-label="关闭"]').first()
+      const closeBtn = page
+        .locator('.editor-overlay .close-btn, .editor-overlay [aria-label="关闭"]')
+        .first()
       if (await closeBtn.isVisible()) {
         await closeBtn.click({ force: true })
         await page.waitForTimeout(800)
@@ -56,12 +55,12 @@ test.describe('多 SVG 页面', () => {
     }
 
     // 无 page error
-    expect(errors.filter(e => e.includes('Error') || e.includes('Uncaught'))).toHaveLength(0)
+    expect(errors.filter((e) => e.includes('Error') || e.includes('Uncaught'))).toHaveLength(0)
   })
 
   test('M2: 同张 SVG 连续开关编辑器 3 次无累积错误', async ({ page }) => {
     const errors: string[] = []
-    page.on('pageerror', e => errors.push(e.message))
+    page.on('pageerror', (e) => errors.push(e.message))
 
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
@@ -95,26 +94,24 @@ test.describe('多 SVG 页面', () => {
       }
 
       // 每轮后检查错误数不增加
-      const currentErrors = errors.filter(e => e.includes('Error') || e.includes('Uncaught'))
+      const currentErrors = errors.filter((e) => e.includes('Error') || e.includes('Uncaught'))
       if (currentErrors.length > 0) {
         console.log(`    ⚠️ 第 ${round} 轮后出现 ${currentErrors.length} 个错误:`, currentErrors)
       }
     }
 
     // 最终检查无累积错误
-    const finalErrors = errors.filter(e => e.includes('Error') || e.includes('Uncaught'))
+    const finalErrors = errors.filter((e) => e.includes('Error') || e.includes('Uncaught'))
     expect(finalErrors.length).toBe(0)
   })
 
   test('M3: 快速连续在两张 SVG 间切换不崩溃', async ({ page }) => {
-    page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+    page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
 
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
 
-    const svgCount = await page.evaluate(() =>
-      document.querySelectorAll('.svg-container').length
-    )
+    const svgCount = await page.evaluate(() => document.querySelectorAll('.svg-container').length)
 
     if (svgCount < 2) {
       console.log('  页面 SVG 少于 2 张，跳过测试')
@@ -146,5 +143,4 @@ test.describe('多 SVG 页面', () => {
     })
     expect(canvasOk).toBe(true)
   })
-
 })

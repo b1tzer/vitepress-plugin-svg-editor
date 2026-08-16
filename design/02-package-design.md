@@ -2,11 +2,11 @@
 
 ## 包名（待定）
 
-| 候选 | 命名空间 | 优点 | 缺点 |
-|------|---------|------|------|
-| `vitepress-plugin-svg-editor` | 无 | 直白，SEO 友好 | 重名风险 |
-| `@java-world/vitepress-plugin-svg-editor` | @java-world | 组织标识 | 仅限本项目使用 |
-| `@scope/vitepress-svg-editor` | @scope | 灵活 | 需确定 scope |
+| 候选                                      | 命名空间    | 优点           | 缺点           |
+| ----------------------------------------- | ----------- | -------------- | -------------- |
+| `vitepress-plugin-svg-editor`             | 无          | 直白，SEO 友好 | 重名风险       |
+| `@java-world/vitepress-plugin-svg-editor` | @java-world | 组织标识       | 仅限本项目使用 |
+| `@scope/vitepress-svg-editor`             | @scope      | 灵活           | 需确定 scope   |
 
 ## 目录结构
 
@@ -78,40 +78,40 @@ vitepress-plugin-svg-editor/
     ".": {
       "types": "./dist/node/index.d.ts",
       "import": "./dist/node/index.mjs",
-      "require": "./dist/node/index.cjs"
+      "require": "./dist/node/index.cjs",
     },
     "./client": {
       "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.mjs"
+      "import": "./dist/client/index.mjs",
     },
-    "./components/*": "./dist/components/*"
+    "./components/*": "./dist/components/*",
   },
   "files": ["dist"],
   "peerDependencies": {
     "vitepress": "^1.0.0",
     "vue": "^3.2.0",
-    "fabric": "^6.0.0"
+    "fabric": "^6.0.0",
   },
   "peerDependenciesMeta": {
-    "fabric": { "optional": true }
+    "fabric": { "optional": true },
   },
   "devDependencies": {
     "unbuild": "^2.0.0",
     "typescript": "^5.0.0",
     "vitepress": "^1.0.0",
     "vue": "^3.2.0",
-    "fabric": "^6.0.0"
-  }
+    "fabric": "^6.0.0",
+  },
 }
 ```
 
 ### exports 字段设计要点
 
-| 入口 | 用途 | 导入方式 |
-|------|------|---------|
-| `.` | VitePress 配置中使用 | `import { svgEditorPlugin } from 'pkg'` |
-| `./client` | VitePress theme/index.ts 使用 | `import 'pkg/client'` 或 `import { enhanceApp } from 'pkg/client'` |
-| `./components/*` | 按需导入独立组件 | `import SvgDiagram from 'pkg/components/SvgDiagram.vue'` |
+| 入口             | 用途                          | 导入方式                                                           |
+| ---------------- | ----------------------------- | ------------------------------------------------------------------ |
+| `.`              | VitePress 配置中使用          | `import { svgEditorPlugin } from 'pkg'`                            |
+| `./client`       | VitePress theme/index.ts 使用 | `import 'pkg/client'` 或 `import { enhanceApp } from 'pkg/client'` |
+| `./components/*` | 按需导入独立组件              | `import SvgDiagram from 'pkg/components/SvgDiagram.vue'`           |
 
 ### 为什么 fabric 是 optional peerDependency
 
@@ -121,29 +121,29 @@ vitepress-plugin-svg-editor/
 
 ## 构建工具选型
 
-| 工具 | 优点 | 缺点 | 结论 |
-|------|------|------|------|
-| **unbuild** | 零配置，自动处理 .mjs/.cjs/.d.ts，支持 stub mode | 社区相对小 | ✅ 首选 |
-| tsdown | 新兴工具，速度快 | 生态不成熟 | 备选 |
-| Vite library mode | 与项目技术栈一致 | 需要手动配置多入口 + .d.ts 生成 | 次选 |
-| Rollup 裸写 | 最灵活 | 配置复杂，维护成本高 | ❌ 不选 |
+| 工具              | 优点                                             | 缺点                            | 结论    |
+| ----------------- | ------------------------------------------------ | ------------------------------- | ------- |
+| **unbuild**       | 零配置，自动处理 .mjs/.cjs/.d.ts，支持 stub mode | 社区相对小                      | ✅ 首选 |
+| tsdown            | 新兴工具，速度快                                 | 生态不成熟                      | 备选    |
+| Vite library mode | 与项目技术栈一致                                 | 需要手动配置多入口 + .d.ts 生成 | 次选    |
+| Rollup 裸写       | 最灵活                                           | 配置复杂，维护成本高            | ❌ 不选 |
 
 ## peerDependencies 版本策略
 
 ```jsonc
 {
   "peerDependencies": {
-    "vitepress": ">=1.0.0 <2.0.0",  // VitePress 2.x 还没出，先锁 1.x
-    "vue": ">=3.2.0 <4.0.0",        // Vue 3.x only
-    "fabric": ">=6.0.0 <7.0.0"      // Fabric 6.x，5.x 已停止维护
-  }
+    "vitepress": ">=1.0.0 <2.0.0", // VitePress 2.x 还没出，先锁 1.x
+    "vue": ">=3.2.0 <4.0.0", // Vue 3.x only
+    "fabric": ">=6.0.0 <7.0.0", // Fabric 6.x，5.x 已停止维护
+  },
 }
 ```
 
 ### 版本兼容声明（放在 README 中）
 
-| 依赖 | 支持版本 | 测试覆盖 |
-|------|---------|---------|
-| VitePress | 1.0.0 - 1.6.x | CI 矩阵测试 1.0, 1.3, 1.6 |
-| Node.js | 18 LTS, 20 LTS, 22 LTS | CI 矩阵全覆盖 |
-| 浏览器 | Chrome 90+, Firefox 90+, Safari 15+, Edge 90+ | Playwright E2E |
+| 依赖      | 支持版本                                      | 测试覆盖                  |
+| --------- | --------------------------------------------- | ------------------------- |
+| VitePress | 1.0.0 - 1.6.x                                 | CI 矩阵测试 1.0, 1.3, 1.6 |
+| Node.js   | 18 LTS, 20 LTS, 22 LTS                        | CI 矩阵全覆盖             |
+| 浏览器    | Chrome 90+, Firefox 90+, Safari 15+, Edge 90+ | Playwright E2E            |

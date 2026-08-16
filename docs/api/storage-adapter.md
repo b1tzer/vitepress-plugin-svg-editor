@@ -53,6 +53,7 @@ await adapter.save(svgContent, '/diagrams/architecture.svg')
 ```
 
 安全策略：
+
 - 仅允许写入 `saveDir` 白名单内的路径
 - 仅接受 `.svg` 后缀的文件
 - 拒绝包含 `../` 的路径遍历攻击

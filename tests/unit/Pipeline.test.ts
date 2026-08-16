@@ -44,16 +44,12 @@ describe('Pipeline', () => {
   })
 
   it('names 应返回所有步骤名', () => {
-    pipeline
-      .use({ name: 'a', process: (s) => s })
-      .use({ name: 'b', process: (s) => s })
+    pipeline.use({ name: 'a', process: (s) => s }).use({ name: 'b', process: (s) => s })
     expect(pipeline.names()).toEqual(['a', 'b'])
   })
 
   it('clear 应清空所有步骤', () => {
-    pipeline
-      .use({ name: 'a', process: (s) => s })
-      .use({ name: 'b', process: (s) => s })
+    pipeline.use({ name: 'a', process: (s) => s }).use({ name: 'b', process: (s) => s })
     pipeline.clear()
     expect(pipeline.size()).toBe(0)
     expect(pipeline.run('input')).toBe('input')
@@ -61,9 +57,7 @@ describe('Pipeline', () => {
 
   it('run 应正确传递中间结果', () => {
     const spy = vi.fn((s: string) => s + 'B')
-    pipeline
-      .use({ name: 'stepA', process: (s) => s + 'A' })
-      .use({ name: 'stepB', process: spy })
+    pipeline.use({ name: 'stepA', process: (s) => s + 'A' }).use({ name: 'stepB', process: spy })
     pipeline.run('X')
     expect(spy).toHaveBeenCalledWith('XA')
   })

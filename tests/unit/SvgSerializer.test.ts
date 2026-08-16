@@ -1,8 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock fabric.Canvas
-const mockToSVG = vi.fn(() => '<svg xmlns="http://www.w3.org/2000/svg">\n<g>\n<rect fill="#ff0000" data-fabric-object="true"/>\n</g>\n</svg>')
-const createMockCanvas = () => ({ toSVG: mockToSVG } as any)
+const mockToSVG = vi.fn(
+  () =>
+    '<svg xmlns="http://www.w3.org/2000/svg">\n<g>\n<rect fill="#ff0000" data-fabric-object="true"/>\n</g>\n</svg>'
+)
+const createMockCanvas = () => ({ toSVG: mockToSVG }) as any
 
 vi.mock('fabric', () => ({}))
 
@@ -19,10 +22,10 @@ describe('SvgSerializer', () => {
     // 默认返回一个带 Fabric 私有属性的 SVG
     mockToSVG.mockReturnValue(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n' +
-      '  <g>\n' +
-      '    <rect fill="#ff0000" stroke="#000000" data-fabric-object="true"/>\n' +
-      '  </g>\n' +
-      '</svg>'
+        '  <g>\n' +
+        '    <rect fill="#ff0000" stroke="#000000" data-fabric-object="true"/>\n' +
+        '  </g>\n' +
+        '</svg>'
     )
   })
 
@@ -35,10 +38,10 @@ describe('SvgSerializer', () => {
   it('serialize 应移除 XML 声明和多余头部信息', () => {
     mockToSVG.mockReturnValue(
       '<?xml version="1.0"?>\n' +
-      '<!DOCTYPE svg>\n' +
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n' +
-      '  <rect fill="#ff0000"/>\n' +
-      '</svg>'
+        '<!DOCTYPE svg>\n' +
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n' +
+        '  <rect fill="#ff0000"/>\n' +
+        '</svg>'
     )
     const result = serializer.serialize(canvas)
     expect(result).not.toContain('<?xml')
@@ -48,8 +51,8 @@ describe('SvgSerializer', () => {
   it('serialize 应将 rgb 转换为 hex', () => {
     mockToSVG.mockReturnValue(
       '<svg xmlns="http://www.w3.org/2000/svg">' +
-      '<rect fill="rgb(255,0,0)" stroke="rgb(0,0,0)"/>' +
-      '</svg>'
+        '<rect fill="rgb(255,0,0)" stroke="rgb(0,0,0)"/>' +
+        '</svg>'
     )
     const result = serializer.serialize(canvas)
     expect(result).not.toContain('rgb(')
@@ -58,8 +61,8 @@ describe('SvgSerializer', () => {
   it('serialize 应恢复 viewBox', () => {
     mockToSVG.mockReturnValue(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">' +
-      '<rect fill="#ff0000"/>' +
-      '</svg>'
+        '<rect fill="#ff0000"/>' +
+        '</svg>'
     )
     const result = serializer.serialize(canvas, { originalViewBox: '0 0 1000 800' })
     expect(result).toContain('viewBox="0 0 1000 800"')
@@ -79,9 +82,7 @@ describe('SvgSerializer', () => {
 
   it('serialize 应处理空 viewBox 的情况', () => {
     mockToSVG.mockReturnValue(
-      '<svg xmlns="http://www.w3.org/2000/svg">' +
-      '<rect fill="#ff0000"/>' +
-      '</svg>'
+      '<svg xmlns="http://www.w3.org/2000/svg">' + '<rect fill="#ff0000"/>' + '</svg>'
     )
     const result = serializer.serialize(canvas)
     expect(result).toContain('<svg')

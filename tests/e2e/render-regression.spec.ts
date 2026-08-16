@@ -54,7 +54,11 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
       const el = document.querySelector('.editor-canvas') as HTMLElement
       if (!el) return null
       const cs = getComputedStyle(el)
-      return { backgroundColor: cs.backgroundColor, backgroundImage: cs.backgroundImage, backgroundSize: cs.backgroundSize }
+      return {
+        backgroundColor: cs.backgroundColor,
+        backgroundImage: cs.backgroundImage,
+        backgroundSize: cs.backgroundSize,
+      }
     })
     expect(bg).not.toBeNull()
     expect(bg!.backgroundImage).toContain('linear-gradient')
@@ -248,7 +252,13 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
       if (!btn) return null
       const cs = getComputedStyle(btn)
       const r = btn.getBoundingClientRect()
-      return { w: r.width, h: r.height, borderRadius: cs.borderRadius, boxShadow: cs.boxShadow, bg: cs.backgroundColor }
+      return {
+        w: r.width,
+        h: r.height,
+        borderRadius: cs.borderRadius,
+        boxShadow: cs.boxShadow,
+        bg: cs.backgroundColor,
+      }
     })
     expect(info).not.toBeNull()
     expect(info!.w).toBeGreaterThanOrEqual(18)

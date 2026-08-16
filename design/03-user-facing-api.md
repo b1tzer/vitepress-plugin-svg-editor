@@ -39,18 +39,18 @@ export default defineConfig({
   plugins: [
     svgEditorPlugin({
       // 所有配置都有默认值，这里只覆盖需要的
-      storage: 'vitepress',    // 'vitepress' | 'localStorage' | CustomStorageAdapter
+      storage: 'vitepress', // 'vitepress' | 'localStorage' | CustomStorageAdapter
       saveDir: 'public/diagrams/', // 默认保存目录
-      theme: 'auto',           // 'auto' | 'light' | 'dark' | ThemeAdapter
-    })
-  ]
+      theme: 'auto', // 'auto' | 'light' | 'dark' | ThemeAdapter
+    }),
+  ],
 })
 ```
 
 ```ts
 // .vitepress/theme/index.ts
 import DefaultTheme from 'vitepress/theme'
-import 'vitepress-plugin-svg-editor/client'  // 自动注册 SvgDiagram 和 SvgEditor
+import 'vitepress-plugin-svg-editor/client' // 自动注册 SvgDiagram 和 SvgEditor
 
 export default {
   extends: DefaultTheme,
@@ -214,8 +214,8 @@ interface StorageAdapter {
 
 interface SaveResult {
   success: boolean
-  path?: string    // 保存后的实际路径
-  error?: Error    // 错误信息
+  path?: string // 保存后的实际路径
+  error?: Error // 错误信息
 }
 ```
 
@@ -246,18 +246,18 @@ const myStorage: StorageAdapter = {
     const res = await fetch('/api/svg/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: sourcePath, content: svgText })
+      body: JSON.stringify({ path: sourcePath, content: svgText }),
     })
     return { success: res.ok }
   },
   async load(sourcePath) {
     const res = await fetch(`/api/svg/load?path=${sourcePath}`)
     return res.text()
-  }
+  },
 }
 
 export default defineConfig({
-  plugins: [svgEditorPlugin({ storage: myStorage })]
+  plugins: [svgEditorPlugin({ storage: myStorage })],
 })
 ```
 
@@ -270,6 +270,6 @@ svgEditorPlugin({
     '--my-bg-color': '#fafafa',
     '--my-dark-brand-color': '#ff9944',
     '--my-dark-bg-color': '#1a1a1a',
-  }
+  },
 })
 ```

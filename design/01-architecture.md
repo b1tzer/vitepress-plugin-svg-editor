@@ -135,12 +135,12 @@ SvgDiagram.vue ──fetch SVG──▶ SvgLoader.load(svgText)
 
 ## 关键设计决策（简要）
 
-| 决策 | 选择 | 理由 |
-|------|------|------|
-| 内核语言 | TypeScript | 类型安全，便于插件使用者获得 IDE 提示 |
-| 渲染引擎 | Fabric.js 6.x（可替换） | 当前项目已深度使用；通过 RenderAdapter 抽象允许未来切换 |
-| 插件协议 | 参考 vitepress-tuck 的 definePlugin | 一行配置覆盖三层（vite + markdown + theme） |
-| 持久化 | StorageAdapter 接口 + 默认 VitePress 文件系统实现 | 不写死 /__svg-save__ |
-| SSR 安全 | defineClientComponent 包裹所有 Canvas 代码 | VitePress 官方推荐方案 |
-| 打包工具 | unbuild / tsdown | 纯 TS 库无需 Vite 构建，产物更干净 |
-| 包管理 | pnpm workspace（monorepo 可选） | 独立 npm 包也可以不建 monorepo |
+| 决策     | 选择                                              | 理由                                                    |
+| -------- | ------------------------------------------------- | ------------------------------------------------------- |
+| 内核语言 | TypeScript                                        | 类型安全，便于插件使用者获得 IDE 提示                   |
+| 渲染引擎 | Fabric.js 6.x（可替换）                           | 当前项目已深度使用；通过 RenderAdapter 抽象允许未来切换 |
+| 插件协议 | 参考 vitepress-tuck 的 definePlugin               | 一行配置覆盖三层（vite + markdown + theme）             |
+| 持久化   | StorageAdapter 接口 + 默认 VitePress 文件系统实现 | 不写死 /**svg-save**                                    |
+| SSR 安全 | defineClientComponent 包裹所有 Canvas 代码        | VitePress 官方推荐方案                                  |
+| 打包工具 | unbuild / tsdown                                  | 纯 TS 库无需 Vite 构建，产物更干净                      |
+| 包管理   | pnpm workspace（monorepo 可选）                   | 独立 npm 包也可以不建 monorepo                          |

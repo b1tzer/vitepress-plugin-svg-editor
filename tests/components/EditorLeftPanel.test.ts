@@ -56,7 +56,7 @@ describe('EditorLeftPanel 左侧面板', () => {
 
   it('点击"圆形"和"文本框"应发射正确类型', async () => {
     const wrapper = mount(EditorLeftPanel, { props: defaultProps })
-    
+
     await wrapper.find('[aria-label="添加圆形"]').trigger('click')
     expect(wrapper.emitted('addElement')?.[0]).toEqual(['circle'])
 
@@ -87,7 +87,7 @@ describe('EditorLeftPanel 左侧面板', () => {
     ]
     const wrapper = mount(EditorLeftPanel, { props: { ...defaultProps, canvasObjects: objs } })
     await wrapper.find('[aria-label="图层"]').trigger('click')
-    
+
     expect(wrapper.find('.layers-empty').exists()).toBe(false)
     expect(wrapper.text()).toContain('2 个图层')
     expect(wrapper.text()).toContain('矩形')
@@ -98,7 +98,7 @@ describe('EditorLeftPanel 左侧面板', () => {
     const objs = [{ id: 'layer-0', type: 'rect', name: '矩形', visible: true }]
     const wrapper = mount(EditorLeftPanel, { props: { ...defaultProps, canvasObjects: objs } })
     await wrapper.find('[aria-label="图层"]').trigger('click')
-    
+
     await wrapper.find('.layer-item').trigger('click')
     expect(wrapper.emitted('selectLayer')).toBeTruthy()
     expect(wrapper.emitted('selectLayer')?.[0]).toEqual(['layer-0'])
@@ -108,7 +108,7 @@ describe('EditorLeftPanel 左侧面板', () => {
     const objs = [{ id: 'layer-0', type: 'rect', name: '矩形', visible: true }]
     const wrapper = mount(EditorLeftPanel, { props: { ...defaultProps, canvasObjects: objs } })
     await wrapper.find('[aria-label="图层"]').trigger('click')
-    
+
     await wrapper.find('[aria-label="隐藏图层"]').trigger('click')
     expect(wrapper.emitted('toggleLayerVisibility')).toBeTruthy()
     expect(wrapper.emitted('toggleLayerVisibility')?.[0]).toEqual(['layer-0'])

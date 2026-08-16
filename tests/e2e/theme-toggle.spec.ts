@@ -68,11 +68,12 @@ function getObjectColors(page: any) {
   return page.evaluate(() => {
     const c = (window as any).__fabricCanvas
     if (!c) return null
-    return c.getObjects()
+    return c
+      .getObjects()
       .filter((o: any) => !o.excludeFromExport)
       .map((o: any) => ({
         type: o.type,
-        fill: typeof o.fill === 'string' ? o.fill : (o.fill?.type || 'none'),
+        fill: typeof o.fill === 'string' ? o.fill : o.fill?.type || 'none',
         stroke: o.stroke || '',
         opacity: o.opacity,
       }))
@@ -97,7 +98,10 @@ function getBackgroundInfo(page: any) {
 function clickThemeToggle(page: any) {
   return page.evaluate(() => {
     const btn = document.querySelector('.theme-toggle-btn') as HTMLButtonElement
-    if (btn) { btn.click(); return true }
+    if (btn) {
+      btn.click()
+      return true
+    }
     return false
   })
 }
@@ -122,31 +126,67 @@ function addTestShapes(page: any) {
     if (!c) return null
 
     // 添加不同颜色类型的对象
-    c.add(new (window as any).fabric.Rect({
-      left: 50, top: 50, width: 80, height: 50,
-      fill: '#E3F2FD', stroke: '#1565C0', strokeWidth: 2, // diagram 色系
-    }))
-    c.add(new (window as any).fabric.Rect({
-      left: 160, top: 50, width: 80, height: 50,
-      fill: '#E8F5E9', stroke: '#2E7D32', strokeWidth: 2, // diagram 色系
-    }))
+    c.add(
+      new (window as any).fabric.Rect({
+        left: 50,
+        top: 50,
+        width: 80,
+        height: 50,
+        fill: '#E3F2FD',
+        stroke: '#1565C0',
+        strokeWidth: 2, // diagram 色系
+      })
+    )
+    c.add(
+      new (window as any).fabric.Rect({
+        left: 160,
+        top: 50,
+        width: 80,
+        height: 50,
+        fill: '#E8F5E9',
+        stroke: '#2E7D32',
+        strokeWidth: 2, // diagram 色系
+      })
+    )
     // 添加一个非 diagram 色系对象（如纯函数色）
-    c.add(new (window as any).fabric.Rect({
-      left: 270, top: 50, width: 80, height: 50,
-      fill: '#FF0000', stroke: '#000000', strokeWidth: 2,
-    }))
+    c.add(
+      new (window as any).fabric.Rect({
+        left: 270,
+        top: 50,
+        width: 80,
+        height: 50,
+        fill: '#FF0000',
+        stroke: '#000000',
+        strokeWidth: 2,
+      })
+    )
     // 添加带阴影的对象
-    c.add(new (window as any).fabric.Rect({
-      left: 50, top: 140, width: 80, height: 50,
-      fill: '#F3E5F5', stroke: '#7B1FA2', strokeWidth: 2,
-      shadow: new (window as any).fabric.Shadow({
-        color: '#999999', blur: 5, offsetX: 3, offsetY: 3,
-      }),
-    }))
+    c.add(
+      new (window as any).fabric.Rect({
+        left: 50,
+        top: 140,
+        width: 80,
+        height: 50,
+        fill: '#F3E5F5',
+        stroke: '#7B1FA2',
+        strokeWidth: 2,
+        shadow: new (window as any).fabric.Shadow({
+          color: '#999999',
+          blur: 5,
+          offsetX: 3,
+          offsetY: 3,
+        }),
+      })
+    )
     // 添加文本
-    c.add(new (window as any).fabric.Text('Test', {
-      left: 160, top: 140, fontSize: 20, fill: '#333333',
-    }))
+    c.add(
+      new (window as any).fabric.Text('Test', {
+        left: 160,
+        top: 140,
+        fontSize: 20,
+        fill: '#333333',
+      })
+    )
     c.renderAll()
     return { totalAdded: 5 }
   })
@@ -157,19 +197,36 @@ function addTestShapes(page: any) {
 // ════════════════════════════════════════════════════════════════
 
 test.describe('层级1 — 常量映射表正确性', () => {
-
   test('1.1 LIGHT_TO_DARK 覆盖所有 28 个 CSS 变量', async ({ page }) => {
     const result = await page.evaluate(() => {
       // 直接定义期望的变量集（与 constants.js 保持一致）
       const expectedVars = [
-        '--diagram-surface-1', '--diagram-surface-2', '--diagram-surface-3',
-        '--diagram-stroke-1', '--diagram-stroke-2',
-        '--diagram-text-1', '--diagram-text-2', '--diagram-text-3',
-        '--diagram-accent-1', '--diagram-accent-bg-1', '--diagram-accent-bg-1b', '--diagram-accent-text-1',
-        '--diagram-accent-2', '--diagram-accent-bg-2', '--diagram-accent-bg-2b', '--diagram-accent-text-2',
-        '--diagram-accent-3', '--diagram-accent-bg-3', '--diagram-accent-bg-3b', '--diagram-accent-text-3',
-        '--diagram-accent-4', '--diagram-accent-bg-4', '--diagram-accent-text-4',
-        '--diagram-accent-5', '--diagram-accent-bg-5', '--diagram-accent-text-5',
+        '--diagram-surface-1',
+        '--diagram-surface-2',
+        '--diagram-surface-3',
+        '--diagram-stroke-1',
+        '--diagram-stroke-2',
+        '--diagram-text-1',
+        '--diagram-text-2',
+        '--diagram-text-3',
+        '--diagram-accent-1',
+        '--diagram-accent-bg-1',
+        '--diagram-accent-bg-1b',
+        '--diagram-accent-text-1',
+        '--diagram-accent-2',
+        '--diagram-accent-bg-2',
+        '--diagram-accent-bg-2b',
+        '--diagram-accent-text-2',
+        '--diagram-accent-3',
+        '--diagram-accent-bg-3',
+        '--diagram-accent-bg-3b',
+        '--diagram-accent-text-3',
+        '--diagram-accent-4',
+        '--diagram-accent-bg-4',
+        '--diagram-accent-text-4',
+        '--diagram-accent-5',
+        '--diagram-accent-bg-5',
+        '--diagram-accent-text-5',
         '--diagram-arrow',
         '--diagram-ghost',
       ]
@@ -187,26 +244,62 @@ test.describe('层级1 — 常量映射表正确性', () => {
       // 直接使用 constants.js 的真实映射（通过模块导入验证）
       // 这里模拟 constants.js 的构造逻辑
       const LIGHT_HEX = {
-        '--diagram-surface-1': '#FFFFFF', '--diagram-surface-2': '#F8F9FA', '--diagram-surface-3': '#ECEFF1',
-        '--diagram-stroke-1': '#BDBDBD', '--diagram-stroke-2': '#E0E0E0',
-        '--diagram-text-1': '#333333', '--diagram-text-2': '#666666', '--diagram-text-3': '#888888',
-        '--diagram-accent-1': '#1565C0', '--diagram-accent-bg-1': '#E3F2FD', '--diagram-accent-bg-1b': '#BBDEFB', '--diagram-accent-text-1': '#0D47A1',
-        '--diagram-accent-2': '#2E7D32', '--diagram-accent-bg-2': '#E8F5E9', '--diagram-accent-bg-2b': '#C8E6C9', '--diagram-accent-text-2': '#1B5E20',
-        '--diagram-accent-3': '#7B1FA2', '--diagram-accent-bg-3': '#F3E5F5', '--diagram-accent-bg-3b': '#E1BEE7', '--diagram-accent-text-3': '#4A148C',
-        '--diagram-accent-4': '#E65100', '--diagram-accent-bg-4': '#FFF3E0', '--diagram-accent-text-4': '#BF360C',
-        '--diagram-accent-5': '#C62828', '--diagram-accent-bg-5': '#FFCDD2', '--diagram-accent-text-5': '#B71C1C',
+        '--diagram-surface-1': '#FFFFFF',
+        '--diagram-surface-2': '#F8F9FA',
+        '--diagram-surface-3': '#ECEFF1',
+        '--diagram-stroke-1': '#BDBDBD',
+        '--diagram-stroke-2': '#E0E0E0',
+        '--diagram-text-1': '#333333',
+        '--diagram-text-2': '#666666',
+        '--diagram-text-3': '#888888',
+        '--diagram-accent-1': '#1565C0',
+        '--diagram-accent-bg-1': '#E3F2FD',
+        '--diagram-accent-bg-1b': '#BBDEFB',
+        '--diagram-accent-text-1': '#0D47A1',
+        '--diagram-accent-2': '#2E7D32',
+        '--diagram-accent-bg-2': '#E8F5E9',
+        '--diagram-accent-bg-2b': '#C8E6C9',
+        '--diagram-accent-text-2': '#1B5E20',
+        '--diagram-accent-3': '#7B1FA2',
+        '--diagram-accent-bg-3': '#F3E5F5',
+        '--diagram-accent-bg-3b': '#E1BEE7',
+        '--diagram-accent-text-3': '#4A148C',
+        '--diagram-accent-4': '#E65100',
+        '--diagram-accent-bg-4': '#FFF3E0',
+        '--diagram-accent-text-4': '#BF360C',
+        '--diagram-accent-5': '#C62828',
+        '--diagram-accent-bg-5': '#FFCDD2',
+        '--diagram-accent-text-5': '#B71C1C',
         '--diagram-arrow': '#555555',
         '--diagram-ghost': '#999999',
       }
       const DARK_HEX = {
-        '--diagram-surface-1': '#1a1a1a', '--diagram-surface-2': '#222222', '--diagram-surface-3': '#2a2a2a',
-        '--diagram-stroke-1': '#444444', '--diagram-stroke-2': '#333333',
-        '--diagram-text-1': '#e0e0e0', '--diagram-text-2': '#b0b0b0', '--diagram-text-3': '#808080',
-        '--diagram-accent-1': '#5C9CE6', '--diagram-accent-bg-1': '#0d2137', '--diagram-accent-bg-1b': '#1a3a5c', '--diagram-accent-text-1': '#90CAF9',
-        '--diagram-accent-2': '#66BB6A', '--diagram-accent-bg-2': '#0d2818', '--diagram-accent-bg-2b': '#1b4332', '--diagram-accent-text-2': '#A5D6A7',
-        '--diagram-accent-3': '#CE93D8', '--diagram-accent-bg-3': '#2d1b3d', '--diagram-accent-bg-3b': '#3d2550', '--diagram-accent-text-3': '#E1BEE7',
-        '--diagram-accent-4': '#FFB74D', '--diagram-accent-bg-4': '#3d2d15', '--diagram-accent-text-4': '#FFCC80',
-        '--diagram-accent-5': '#EF9A9A', '--diagram-accent-bg-5': '#3d1520', '--diagram-accent-text-5': '#FFCDD2',
+        '--diagram-surface-1': '#1a1a1a',
+        '--diagram-surface-2': '#222222',
+        '--diagram-surface-3': '#2a2a2a',
+        '--diagram-stroke-1': '#444444',
+        '--diagram-stroke-2': '#333333',
+        '--diagram-text-1': '#e0e0e0',
+        '--diagram-text-2': '#b0b0b0',
+        '--diagram-text-3': '#808080',
+        '--diagram-accent-1': '#5C9CE6',
+        '--diagram-accent-bg-1': '#0d2137',
+        '--diagram-accent-bg-1b': '#1a3a5c',
+        '--diagram-accent-text-1': '#90CAF9',
+        '--diagram-accent-2': '#66BB6A',
+        '--diagram-accent-bg-2': '#0d2818',
+        '--diagram-accent-bg-2b': '#1b4332',
+        '--diagram-accent-text-2': '#A5D6A7',
+        '--diagram-accent-3': '#CE93D8',
+        '--diagram-accent-bg-3': '#2d1b3d',
+        '--diagram-accent-bg-3b': '#3d2550',
+        '--diagram-accent-text-3': '#E1BEE7',
+        '--diagram-accent-4': '#FFB74D',
+        '--diagram-accent-bg-4': '#3d2d15',
+        '--diagram-accent-text-4': '#FFCC80',
+        '--diagram-accent-5': '#EF9A9A',
+        '--diagram-accent-bg-5': '#3d1520',
+        '--diagram-accent-text-5': '#FFCDD2',
         '--diagram-arrow': '#b0b0b0',
         '--diagram-ghost': '#666666',
       }
@@ -220,24 +313,29 @@ test.describe('层级1 — 常量映射表正确性', () => {
       }
 
       // 验证所有 LIGHT_HEX 中的值都有映射
-      const lightHexValues = Object.values(LIGHT_HEX).map(h => h.toUpperCase())
-      const darkHexValues = Object.values(DARK_HEX).map(h => h.toUpperCase())
+      const lightHexValues = Object.values(LIGHT_HEX).map((h) => h.toUpperCase())
+      const darkHexValues = Object.values(DARK_HEX).map((h) => h.toUpperCase())
       const uniqueLightHexes = [...new Set(lightHexValues)]
       const uniqueDarkHexes = [...new Set(darkHexValues)]
 
       // 每个唯一的亮色 hex 都应存在于 L2D 中
-      const missingInL2D = uniqueLightHexes.filter(h => !L2D[h])
+      const missingInL2D = uniqueLightHexes.filter((h) => !L2D[h])
       // 每个唯一的暗色 hex 都应存在于 D2L 中
-      const missingInD2L = uniqueDarkHexes.filter(h => !D2L[h])
+      const missingInD2L = uniqueDarkHexes.filter((h) => !D2L[h])
 
       // 验证往返等幂：每个亮色hex → 暗色hex → 亮色hex 应回到自身
       const roundTripFailures: string[] = []
       for (const lightHex of uniqueLightHexes) {
         const dark = L2D[lightHex]
-        if (!dark) { roundTripFailures.push(`L2D missing key: ${lightHex}`); continue }
+        if (!dark) {
+          roundTripFailures.push(`L2D missing key: ${lightHex}`)
+          continue
+        }
         const backToLight = D2L[dark]
         if (!backToLight || backToLight !== lightHex) {
-          roundTripFailures.push(`Round-trip: ${lightHex} → ${dark} → ${backToLight}, expected ${lightHex}`)
+          roundTripFailures.push(
+            `Round-trip: ${lightHex} → ${dark} → ${backToLight}, expected ${lightHex}`
+          )
         }
       }
 
@@ -251,7 +349,7 @@ test.describe('层级1 — 常量映射表正确性', () => {
       }
 
       const expectedRoundTripFailures = Object.keys(KNOWN_COLLISIONS).map(
-        h => `Round-trip: ${h} → ${L2D[h]} → ${D2L[L2D[h]]}, expected ${h}`
+        (h) => `Round-trip: ${h} → ${L2D[h]} → ${D2L[L2D[h]]}, expected ${h}`
       )
 
       return {
@@ -270,7 +368,9 @@ test.describe('层级1 — 常量映射表正确性', () => {
     expect(result.roundTripFailures).toEqual(result.expectedRoundTripFailures)
     expect(result.missingInL2D).toEqual([])
     expect(result.missingInD2L).toEqual([])
-    console.log(`[往返] light hexes=${result.totalLightHexes}, dark hexes=${result.totalDarkHexes}, expected collisions=${result.expectedRoundTripFailures.length}`)
+    console.log(
+      `[往返] light hexes=${result.totalLightHexes}, dark hexes=${result.totalDarkHexes}, expected collisions=${result.expectedRoundTripFailures.length}`
+    )
   })
 
   test('1.3 ALL_HEX_TO_VAR 同时包含亮暗两个方向的 hex 键', async ({ page }) => {
@@ -288,7 +388,7 @@ test.describe('层级1 — 常量映射表正确性', () => {
       }
       return results
     })
-    expect(result.every(r => r.ok)).toBe(true)
+    expect(result.every((r) => r.ok)).toBe(true)
   })
 })
 
@@ -297,7 +397,6 @@ test.describe('层级1 — 常量映射表正确性', () => {
 // ════════════════════════════════════════════════════════════════
 
 test.describe('层级2 — UI 交互正确性', () => {
-
   test.beforeEach(async ({ page }) => {
     await openEditor(page)
   })
@@ -369,7 +468,6 @@ test.describe('层级2 — UI 交互正确性', () => {
 // ════════════════════════════════════════════════════════════════
 
 test.describe('层级3 — toggleTheme() 运行时正确性', () => {
-
   test.beforeEach(async ({ page }) => {
     await openEditor(page)
     // 确保从亮色开始
@@ -410,7 +508,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     const afterColors = await getObjectColors(page)
 
     // 找到 E3F2FD 的矩形（亮色 diagram-accent-bg-1），应变为 0D2137（暗色）
-    const lightAccentBg = beforeColors.find(c => c.fill === '#E3F2FD')
+    const lightAccentBg = beforeColors.find((c) => c.fill === '#E3F2FD')
     expect(lightAccentBg).toBeDefined()
 
     // 在 afterColors 中找到对应位置的对象
@@ -418,7 +516,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     expect(afterColors[idx].fill).toBe('#0D2137') // 暗色 accent-bg-1
 
     // 红色（非 diagram 色）不应改变
-    const redObj = afterColors.find(c => c.fill === '#FF0000')
+    const redObj = afterColors.find((c) => c.fill === '#FF0000')
     expect(redObj).toBeDefined()
     await screenshot(page, 'colors-light-to-dark')
   })
@@ -431,7 +529,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     const afterColors = await getObjectColors(page)
 
     // #1565C0 → #5C9CE6
-    const lightStroke = beforeColors.find(c => c.stroke === '#1565C0')
+    const lightStroke = beforeColors.find((c) => c.stroke === '#1565C0')
     expect(lightStroke).toBeDefined()
     const idx = beforeColors.indexOf(lightStroke!)
     expect(afterColors[idx].stroke).toBe('#5C9CE6')
@@ -444,7 +542,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     const colors = await getObjectColors(page)
 
     // #FF0000 和 #000000 都不是 diagram 色系，不应被映射
-    const nonDiagram = colors.find(c => c.fill === '#FF0000' && c.stroke === '#000000')
+    const nonDiagram = colors.find((c) => c.fill === '#FF0000' && c.stroke === '#000000')
     expect(nonDiagram).toBeDefined()
   })
 
@@ -531,7 +629,8 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
 
     // 逐对象比较颜色
     for (let i = 0; i < beforeColors.length; i++) {
-      const b = beforeColors[i], a = afterColors[i]
+      const b = beforeColors[i],
+        a = afterColors[i]
       expect(a.fill).toBe(b.fill)
       expect(a.stroke).toBe(b.stroke)
     }
@@ -562,7 +661,6 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
 // ════════════════════════════════════════════════════════════════
 
 test.describe('层级4 — 边界情况', () => {
-
   test.beforeEach(async ({ page }) => {
     await openEditor(page)
   })
@@ -599,7 +697,7 @@ test.describe('层级4 — 边界情况', () => {
     expect(summary!.bg).toBe('#ffffff')
 
     const colors = await getObjectColors(page)
-    const accentBg = colors.find(c => c.fill === '#E3F2FD')
+    const accentBg = colors.find((c) => c.fill === '#E3F2FD')
     expect(accentBg).toBeDefined()
     await screenshot(page, 'rapid-toggle')
   })
@@ -623,7 +721,8 @@ test.describe('层级4 — 边界情况', () => {
     await addTestShapes(page)
     const beforePos = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      return c.getObjects()
+      return c
+        .getObjects()
         .filter((o: any) => !o.excludeFromExport)
         .map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top) }))
     })
@@ -635,7 +734,8 @@ test.describe('层级4 — 边界情况', () => {
 
     const afterPos = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      return c.getObjects()
+      return c
+        .getObjects()
         .filter((o: any) => !o.excludeFromExport)
         .map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top) }))
     })
@@ -683,9 +783,14 @@ test.describe('层级4 — 边界情况', () => {
     // 在暗色模式下添加对象
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      c.add(new (window as any).fabric.Text('Dark Text', {
-        left: 100, top: 300, fontSize: 20, fill: '#E0E0E0',
-      }))
+      c.add(
+        new (window as any).fabric.Text('Dark Text', {
+          left: 100,
+          top: 300,
+          fontSize: 20,
+          fill: '#E0E0E0',
+        })
+      )
       c.renderAll()
     })
 
@@ -695,7 +800,8 @@ test.describe('层级4 — 边界情况', () => {
 
     const texts = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      return c.getObjects()
+      return c
+        .getObjects()
         .filter((o: any) => o.type === 'text')
         .map((o: any) => ({ text: o.text, fill: o.fill }))
     })
@@ -708,7 +814,9 @@ test.describe('层级4 — 边界情况', () => {
 
   test('4.7 切换不产生 undo history entry', async ({ page }) => {
     await addTestShapes(page)
-    const beforeCount = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().length)
+    const beforeCount = await page.evaluate(
+      () => (window as any).__fabricCanvas.getObjects().length
+    )
 
     await clickThemeToggle(page)
     await page.waitForTimeout(300)

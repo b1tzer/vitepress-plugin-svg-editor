@@ -13,12 +13,18 @@ import { test, expect } from '@playwright/test'
 const PAGE = '/features.html'
 
 test.beforeEach(async ({ page }) => {
-  page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
-  page.on('console', msg => { if (msg.type() === 'error') console.log('  🐛 CONSOLE ERR:', msg.text()) })
-  page.on('console', msg => { if (msg.text().startsWith('[Guard]')) console.log(`  📢 ${msg.text()}`) })
+  page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') console.log('  🐛 CONSOLE ERR:', msg.text())
+  })
+  page.on('console', (msg) => {
+    if (msg.text().startsWith('[Guard]')) console.log(`  📢 ${msg.text()}`)
+  })
   await page.goto(PAGE, { waitUntil: 'networkidle', timeout: 30000 })
   await page.waitForSelector('.svg-container', { timeout: 15000 })
-  await page.evaluate(() => document.querySelectorAll('.svg-container')[1]?.scrollIntoView({ block: 'center' }))
+  await page.evaluate(() =>
+    document.querySelectorAll('.svg-container')[1]?.scrollIntoView({ block: 'center' })
+  )
   await page.waitForTimeout(300)
   const container = page.locator('.svg-container').nth(1)
   await container.hover()
@@ -32,11 +38,15 @@ test('G1: 审计 — 列出所有 fabric 对象的 selectable/evented 状态', a
     const c = (window as any).__fabricCanvas
     if (!c) return { err: 'no canvas' }
     return c.getObjects().map((o: any, i: number) => ({
-      i, type: o.type, fill: o.fill,
-      left: Math.round(o.left || 0), top: Math.round(o.top || 0),
+      i,
+      type: o.type,
+      fill: o.fill,
+      left: Math.round(o.left || 0),
+      top: Math.round(o.top || 0),
       w: Math.round((o.width || 0) * (o.scaleX || 1)),
       h: Math.round((o.height || 0) * (o.scaleY || 1)),
-      sel: o.selectable, evt: o.evented,
+      sel: o.selectable,
+      evt: o.evented,
       excl: o.excludeFromExport,
     }))
   })
@@ -44,7 +54,9 @@ test('G1: 审计 — 列出所有 fabric 对象的 selectable/evented 状态', a
   console.log(`总对象数: ${objs.length}`)
   const suspects = objs.filter((o: any) => o.type === 'rect' && o.w > 400)
   suspects.forEach((o: any) => {
-    console.log(`  SUSPECT: idx=${o.i} ${o.w}×${o.h} fill=${o.fill} sel=${o.sel} evt=${o.evt} excl=${o.excl}`)
+    console.log(
+      `  SUSPECT: idx=${o.i} ${o.w}×${o.h} fill=${o.fill} sel=${o.sel} evt=${o.evt} excl=${o.excl}`
+    )
   })
   const selectable = objs.filter((o: any) => o.sel && !o.excl)
   const locked = objs.filter((o: any) => !o.sel || o.excl)
@@ -52,17 +64,30 @@ test('G1: 审计 — 列出所有 fabric 对象的 selectable/evented 状态', a
 
   console.log(`✅ 锁定对象: ${locked.length}`)
   console.log(`✅ 可选中对象: ${selectable.length}`)
-  console.log(`❌ 疑似背景但可选中: ${bgLike.length} →`, JSON.stringify(bgLike.map((o: any) => `${o.type} ${o.w}×${o.h} ${o.fill}`)))
+  console.log(
+    `❌ 疑似背景但可选中: ${bgLike.length} →`,
+    JSON.stringify(bgLike.map((o: any) => `${o.type} ${o.w}×${o.h} ${o.fill}`))
+  )
 
   expect(bgLike.length, `发现 ${bgLike.length} 个大面积背景矩形可被选中/拖拽`).toBe(0)
   expect(locked.length, '纯 canvas.backgroundColor，不应有锁定背景对象').toBeGreaterThanOrEqual(0)
 })
 
 test('G2: 交互 — 点击背景不应选中对象', async ({ page }) => {
-  const box = await page.locator('.editor-canvas .lower-canvas').boundingBox().catch(() => null)
-  if (!box) { console.log('⚠️ 无法获取 canvas boundingBox'); return }
+  const box = await page
+    .locator('.editor-canvas .lower-canvas')
+    .boundingBox()
+    .catch(() => null)
+  if (!box) {
+    console.log('⚠️ 无法获取 canvas boundingBox')
+    return
+  }
 
-  await page.evaluate(() => { const c = (window as any).__fabricCanvas; c.discardActiveObject(); c.renderAll() })
+  await page.evaluate(() => {
+    const c = (window as any).__fabricCanvas
+    c.discardActiveObject()
+    c.renderAll()
+  })
 
   await page.mouse.click(box.x + box.width / 2, box.y + 20)
   await page.waitForTimeout(300)
@@ -74,21 +99,37 @@ test('G2: 交互 — 点击背景不应选中对象', async ({ page }) => {
   })
   console.log(`点击空白后: ${selAfterBgClick}`)
   const selObj = await page.evaluate(() => !!(window as any).__fabricCanvas?.getActiveObject())
-  const selType = await page.evaluate(() => (window as any).__fabricCanvas?.getActiveObject()?.type || 'none')
+  const selType = await page.evaluate(
+    () => (window as any).__fabricCanvas?.getActiveObject()?.type || 'none'
+  )
   console.log(`  选中类型: ${selType}`)
 })
 
 test('G3: 拖拽 — 拖拽背景区域不能移动背景元素', async ({ page }) => {
   const before = await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
-    return c.getObjects().map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top), type: o.type, sel: o.selectable }))
+    return c.getObjects().map((o: any) => ({
+      left: Math.round(o.left),
+      top: Math.round(o.top),
+      type: o.type,
+      sel: o.selectable,
+    }))
   })
 
-  const box = await page.locator('.editor-canvas .lower-canvas').boundingBox().catch(() => null)
-  if (!box || before.length === 0) { console.log('⚠️ 跳过'); return }
+  const box = await page
+    .locator('.editor-canvas .lower-canvas')
+    .boundingBox()
+    .catch(() => null)
+  if (!box || before.length === 0) {
+    console.log('⚠️ 跳过')
+    return
+  }
 
   const selIdx = before.findIndex((o: any) => o.sel && o.type !== 'group')
-  if (selIdx < 0) { console.log('⚠️ 无可选中对象'); return }
+  if (selIdx < 0) {
+    console.log('⚠️ 无可选中对象')
+    return
+  }
 
   const obj = before[selIdx]
   const sx = box.x + obj.left + 20
@@ -102,7 +143,9 @@ test('G3: 拖拽 — 拖拽背景区域不能移动背景元素', async ({ page 
 
   const after = await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
-    return c.getObjects().map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top), sel: o.selectable }))
+    return c
+      .getObjects()
+      .map((o: any) => ({ left: Math.round(o.left), top: Math.round(o.top), sel: o.selectable }))
   })
 
   const moved = after[selIdx].left !== before[selIdx].left

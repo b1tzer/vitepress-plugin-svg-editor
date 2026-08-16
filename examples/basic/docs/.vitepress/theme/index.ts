@@ -6,5 +6,5 @@ export default {
   enhanceApp({ app }) {
     app.component('SvgDiagram', SvgDiagram)
     app.component('SvgEditor', SvgEditor)
-  }
+  },
 }

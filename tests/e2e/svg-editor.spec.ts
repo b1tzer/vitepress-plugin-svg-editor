@@ -54,12 +54,19 @@ test.describe('SvgEditor UI 运行时验证', () => {
 
     for (let i = 0; i < count; i++) {
       const btn = buttons.nth(i)
-      const title = await btn.getAttribute('title') || ''
+      const title = (await btn.getAttribute('title')) || ''
       const text = await btn.textContent()
       console.log(`  按钮 ${i}: title="${title}", text="${text?.trim()}"`)
     }
 
-    const expectedTips = ['撤销 Ctrl+Z', '重做 Ctrl+Y', '复制 Ctrl+C', '粘贴 Ctrl+V', '删除 Delete', '适应画布 Ctrl+0']
+    const expectedTips = [
+      '撤销 Ctrl+Z',
+      '重做 Ctrl+Y',
+      '复制 Ctrl+C',
+      '粘贴 Ctrl+V',
+      '删除 Delete',
+      '适应画布 Ctrl+0',
+    ]
     for (const t of expectedTips) {
       const btn = toolbar.locator(`button[data-tip="${t}"]`)
       const exists = await btn.count()
@@ -120,8 +127,13 @@ test.describe('SvgEditor UI 运行时验证', () => {
     // 选中一个非文本对象，使属性面板显示「填充/边框」颜色选择器
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      const obj = c.getObjects().find((o: any) => o.type !== 'text' && o.type !== 'i-text' && o.type !== 'textbox')
-      if (obj) { c.setActiveObject(obj); c.renderAll() }
+      const obj = c
+        .getObjects()
+        .find((o: any) => o.type !== 'text' && o.type !== 'i-text' && o.type !== 'textbox')
+      if (obj) {
+        c.setActiveObject(obj)
+        c.renderAll()
+      }
     })
 
     const colorInputs = page.locator('.context-panel input[type="color"]')
@@ -136,8 +148,13 @@ test.describe('SvgEditor UI 运行时验证', () => {
     // 选中对象，使属性面板显示对齐按钮
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      const obj = c.getObjects().find((o: any) => o.type !== 'text' && o.type !== 'i-text' && o.type !== 'textbox')
-      if (obj) { c.setActiveObject(obj); c.renderAll() }
+      const obj = c
+        .getObjects()
+        .find((o: any) => o.type !== 'text' && o.type !== 'i-text' && o.type !== 'textbox')
+      if (obj) {
+        c.setActiveObject(obj)
+        c.renderAll()
+      }
     })
 
     const alignTips = ['左对齐', '水平居中', '右对齐', '顶对齐', '垂直居中', '底对齐']

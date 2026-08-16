@@ -6,12 +6,30 @@
  */
 import { test, expect } from '@playwright/test'
 import {
-  addRect, addCircle, addText, addLine,
-  selectObject, selectAll, deselectAll, deleteSelected,
-  moveObject, dragObject, scaleObject, rotateObject, setObjectOpacity,
-  getObjectState, getActiveObjectState, getCanvasSummary,
-  clearCanvas, getZoom, setZoom,
-  undo, redo, screenshotCanvas, addTestShapes, expectCanvasToHave,
+  addRect,
+  addCircle,
+  addText,
+  addLine,
+  selectObject,
+  selectAll,
+  deselectAll,
+  deleteSelected,
+  moveObject,
+  dragObject,
+  scaleObject,
+  rotateObject,
+  setObjectOpacity,
+  getObjectState,
+  getActiveObjectState,
+  getCanvasSummary,
+  clearCanvas,
+  getZoom,
+  setZoom,
+  undo,
+  redo,
+  screenshotCanvas,
+  addTestShapes,
+  expectCanvasToHave,
   navigateAndOpenEditor,
 } from './helpers'
 
@@ -27,7 +45,6 @@ async function openEditor(page: any) {
 // ── 测试套件 ──
 
 test.describe('Canvas 交互测试', () => {
-
   test.beforeEach(async ({ page }) => {
     await openEditor(page)
   })
@@ -37,7 +54,12 @@ test.describe('Canvas 交互测试', () => {
   test('1.1 添加矩形到画布', async ({ page }) => {
     // 先调试：检查 canvas 实例是否可用
     const debugInfo = await page.evaluate(() => {
-      const result: any = { canvasElements: [], fabricFound: false, fabricCanvas: null, vueInfo: null }
+      const result: any = {
+        canvasElements: [],
+        fabricFound: false,
+        fabricCanvas: null,
+        vueInfo: null,
+      }
       const allCanvas = document.querySelectorAll('canvas')
       result.canvasElements = Array.from(allCanvas).map((c, i) => ({
         index: i,
@@ -87,8 +109,13 @@ test.describe('Canvas 交互测试', () => {
       const c = (window as any).__fabricCanvas
       if (!c) return -1
       const rect = new (window as any).fabric.Rect({
-        left: 100, top: 100, width: 200, height: 100,
-        fill: '#2196F3', stroke: '#1565C0', strokeWidth: 2,
+        left: 100,
+        top: 100,
+        width: 200,
+        height: 100,
+        fill: '#2196F3',
+        stroke: '#1565C0',
+        strokeWidth: 2,
       })
       c.add(rect)
       c.renderAll()
@@ -103,10 +130,13 @@ test.describe('Canvas 交互测试', () => {
     const count = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (c) {
-        
         const circle = new (window as any).fabric.Circle({
-          left: 300, top: 150, radius: 50,
-          fill: '#4CAF50', stroke: '#388E3C', strokeWidth: 2,
+          left: 300,
+          top: 150,
+          radius: 50,
+          fill: '#4CAF50',
+          stroke: '#388E3C',
+          strokeWidth: 2,
         })
         c.add(circle)
         c.renderAll()
@@ -123,9 +153,11 @@ test.describe('Canvas 交互测试', () => {
     const count = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (c) {
-        
         const text = new (window as any).fabric.Text('Hello Fabric.js', {
-          left: 150, top: 300, fontSize: 32, fill: '#333333',
+          left: 150,
+          top: 300,
+          fontSize: 32,
+          fill: '#333333',
         })
         c.add(text)
         c.renderAll()
@@ -144,24 +176,31 @@ test.describe('Canvas 交互测试', () => {
     const state = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       // 添加一个矩形
       const rect = new (window as any).fabric.Rect({
-        left: 200, top: 200, width: 150, height: 80,
-        fill: '#FF9800', stroke: '#E65100', strokeWidth: 2,
+        left: 200,
+        top: 200,
+        width: 150,
+        height: 80,
+        fill: '#FF9800',
+        stroke: '#E65100',
+        strokeWidth: 2,
       })
       c.add(rect)
       // 选中它
       c.setActiveObject(rect)
       c.renderAll()
       const active = c.getActiveObject()
-      return active ? {
-        type: active.type,
-        left: Math.round(active.left),
-        top: Math.round(active.top),
-        fill: active.fill,
-        selected: true,
-      } : null
+      return active
+        ? {
+            type: active.type,
+            left: Math.round(active.left),
+            top: Math.round(active.top),
+            fill: active.fill,
+            selected: true,
+          }
+        : null
     })
     console.log(`[选中状态]`, JSON.stringify(state))
     expect(state).not.toBeNull()
@@ -174,8 +213,14 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
-      const rect = new (window as any).fabric.Rect({ left: 100, top: 100, width: 100, height: 100, fill: 'blue' })
+
+      const rect = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'blue',
+      })
       c.add(rect)
       c.setActiveObject(rect)
       c.discardActiveObject()
@@ -192,9 +237,13 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const rect = new (window as any).fabric.Rect({
-        left: 100, top: 100, width: 100, height: 100, fill: '#2196F3',
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: '#2196F3',
       })
       c.add(rect)
       // 移动到 (300, 200)
@@ -213,9 +262,13 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const rect = new (window as any).fabric.Rect({
-        left: 100, top: 100, width: 100, height: 100, fill: '#4CAF50',
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: '#4CAF50',
       })
       c.add(rect)
       const before = { left: rect.left, top: rect.top }
@@ -240,9 +293,13 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const rect = new (window as any).fabric.Rect({
-        left: 200, top: 200, width: 100, height: 100, fill: '#E91E63',
+        left: 200,
+        top: 200,
+        width: 100,
+        height: 100,
+        fill: '#E91E63',
       })
       c.add(rect)
       rect.set({ scaleX: 2, scaleY: 1.5 })
@@ -255,7 +312,9 @@ test.describe('Canvas 交互测试', () => {
         actualHeight: Math.round(rect.height * rect.scaleY),
       }
     })
-    console.log(`[缩放] scale: (${result!.scaleX}, ${result!.scaleY}), 实际尺寸: ${result!.actualWidth}x${result!.actualHeight}`)
+    console.log(
+      `[缩放] scale: (${result!.scaleX}, ${result!.scaleY}), 实际尺寸: ${result!.actualWidth}x${result!.actualHeight}`
+    )
     expect(result!.scaleX).toBe(2)
     expect(result!.scaleY).toBe(1.5)
     await screenshotCanvas(page, 'scale-object')
@@ -265,9 +324,13 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const rect = new (window as any).fabric.Rect({
-        left: 300, top: 200, width: 120, height: 60, fill: '#9C27B0',
+        left: 300,
+        top: 200,
+        width: 120,
+        height: 60,
+        fill: '#9C27B0',
       })
       c.add(rect)
       rect.set({ angle: 45 })
@@ -284,9 +347,13 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const rect = new (window as any).fabric.Rect({
-        left: 200, top: 150, width: 150, height: 100, fill: '#FF5722',
+        left: 200,
+        top: 150,
+        width: 150,
+        height: 100,
+        fill: '#FF5722',
       })
       c.add(rect)
       rect.set({ opacity: 0.3 })
@@ -305,8 +372,19 @@ test.describe('Canvas 交互测试', () => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
       const initialCount = c.getObjects().length
-      const rect = new (window as any).fabric.Rect({ left: 100, top: 100, width: 100, height: 100, fill: 'red' })
-      const circle = new (window as any).fabric.Circle({ left: 300, top: 100, radius: 50, fill: 'blue' })
+      const rect = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'red',
+      })
+      const circle = new (window as any).fabric.Circle({
+        left: 300,
+        top: 100,
+        radius: 50,
+        fill: 'blue',
+      })
       c.add(rect)
       c.add(circle)
       c.setActiveObject(rect)
@@ -317,7 +395,9 @@ test.describe('Canvas 交互测试', () => {
       c.renderAll()
       return { initialCount, finalCount: c.getObjects().length, added: 2, removed: 1 }
     })
-    console.log(`[删除] 初始: ${result!.initialCount}, 添加: ${result!.added}, 删除: ${result!.removed}, 最终: ${result!.finalCount}`)
+    console.log(
+      `[删除] 初始: ${result!.initialCount}, 添加: ${result!.added}, 删除: ${result!.removed}, 最终: ${result!.finalCount}`
+    )
     expect(result!.finalCount).toBe(result!.initialCount + 1) // 初始 + 2 添加 - 1 删除
     await screenshotCanvas(page, 'delete-object')
   })
@@ -328,9 +408,27 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 80, height: 80, fill: 'red' })
-      const r2 = new (window as any).fabric.Rect({ left: 200, top: 100, width: 80, height: 80, fill: 'blue' })
-      const r3 = new (window as any).fabric.Rect({ left: 300, top: 100, width: 80, height: 80, fill: 'green' })
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'red',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 200,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'blue',
+      })
+      const r3 = new (window as any).fabric.Rect({
+        left: 300,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'green',
+      })
       c.add(r1, r2, r3)
       // 只选这 3 个新对象
       const sel = new (window as any).fabric.ActiveSelection([r1, r2, r3], { canvas: c })
@@ -354,9 +452,19 @@ test.describe('Canvas 交互测试', () => {
       const c = (window as any).__fabricCanvas
       if (!c) return 0
       const before = c.getObjects().length
-      c.add(new (window as any).fabric.Rect({ left: 100, top: 100, width: 150, height: 80, fill: '#2196F3' }))
+      c.add(
+        new (window as any).fabric.Rect({
+          left: 100,
+          top: 100,
+          width: 150,
+          height: 80,
+          fill: '#2196F3',
+        })
+      )
       c.add(new (window as any).fabric.Circle({ left: 350, top: 120, radius: 40, fill: '#4CAF50' }))
-      c.add(new (window as any).fabric.Text('Test', { left: 150, top: 280, fontSize: 28, fill: '#333' }))
+      c.add(
+        new (window as any).fabric.Text('Test', { left: 150, top: 280, fontSize: 28, fill: '#333' })
+      )
       c.renderAll()
       return before
     })
@@ -396,7 +504,7 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const center = { x: c.getWidth() / 2, y: c.getHeight() / 2 }
       c.zoomToPoint(center, 2.0)
       c.renderAll()
@@ -413,14 +521,24 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
+
       const before = c.getObjects().length
       // 添加一个对象
-      c.add(new (window as any).fabric.Rect({ left: 100, top: 100, width: 100, height: 100, fill: 'red' }))
+      c.add(
+        new (window as any).fabric.Rect({
+          left: 100,
+          top: 100,
+          width: 100,
+          height: 100,
+          fill: 'red',
+        })
+      )
       c.renderAll()
       const afterAdd = c.getObjects().length
       // 触发 Ctrl+Z
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }))
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true })
+      )
       return { before, afterAdd }
     })
     console.log(`[undo] 添加前: ${result!.before}, 添加后: ${result!.afterAdd}`)
@@ -435,9 +553,21 @@ test.describe('Canvas 交互测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 100, height: 100, fill: 'blue' })
-      const r2 = new (window as any).fabric.Rect({ left: 250, top: 100, width: 100, height: 100, fill: 'red' })
+
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'blue',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 250,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'red',
+      })
       c.add(r1, r2)
       // 模拟 r2 移动到接近 r1 的位置
       r2.set({ left: 105 }) // 距离 r1 右边 5px，在 SNAP_THRESHOLD(8) 内

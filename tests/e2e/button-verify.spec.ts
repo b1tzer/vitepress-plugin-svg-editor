@@ -11,8 +11,10 @@ import { navigateAndOpenEditor } from './helpers'
 const PAGE = '/features.html'
 
 test.beforeEach(async ({ page }) => {
-  page.on('pageerror', e => console.log('  ⚠️ JS Error:', e.message))
-  page.on('console', msg => { if (msg.type() === 'error') console.log('  ⚠️ Console Error:', msg.text()) })
+  page.on('pageerror', (e) => console.log('  ⚠️ JS Error:', e.message))
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') console.log('  ⚠️ Console Error:', msg.text())
+  })
 })
 
 test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛验证', async ({ page }) => {
@@ -39,10 +41,26 @@ test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛�
     c.discardActiveObject()
     c.setViewportTransform([1, 0, 0, 1, 0, 0])
     c.setZoom(1)
-    c.getObjects().forEach((o: any) => { if (o.type === 'rect' || o.id === '__test__') c.remove(o) })
+    c.getObjects().forEach((o: any) => {
+      if (o.type === 'rect' || o.id === '__test__') c.remove(o)
+    })
     const R = (window as any).fabric.Rect
-    const r1 = new R({ left: 100, top: 100, width: 80, height: 50, fill: '#1565C0', id: '__test__' })
-    const r2 = new R({ left: 400, top: 100, width: 80, height: 50, fill: '#E53935', id: '__test__' })
+    const r1 = new R({
+      left: 100,
+      top: 100,
+      width: 80,
+      height: 50,
+      fill: '#1565C0',
+      id: '__test__',
+    })
+    const r2 = new R({
+      left: 400,
+      top: 100,
+      width: 80,
+      height: 50,
+      fill: '#E53935',
+      id: '__test__',
+    })
     c.add(r1, r2)
     c.renderAll()
   })
@@ -51,7 +69,7 @@ test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛�
   const before = await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
     const rects = c.getObjects().filter((o: any) => o.id === '__test__')
-    return rects.map((o: any) => Math.round(o.left + o.width! * (o.scaleX || 1) / 2))
+    return rects.map((o: any) => Math.round(o.left + (o.width! * (o.scaleX || 1)) / 2))
   })
   console.log(`  居中前中心X: [${before[0]}, ${before[1]}]`)
   expect(before[0]).toBeGreaterThan(0)
@@ -77,8 +95,10 @@ test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛�
     if (sel && sel.type === 'activeselection') sel.destroy()
     c.discardActiveObject()
     c.renderAll()
-    return c.getObjects().filter((o: any) => o.id === '__test__')
-      .map((o: any) => Math.round(o.left + o.width! * (o.scaleX || 1) / 2))
+    return c
+      .getObjects()
+      .filter((o: any) => o.id === '__test__')
+      .map((o: any) => Math.round(o.left + (o.width! * (o.scaleX || 1)) / 2))
   })
   const diff = Math.abs(after[0] - after[1])
   const moved = before[0] !== after[0] || before[1] !== after[1]

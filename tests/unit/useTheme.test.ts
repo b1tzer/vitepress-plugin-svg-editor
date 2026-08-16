@@ -42,7 +42,13 @@ describe('useTheme', () => {
   })
 
   it('toggleTheme 应遍历对象替换颜色', () => {
-    const obj = { type: 'rect', fill: '#FFFFFF', stroke: '#333333', excludeFromExport: false, set: vi.fn() }
+    const obj = {
+      type: 'rect',
+      fill: '#FFFFFF',
+      stroke: '#333333',
+      excludeFromExport: false,
+      set: vi.fn(),
+    }
     canvasMgr.canvas.getObjects.mockReturnValue([obj])
 
     const { toggleTheme } = useTheme(canvasMgr as any)

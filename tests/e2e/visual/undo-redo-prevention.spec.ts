@@ -41,9 +41,9 @@ test.describe('Undo/Redo 功能端到端测试（防黑屏回归）', () => {
     await expect(canvasEl).toBeAttached({ timeout: 3000 })
 
     // 确认画布区域不是纯黑色（至少有背景色）
-    const bgColor = await page.locator('.editor-body').evaluate((el: HTMLElement) =>
-      window.getComputedStyle(el).backgroundColor
-    )
+    const bgColor = await page
+      .locator('.editor-body')
+      .evaluate((el: HTMLElement) => window.getComputedStyle(el).backgroundColor)
     // 画布区域应有明确背景
     expect(bgColor).toBeTruthy()
   })
@@ -111,8 +111,8 @@ test.describe('Undo/Redo 功能端到端测试（防黑屏回归）', () => {
     await expect(canvasEl).toBeAttached({ timeout: 2000 })
 
     // 确认编辑面板没有变成 display:none
-    const display = await editorPanel.evaluate((el: HTMLElement) =>
-      window.getComputedStyle(el).display
+    const display = await editorPanel.evaluate(
+      (el: HTMLElement) => window.getComputedStyle(el).display
     )
     expect(display).not.toBe('none')
   })

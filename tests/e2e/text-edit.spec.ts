@@ -15,7 +15,9 @@ const SVG_IDX = 1
 
 async function findToolbarButton(page: any, tipOrText: string) {
   return page.evaluate((target: string) => {
-    const btns = document.querySelectorAll('.editor-overlay button, .editor-overlay [data-tip], .editor-overlay [title]')
+    const btns = document.querySelectorAll(
+      '.editor-overlay button, .editor-overlay [data-tip], .editor-overlay [title]'
+    )
     for (let i = 0; i < btns.length; i++) {
       const el = btns[i] as HTMLElement
       const tip = el.getAttribute('data-tip') || el.getAttribute('title') || el.textContent || ''
@@ -28,7 +30,10 @@ async function findToolbarButton(page: any, tipOrText: string) {
 async function clickToolbarButton(page: any, tipOrText: string) {
   const idx = await findToolbarButton(page, tipOrText)
   if (idx >= 0) {
-    await page.locator('.editor-overlay button, .editor-overlay [data-tip]').nth(idx).click({ force: true })
+    await page
+      .locator('.editor-overlay button, .editor-overlay [data-tip]')
+      .nth(idx)
+      .click({ force: true })
     await page.waitForTimeout(300)
     return true
   }
@@ -39,9 +44,8 @@ async function clickToolbarButton(page: any, tipOrText: string) {
 // ═══════════════════ Tests ═══════════════════
 
 test.describe('文字编辑', () => {
-
   test.beforeEach(async ({ page }) => {
-    page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+    page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
     await openEditor(page, SVG_IDX)
@@ -184,5 +188,4 @@ test.describe('文字编辑', () => {
 
     await screenshotCanvas(page, 'text-align')
   })
-
 })

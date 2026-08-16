@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
 import {
   navigateAndOpenEditor,
-  addRect, addCircle, addText,
+  addRect,
+  addCircle,
+  addText,
   getCanvas,
   screenshot as screenshotCanvas,
 } from './helpers'
@@ -55,7 +57,6 @@ async function screenshot(page: any, name: string) {
 // ── 测试套件 ──
 
 test.describe('SvgEditor 全量功能测试', () => {
-
   test.beforeEach(async ({ page }) => {
     await openEditor(page)
   })
@@ -65,21 +66,27 @@ test.describe('SvgEditor 全量功能测试', () => {
   // ════════════════════════════════════════════════════════════════
 
   test('1.1 添加矩形', async ({ page }) => {
-    const before = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects().length ?? 0)
+    const before = await page.evaluate(
+      () => (window as any).__fabricCanvas?.getObjects().length ?? 0
+    )
     const result = await addRect(page)
     expect(result!.total).toBe(before + 1)
     await screenshot(page, '01-add-rect')
   })
 
   test('1.2 添加圆形', async ({ page }) => {
-    const before = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects().length ?? 0)
+    const before = await page.evaluate(
+      () => (window as any).__fabricCanvas?.getObjects().length ?? 0
+    )
     const result = await addCircle(page)
     expect(result!.total).toBe(before + 1)
     await screenshot(page, '02-add-circle')
   })
 
   test('1.3 添加文本', async ({ page }) => {
-    const before = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects().length ?? 0)
+    const before = await page.evaluate(
+      () => (window as any).__fabricCanvas?.getObjects().length ?? 0
+    )
     const result = await addText(page, 'Hello World')
     expect(result!.total).toBe(before + 1)
     await screenshot(page, '03-add-text')
@@ -127,9 +134,27 @@ test.describe('SvgEditor 全量功能测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 80, height: 80, fill: 'red' })
-      const r2 = new (window as any).fabric.Rect({ left: 200, top: 100, width: 80, height: 80, fill: 'blue' })
-      const r3 = new (window as any).fabric.Rect({ left: 300, top: 100, width: 80, height: 80, fill: 'green' })
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'red',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 200,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'blue',
+      })
+      const r3 = new (window as any).fabric.Rect({
+        left: 300,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'green',
+      })
       c.add(r1, r2, r3)
       const sel = new (window as any).fabric.ActiveSelection([r1, r2, r3], { canvas: c })
       c.setActiveObject(sel)
@@ -184,7 +209,8 @@ test.describe('SvgEditor 全量功能测试', () => {
       obj.setCoords()
       c.renderAll()
       return {
-        scaleX: obj.scaleX, scaleY: obj.scaleY,
+        scaleX: obj.scaleX,
+        scaleY: obj.scaleY,
         actualW: Math.round(obj.width * obj.scaleX),
         actualH: Math.round(obj.height * obj.scaleY),
       }
@@ -355,8 +381,20 @@ test.describe('SvgEditor 全量功能测试', () => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
       // 先添加两个对象，确保第一个不是在最顶层
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 100, height: 100, fill: 'red' })
-      const r2 = new (window as any).fabric.Rect({ left: 150, top: 150, width: 100, height: 100, fill: 'blue' })
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'red',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 150,
+        top: 150,
+        width: 100,
+        height: 100,
+        fill: 'blue',
+      })
       c.add(r1)
       c.add(r2)
       c.setActiveObject(r1)
@@ -396,8 +434,20 @@ test.describe('SvgEditor 全量功能测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 80, height: 80, fill: 'red' })
-      const r2 = new (window as any).fabric.Rect({ left: 200, top: 100, width: 80, height: 80, fill: 'blue' })
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'red',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 200,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'blue',
+      })
       c.add(r1, r2)
       const sel = new (window as any).fabric.ActiveSelection([r1, r2], { canvas: c })
       c.setActiveObject(sel)
@@ -417,8 +467,20 @@ test.describe('SvgEditor 全量功能测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 80, height: 80, fill: 'red' })
-      const r2 = new (window as any).fabric.Rect({ left: 200, top: 100, width: 80, height: 80, fill: 'blue' })
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'red',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 200,
+        top: 100,
+        width: 80,
+        height: 80,
+        fill: 'blue',
+      })
       c.add(r1, r2)
       const sel = new (window as any).fabric.ActiveSelection([r1, r2], { canvas: c })
       c.setActiveObject(sel)
@@ -451,7 +513,10 @@ test.describe('SvgEditor 全量功能测试', () => {
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const a = c.getActiveObject()
-      if (a) a.clone((cloned: any) => { (window as any)._clipboard = cloned })
+      if (a)
+        a.clone((cloned: any) => {
+          ;(window as any)._clipboard = cloned
+        })
     })
     // 粘贴
     await page.evaluate(() => {
@@ -555,8 +620,20 @@ test.describe('SvgEditor 全量功能测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
-      const r1 = new (window as any).fabric.Rect({ left: 100, top: 100, width: 100, height: 100, fill: 'blue' })
-      const r2 = new (window as any).fabric.Rect({ left: 250, top: 100, width: 100, height: 100, fill: 'red' })
+      const r1 = new (window as any).fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'blue',
+      })
+      const r2 = new (window as any).fabric.Rect({
+        left: 250,
+        top: 100,
+        width: 100,
+        height: 100,
+        fill: 'red',
+      })
       c.add(r1, r2)
       // 移动 r2 接近 r1（距离 < SNAP_THRESHOLD=8）
       r2.set({ left: 105 })
@@ -602,8 +679,12 @@ test.describe('SvgEditor 全量功能测试', () => {
       const grad = new (window as any).fabric.Gradient({
         type: 'radial',
         coords: {
-          x1: obj.radius, y1: obj.radius, r1: 0,
-          x2: obj.radius, y2: obj.radius, r2: obj.radius,
+          x1: obj.radius,
+          y1: obj.radius,
+          r1: 0,
+          x2: obj.radius,
+          y2: obj.radius,
+          r2: obj.radius,
         },
         colorStops: [
           { offset: 0, color: '#FFFFFF' },
@@ -628,9 +709,15 @@ test.describe('SvgEditor 全量功能测试', () => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const obj = c.getActiveObject()
-      obj.set('shadow', new (window as any).fabric.Shadow({
-        color: '#000000', blur: 10, offsetX: 5, offsetY: 5,
-      }))
+      obj.set(
+        'shadow',
+        new (window as any).fabric.Shadow({
+          color: '#000000',
+          blur: 10,
+          offsetX: 5,
+          offsetY: 5,
+        })
+      )
       c.renderAll()
       return { hasShadow: !!obj.shadow, blur: obj.shadow?.blur }
     })
@@ -644,9 +731,15 @@ test.describe('SvgEditor 全量功能测试', () => {
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const obj = c.getActiveObject()
-      obj.set('shadow', new (window as any).fabric.Shadow({
-        color: '#000000', blur: 10, offsetX: 5, offsetY: 5,
-      }))
+      obj.set(
+        'shadow',
+        new (window as any).fabric.Shadow({
+          color: '#000000',
+          blur: 10,
+          offsetX: 5,
+          offsetY: 5,
+        })
+      )
       c.renderAll()
     })
     const result = await page.evaluate(() => {
@@ -707,7 +800,10 @@ test.describe('SvgEditor 全量功能测试', () => {
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const rect = c.getObjects().find((o: any) => o.type === 'rect' && o.fill === '#2196F3')
-      if (rect) { rect.set({ left: 200, top: 150 }); rect.setCoords() }
+      if (rect) {
+        rect.set({ left: 200, top: 150 })
+        rect.setCoords()
+      }
       c.renderAll()
     })
     await screenshot(page, '39-multi-step2')
@@ -716,7 +812,10 @@ test.describe('SvgEditor 全量功能测试', () => {
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const text = c.getObjects().find((o: any) => o.type === 'text' && o.text === 'Label')
-      if (text) { text.set('text', 'Updated'); text.set('fill', '#E91E63') }
+      if (text) {
+        text.set('text', 'Updated')
+        text.set('fill', '#E91E63')
+      }
       c.renderAll()
     })
     await screenshot(page, '40-multi-step3')

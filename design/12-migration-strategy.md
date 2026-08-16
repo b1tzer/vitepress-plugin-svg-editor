@@ -40,6 +40,7 @@ docs/.vitepress/
 ```
 
 以及测试文件在 `tests/` 目录：
+
 ```
 tests/
 ├── svg-editor.spec.ts               ← 基础 E2E 测试
@@ -78,6 +79,7 @@ java-world/
 ```
 
 **此时原项目的导入方式**：
+
 ```ts
 // docs/.vitepress/theme/index.ts
 import SvgEditor from './components/SvgEditor.vue'
@@ -88,7 +90,7 @@ export default {
   enhanceApp({ app }) {
     app.component('SvgEditor', SvgEditor)
     app.component('SvgDiagram', SvgDiagram)
-  }
+  },
 }
 ```
 
@@ -120,12 +122,14 @@ java-world/                              ← 现仓库根目录
 ### 关键文件
 
 `pnpm-workspace.yaml`:
+
 ```yaml
 packages:
   - 'packages/*'
 ```
 
 `packages/vitepress-plugin-svg-editor/package.json`:
+
 ```json
 {
   "name": "vitepress-plugin-svg-editor",
@@ -147,6 +151,7 @@ packages:
 ```
 
 **验收标准**：
+
 ```
 [ ] pnpm install 成功，不报错
 [ ] pnpm --filter vitepress-plugin-svg-editor build 成功
@@ -161,16 +166,17 @@ packages:
 
 ### 文件迁移映射
 
-| 原路径 | 新路径 | 变化 |
-|--------|--------|------|
-| `theme/components/editor/CanvasManager.js` | `packages/.../src/core/CanvasManager.ts` | JS→TS，提取接口 |
-| `theme/components/editor/HistoryManager.js` | `packages/.../src/core/HistoryManager.ts` | JS→TS |
-| `theme/components/editor/constants.js` | `packages/.../src/core/constants.ts` | 分类整理 |
-| `theme/components/editor/preprocessor.js` | `packages/.../src/core/preprocessor.ts` | 可配置化 |
-| `theme/components/editor/postprocessor.js` | `packages/.../src/core/postprocessor.ts` | 可配置化 |
-| `theme/components/editor/plugins/*.js` | `packages/.../src/plugins/*.ts` | 改为注册式 |
+| 原路径                                      | 新路径                                    | 变化            |
+| ------------------------------------------- | ----------------------------------------- | --------------- |
+| `theme/components/editor/CanvasManager.js`  | `packages/.../src/core/CanvasManager.ts`  | JS→TS，提取接口 |
+| `theme/components/editor/HistoryManager.js` | `packages/.../src/core/HistoryManager.ts` | JS→TS           |
+| `theme/components/editor/constants.js`      | `packages/.../src/core/constants.ts`      | 分类整理        |
+| `theme/components/editor/preprocessor.js`   | `packages/.../src/core/preprocessor.ts`   | 可配置化        |
+| `theme/components/editor/postprocessor.js`  | `packages/.../src/core/postprocessor.ts`  | 可配置化        |
+| `theme/components/editor/plugins/*.js`      | `packages/.../src/plugins/*.ts`           | 改为注册式      |
 
 **验收标准**：
+
 ```
 [ ] pnpm --filter vitepress-plugin-svg-editor build 成功
 [ ] core/ 目录单元测试覆盖率 ≥ 80%
@@ -208,6 +214,7 @@ if (import.meta.env.VITE_USE_NEW_EDITOR === 'true') {
 通过 `VITE_USE_NEW_EDITOR=true pnpm docs:dev` 切换到新包验证，默认仍走旧代码。
 
 **验收标准**：
+
 ```
 [ ] VITE_USE_NEW_EDITOR=true 时编辑器正常打开、编辑、保存
 [ ] VITE_USE_NEW_EDITOR=false（默认）时原编辑器正常
@@ -241,8 +248,8 @@ export default defineConfig({
   plugins: [
     svgEditorPlugin({
       saveDir: 'public/diagrams/',
-    })
-  ]
+    }),
+  ],
 })
 ```
 
@@ -253,6 +260,7 @@ export default defineConfig({
 **回滚策略**：如果切换后发现回归问题，git revert 回到 Phase D 状态，旧代码还在 git 历史中。
 
 **验收标准**：
+
 ```
 [ ] 删除旧代码后项目仍正常 build + dev
 [ ] E2E 测试全部通过
@@ -317,24 +325,24 @@ pnpm test:e2e
 
 ## 四、配置文件统一管理
 
-| 配置项 | 过渡期位置 | 最终位置 |
-|--------|-----------|---------|
-| CSS 颜色映射 | `theme/components/editor/constants.js`（旧）+ `src/core/constants.ts`（新） | `svgEditorPlugin({ cssVariableMap })` 默认值 |
-| Fabric.js CDN URL | `config.mts` transformHead | 插件内置 + `cdnUrl` 配置项 |
-| /__svg-save__ 端点 | `config.mts` vite plugin | 插件内置 `VitePressSaveAdapter` |
-| 预处理逻辑 | `theme/components/editor/preprocessor.js` | 插件内置 + `preprocess` 钩子 |
-| 目录白名单 | `config.mts` save-tool | `StorageAdapter.saveDir` 配置 |
+| 配置项             | 过渡期位置                                                                  | 最终位置                                     |
+| ------------------ | --------------------------------------------------------------------------- | -------------------------------------------- |
+| CSS 颜色映射       | `theme/components/editor/constants.js`（旧）+ `src/core/constants.ts`（新） | `svgEditorPlugin({ cssVariableMap })` 默认值 |
+| Fabric.js CDN URL  | `config.mts` transformHead                                                  | 插件内置 + `cdnUrl` 配置项                   |
+| /**svg-save** 端点 | `config.mts` vite plugin                                                    | 插件内置 `VitePressSaveAdapter`              |
+| 预处理逻辑         | `theme/components/editor/preprocessor.js`                                   | 插件内置 + `preprocess` 钩子                 |
+| 目录白名单         | `config.mts` save-tool                                                      | `StorageAdapter.saveDir` 配置                |
 
 ---
 
 ## 五、回滚与应急方案
 
-| 场景 | 操作 |
-|------|------|
-| Phase D 新包验证有 bug | 关掉 `VITE_USE_NEW_EDITOR` 环境变量，旧代码完全不受影响 |
-| Phase E 切换后出问题 | `git revert` 回到 Phase D |
-| npm publish 后有严重问题 | `npm deprecate pkg@0.1.0` + 原项目 pin 到上一个可用的 commit hash |
-| 原项目依赖了新包但 pnpm link 断开 | `pnpm install` 自动重新建立 workspace soft link |
+| 场景                              | 操作                                                              |
+| --------------------------------- | ----------------------------------------------------------------- |
+| Phase D 新包验证有 bug            | 关掉 `VITE_USE_NEW_EDITOR` 环境变量，旧代码完全不受影响           |
+| Phase E 切换后出问题              | `git revert` 回到 Phase D                                         |
+| npm publish 后有严重问题          | `npm deprecate pkg@0.1.0` + 原项目 pin 到上一个可用的 commit hash |
+| 原项目依赖了新包但 pnpm link 断开 | `pnpm install` 自动重新建立 workspace soft link                   |
 
 ---
 

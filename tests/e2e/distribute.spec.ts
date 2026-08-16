@@ -42,9 +42,8 @@ async function getDistributeState(page: any) {
 // ═══════════════════ Tests ═══════════════════
 
 test.describe('等间距分布', () => {
-
   test.beforeEach(async ({ page }) => {
-    page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+    page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
     await openEditor(page, SVG_IDX)
@@ -144,5 +143,4 @@ test.describe('等间距分布', () => {
     const state = await getObjectState(page, 0)
     expect(state).not.toBeNull()
   })
-
 })

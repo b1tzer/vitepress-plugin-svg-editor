@@ -14,7 +14,6 @@ function screenshot(page: any, name: string) {
 }
 
 test.describe('SvgEditor 边界与功能区外测试', () => {
-
   test.beforeEach(async ({ page }) => {
     await openEditor(page)
   })
@@ -77,31 +76,49 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
   // ════════════════════════════════════════════════════════════════
 
   test('2.1 添加对象后 undo', async ({ page }) => {
-    const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const before = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await addRect(page)
-    const afterAdd = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const afterAdd = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     expect(afterAdd).toBe(before + 1)
     await page.keyboard.press('Control+z')
     await page.waitForTimeout(500)
-    const afterUndo = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const afterUndo = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[undo] before=${before}, afterAdd=${afterAdd}, afterUndo=${afterUndo}`)
     await screenshot(page, 'undo-test')
   })
 
   test('2.2 undo 后 redo 恢复', async ({ page }) => {
-    const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const before = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await addRect(page)
     await page.keyboard.press('Control+z')
     await page.waitForTimeout(300)
     await page.keyboard.press('Control+y')
     await page.waitForTimeout(300)
-    const afterRedo = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const afterRedo = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[redo] before=${before}, afterRedo=${afterRedo}`)
     await screenshot(page, 'redo-test')
   })
 
   test('2.3 连续 undo', async ({ page }) => {
-    const initial = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const initial = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await addRect(page, { fill: 'red' })
     await addRect(page, { fill: 'blue' })
     await addRect(page, { fill: 'green' })
@@ -109,7 +126,10 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
       await page.keyboard.press('Control+z')
       await page.waitForTimeout(300)
     }
-    const afterUndo = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const afterUndo = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[连续undo] initial=${initial}, afterUndo=${afterUndo}`)
     await screenshot(page, 'undo-all')
   })
@@ -126,9 +146,20 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
     })
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      c.add(new (window as any).fabric.Rect({ left: 200, top: 200, width: 100, height: 50, fill: '#FF5722' }))
+      c.add(
+        new (window as any).fabric.Rect({
+          left: 200,
+          top: 200,
+          width: 100,
+          height: 50,
+          fill: '#FF5722',
+        })
+      )
       c.renderAll()
-      return { zoom: c.getZoom(), rectLeft: Math.round(c.getObjects()[c.getObjects().length - 1].left) }
+      return {
+        zoom: c.getZoom(),
+        rectLeft: Math.round(c.getObjects()[c.getObjects().length - 1].left),
+      }
     })
     expect(result.zoom).toBe(2)
     expect(result.rectLeft).toBe(200)
@@ -161,12 +192,18 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
 
   test('4.1 Ctrl+C / Ctrl+V', async ({ page }) => {
     await addRect(page, { fill: '#FF9800' })
-    const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const before = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await page.keyboard.press('Control+c')
     await page.waitForTimeout(200)
     await page.keyboard.press('Control+v')
     await page.waitForTimeout(200)
-    const after = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const after = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[复制粘贴] before=${before}, after=${after}`)
     expect(after).toBe(before + 1)
     await screenshot(page, 'copy-paste-kb')
@@ -174,10 +211,16 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
 
   test('4.2 Delete 删除', async ({ page }) => {
     await addRect(page)
-    const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const before = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await page.keyboard.press('Delete')
     await page.waitForTimeout(300)
-    const after = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const after = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[Delete] before=${before}, after=${after}`)
     expect(after).toBe(before - 1)
     await screenshot(page, 'delete-kb')
@@ -188,18 +231,29 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
   // ════════════════════════════════════════════════════════════════
 
   test('5.1 连续快速添加 10 个对象', async ({ page }) => {
-    const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const before = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     for (let i = 0; i < 10; i++) {
       await page.evaluate((idx: number) => {
         const c = (window as any).__fabricCanvas
-        c.add(new (window as any).fabric.Rect({
-          left: 50 + idx * 30, top: 50 + idx * 20, width: 80, height: 40,
-          fill: `hsl(${idx * 36}, 70%, 50%)`,
-        }))
+        c.add(
+          new (window as any).fabric.Rect({
+            left: 50 + idx * 30,
+            top: 50 + idx * 20,
+            width: 80,
+            height: 40,
+            fill: `hsl(${idx * 36}, 70%, 50%)`,
+          })
+        )
         c.renderAll()
       }, i)
     }
-    const after = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const after = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     expect(after).toBe(before + 10)
     await screenshot(page, 'rapid-add')
   })
@@ -208,14 +262,22 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
     for (let i = 0; i < 5; i++) {
       await page.evaluate((idx: number) => {
         const c = (window as any).__fabricCanvas
-        c.add(new (window as any).fabric.Rect({
-          left: 100 + idx * 50, top: 100, width: 40, height: 40,
-          fill: `hsl(${idx * 72}, 70%, 50%)`,
-        }))
+        c.add(
+          new (window as any).fabric.Rect({
+            left: 100 + idx * 50,
+            top: 100,
+            width: 40,
+            height: 40,
+            fill: `hsl(${idx * 72}, 70%, 50%)`,
+          })
+        )
         c.renderAll()
       }, i)
     }
-    const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const before = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const objs = c.getObjects().filter((o: any) => !o.excludeFromExport)
@@ -226,19 +288,28 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
     await page.waitForTimeout(300)
     await page.keyboard.press('Delete')
     await page.waitForTimeout(300)
-    const after = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const after = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[全选删除] before=${before}, after=${after}`)
     expect(after).toBe(0)
     await screenshot(page, 'select-all-delete')
   })
 
   test('5.3 添加后 undo 再添加', async ({ page }) => {
-    const initial = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const initial = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     await addRect(page, { fill: 'red' })
     await page.keyboard.press('Control+z')
     await page.waitForTimeout(300)
     await addRect(page, { fill: 'blue' })
-    const final = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length)
+    const final = await page.evaluate(
+      () =>
+        (window as any).__fabricCanvas.getObjects().filter((o: any) => !o.excludeFromExport).length
+    )
     console.log(`[undo再添加] initial=${initial}, final=${final}`)
     await screenshot(page, 'undo-then-add')
   })
@@ -257,7 +328,9 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
 
   test('6.2 保存后编辑器关闭', async ({ page }) => {
     await page.locator('.btn-save').click()
-    await page.waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 }).catch(() => {})
+    await page
+      .waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 })
+      .catch(() => {})
     await page.waitForTimeout(1000)
     const editorExists = await page.evaluate(() => !!document.querySelector('.editor-overlay'))
     console.log(`[保存] 编辑器关闭: ${!editorExists}`)
@@ -276,7 +349,15 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
     for (let i = 0; i < 5; i++) {
       await page.evaluate((idx: number) => {
         const c = (window as any).__fabricCanvas
-        c.add(new (window as any).fabric.Rect({ left: 50 + idx * 100, top: 50, width: 80, height: 80, fill: 'blue' }))
+        c.add(
+          new (window as any).fabric.Rect({
+            left: 50 + idx * 100,
+            top: 50,
+            width: 80,
+            height: 80,
+            fill: 'blue',
+          })
+        )
         c.renderAll()
       }, i)
     }

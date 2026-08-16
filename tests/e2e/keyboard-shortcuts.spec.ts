@@ -5,7 +5,16 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { openEditor, addRect, addText, addCircle, selectAll, undo, redo, getCanvasSummary } from './helpers'
+import {
+  openEditor,
+  addRect,
+  addText,
+  addCircle,
+  selectAll,
+  undo,
+  redo,
+  getCanvasSummary,
+} from './helpers'
 
 // ═══════════════════ 配置 ═══════════════════
 const EDITOR_URL = '/'
@@ -14,9 +23,8 @@ const SVG_IDX = 1
 // ═══════════════════ Tests ═══════════════════
 
 test.describe('快捷键', () => {
-
   test.beforeEach(async ({ page }) => {
-    page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+    page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
     // 拦截保存端点：避免测试真实写回样例 SVG 文件（污染源码），返回内存 mock 响应
     await page.route('**/__svg-save__', (route) => {
       route.fulfill({
@@ -132,5 +140,4 @@ test.describe('快捷键', () => {
     })
     // 取消选择后应有 activeObject 为 null/false
   })
-
 })

@@ -2,7 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import EditorCanvas from '../../src/components/sub/EditorCanvas.vue'
 
-const d = { loading: false, zoomLevel: 100, canvasWidth: 800, canvasHeight: 600, themeMode: 'light', viewportVersion: 0 }
+const d = {
+  loading: false,
+  zoomLevel: 100,
+  canvasWidth: 800,
+  canvasHeight: 600,
+  themeMode: 'light',
+  viewportVersion: 0,
+}
 
 describe('EditorCanvas', () => {
   // ── 基础渲染 ──

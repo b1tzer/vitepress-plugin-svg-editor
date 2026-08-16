@@ -23,14 +23,29 @@ function makeFakeCanvas(activeObjects: any[]) {
 
 function textObj(opts: Record<string, any> = {}) {
   return {
-    type: 'text', text: 'Hello', fontWeight: 'normal', fontStyle: 'normal', underline: false, ...opts,
-    set(prop: string, value: any) { (this as any)[prop] = value },
+    type: 'text',
+    text: 'Hello',
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    underline: false,
+    ...opts,
+    set(prop: string, value: any) {
+      ;(this as any)[prop] = value
+    },
   }
 }
 function textboxObj(opts: Record<string, any> = {}) {
   return {
-    type: 'textbox', text: 'World', width: 120, fontWeight: 'normal', fontStyle: 'normal', underline: false, ...opts,
-    set(prop: string, value: any) { (this as any)[prop] = value },
+    type: 'textbox',
+    text: 'World',
+    width: 120,
+    fontWeight: 'normal',
+    fontStyle: 'normal',
+    underline: false,
+    ...opts,
+    set(prop: string, value: any) {
+      ;(this as any)[prop] = value
+    },
   }
 }
 

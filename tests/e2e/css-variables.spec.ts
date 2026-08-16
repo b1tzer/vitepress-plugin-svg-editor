@@ -16,15 +16,14 @@ const SVG_IDX = 1
 // ═══════════════════ Tests ═══════════════════
 
 test.describe('CSS 变量解析', () => {
-
   test.beforeEach(async ({ page }) => {
-    page.on('pageerror', e => console.log('  ⚠️ JS:', e.message))
+    page.on('pageerror', (e) => console.log('  ⚠️ JS:', e.message))
     await page.goto(EDITOR_URL, { waitUntil: 'networkidle', timeout: 30000 })
     await page.waitForSelector('.svg-container', { timeout: 15000 })
   })
 
   test('CV1: 含 CSS 变量的 SVG 打开后颜色解析为非 var() 值', async ({ page }) => {
-    // 获取页面某张 SVG 的原始内容，检查是否含 var() 
+    // 获取页面某张 SVG 的原始内容，检查是否含 var()
     const rawSvg = await page.evaluate((idx: number) => {
       const containers = document.querySelectorAll('.svg-container')
       const svg = containers[idx]?.querySelector('svg')
@@ -70,8 +69,9 @@ test.describe('CSS 变量解析', () => {
       const objs = c.getObjects()
       return {
         count: objs.length,
-        hasCssVar: objs.some((o: any) => 
-          String(o.fill || '').includes('var(') || String(o.stroke || '').includes('var(')
+        hasCssVar: objs.some(
+          (o: any) =>
+            String(o.fill || '').includes('var(') || String(o.stroke || '').includes('var(')
         ),
       }
     })
@@ -117,5 +117,4 @@ test.describe('CSS 变量解析', () => {
       expect(fill).not.toContain('var(')
     }
   })
-
 })

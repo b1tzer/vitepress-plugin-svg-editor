@@ -80,9 +80,7 @@ describe('HistoryManager', () => {
     await vi.waitFor(() => {
       expect(canvas.loadFromJSON).toHaveBeenCalled()
     })
-    expect(mockSet).toHaveBeenCalledWith(
-      expect.objectContaining({ fill: 'rgba(0,0,0,0.001)' })
-    )
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ fill: 'rgba(0,0,0,0.001)' }))
     expect(mockSetCoords).toHaveBeenCalled()
   })
 

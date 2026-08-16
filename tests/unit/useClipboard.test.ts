@@ -52,10 +52,16 @@ describe('useClipboard', () => {
 
   it('paste 单个对象时应 add + setActiveObject + afterChange', () => {
     const cloneResult = {
-      type: 'rect', left: 10, top: 10, set: vi.fn(),
+      type: 'rect',
+      left: 10,
+      top: 10,
+      set: vi.fn(),
       clone: vi.fn((fn: any) => fn({ type: 'rect', left: 10, top: 10, set: vi.fn() })),
     }
-    canvas.getActiveObject.mockReturnValue({ type: 'rect', clone: vi.fn((fn: any) => fn(cloneResult)) })
+    canvas.getActiveObject.mockReturnValue({
+      type: 'rect',
+      clone: vi.fn((fn: any) => fn(cloneResult)),
+    })
     cb.copy()
 
     canvas.add.mockClear()
@@ -68,9 +74,24 @@ describe('useClipboard', () => {
   })
 
   it('paste 多对象时应创建 ActiveSelection', () => {
-    const cloneResult1 = { type: 'rect', left: 0, top: 0, set: vi.fn(), clone: vi.fn((fn: any) => fn({ type: 'rect', left: 0, top: 0, set: vi.fn() })) }
-    const cloneResult2 = { type: 'circle', left: 0, top: 0, set: vi.fn(), clone: vi.fn((fn: any) => fn({ type: 'circle', left: 0, top: 0, set: vi.fn() })) }
-    const sel = { type: 'activeselection', getObjects: vi.fn().mockReturnValue([cloneResult1, cloneResult2]) }
+    const cloneResult1 = {
+      type: 'rect',
+      left: 0,
+      top: 0,
+      set: vi.fn(),
+      clone: vi.fn((fn: any) => fn({ type: 'rect', left: 0, top: 0, set: vi.fn() })),
+    }
+    const cloneResult2 = {
+      type: 'circle',
+      left: 0,
+      top: 0,
+      set: vi.fn(),
+      clone: vi.fn((fn: any) => fn({ type: 'circle', left: 0, top: 0, set: vi.fn() })),
+    }
+    const sel = {
+      type: 'activeselection',
+      getObjects: vi.fn().mockReturnValue([cloneResult1, cloneResult2]),
+    }
     canvas.getActiveObject.mockReturnValue(sel)
     cb.copy()
 

@@ -29,9 +29,14 @@ import { mergeArrows } from '../../src/plugins/arrow-merger'
 function makeLine(overrides: Record<string, any> = {}) {
   return {
     type: 'line',
-    left: 0, top: 0, width: 100, height: 0,
-    x2: 100, y2: 0,
-    scaleX: 1, scaleY: 1,
+    left: 0,
+    top: 0,
+    width: 100,
+    height: 0,
+    x2: 100,
+    y2: 0,
+    scaleX: 1,
+    scaleY: 1,
     ...overrides,
   } as any
 }
@@ -39,9 +44,12 @@ function makeLine(overrides: Record<string, any> = {}) {
 function makePolygon(overrides: Record<string, any> = {}) {
   return {
     type: 'polygon',
-    left: 120, top: -5,
-    width: 10, height: 10,
-    scaleX: 1, scaleY: 1,
+    left: 120,
+    top: -5,
+    width: 10,
+    height: 10,
+    scaleX: 1,
+    scaleY: 1,
     fill: '#333',
     ...overrides,
   } as any
@@ -50,8 +58,12 @@ function makePolygon(overrides: Record<string, any> = {}) {
 function makeRect(overrides: Record<string, any> = {}) {
   return {
     type: 'rect',
-    left: 0, top: 0, width: 50, height: 50,
-    scaleX: 1, scaleY: 1,
+    left: 0,
+    top: 0,
+    width: 50,
+    height: 50,
+    scaleX: 1,
+    scaleY: 1,
     fill: '#f00',
     ...overrides,
   } as any
@@ -78,12 +90,18 @@ describe('mergeArrows', () => {
 
   it('水平线 + 右端箭头应合并', () => {
     const line = makeLine({
-      left: 0, top: 0, width: 200, height: 0,
-      x2: 200, y2: 0,
+      left: 0,
+      top: 0,
+      width: 200,
+      height: 0,
+      x2: 200,
+      y2: 0,
     })
     const poly = makePolygon({
-      left: 205, top: -6,
-      width: 10, height: 12,
+      left: 205,
+      top: -6,
+      width: 10,
+      height: 12,
     }) // 中心 (210, 0), 距离 ≈ 10 < 30
     const result = mergeArrows([line, poly])
     expect(result).toHaveLength(1)
@@ -92,12 +110,18 @@ describe('mergeArrows', () => {
 
   it('垂直线 + 下端箭头应合并', () => {
     const line = makeLine({
-      left: 0, top: 0, width: 0, height: 200,
-      x2: 0, y2: 200,
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 200,
+      x2: 0,
+      y2: 200,
     })
     const poly = makePolygon({
-      left: -5, top: 205,
-      width: 10, height: 10,
+      left: -5,
+      top: 205,
+      width: 10,
+      height: 10,
       x2: undefined,
     })
     const result = mergeArrows([line, poly])
@@ -214,7 +238,7 @@ describe('mergeArrows', () => {
 
     expect(mockGroupCtor).toHaveBeenCalledWith(
       [line, poly],
-      expect.objectContaining({ selectable: true, evented: true }),
+      expect.objectContaining({ selectable: true, evented: true })
     )
   })
 

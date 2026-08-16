@@ -4,11 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import {
-  MoveCommand,
-  ResizeCommand,
-  PropertyChangeCommand,
-} from '../../src/core/history/Command'
+import { MoveCommand, ResizeCommand, PropertyChangeCommand } from '../../src/core/history/Command'
 
 // mock fabric 对象
 function makeMockObj(overrides: Record<string, any> = {}) {
@@ -38,7 +34,9 @@ function makeMockCanvas() {
   const objects: any[] = []
   return {
     getObjects: vi.fn(() => objects),
-    add: vi.fn((obj: any) => { objects.push(obj) }),
+    add: vi.fn((obj: any) => {
+      objects.push(obj)
+    }),
     remove: vi.fn((obj: any) => {
       const idx = objects.indexOf(obj)
       if (idx >= 0) objects.splice(idx, 1)
@@ -211,6 +209,6 @@ describe('PropertyChangeCommand', () => {
     cmd.execute()
     cmd.undo()
 
-    expect(obj.fill).toBe('#ff0000')  // 使用的是拷贝后的原值
+    expect(obj.fill).toBe('#ff0000') // 使用的是拷贝后的原值
   })
 })

@@ -8,12 +8,12 @@
 
 ### Canvas 事件
 
-| 事件名 | 参数 | 触发时机 |
-|--------|------|---------|
-| `zoomChange` | `(level: number)` | 缩放级别变化 |
-| `guideLinesChange` | `(lines: GuideLine[])` | 对齐辅助线变化 |
-| `selectionChange` | `(obj: fabric.Object \| null)` | 选中对象变化 |
-| `modified` | `(obj: fabric.Object)` | 对象被修改（拖拽/缩放/旋转后） |
+| 事件名             | 参数                           | 触发时机                       |
+| ------------------ | ------------------------------ | ------------------------------ |
+| `zoomChange`       | `(level: number)`              | 缩放级别变化                   |
+| `guideLinesChange` | `(lines: GuideLine[])`         | 对齐辅助线变化                 |
+| `selectionChange`  | `(obj: fabric.Object \| null)` | 选中对象变化                   |
+| `modified`         | `(obj: fabric.Object)`         | 对象被修改（拖拽/缩放/旋转后） |
 
 ### 使用示例
 

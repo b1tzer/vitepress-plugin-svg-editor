@@ -54,7 +54,9 @@ describe('EventBus', () => {
   it('一个 handler 抛异常不应影响其他 handler', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const ok = vi.fn()
-    bus.on('zoomChange', () => { throw new Error('bang') })
+    bus.on('zoomChange', () => {
+      throw new Error('bang')
+    })
     bus.on('zoomChange', ok)
     bus.emit('zoomChange', 100)
     expect(ok).toHaveBeenCalled()

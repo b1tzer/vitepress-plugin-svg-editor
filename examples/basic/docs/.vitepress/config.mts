@@ -13,8 +13,6 @@ export default defineConfig({
   },
 
   vite: {
-    plugins: [
-      svgEditorPlugin({ saveDir: 'docs/public/diagrams' }),
-    ],
+    plugins: [svgEditorPlugin({ saveDir: 'docs/public/diagrams' })],
   },
 })

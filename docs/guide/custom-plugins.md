@@ -6,14 +6,14 @@
 
 ```ts
 interface EditorPlugin {
-  name: string                    // 唯一标识
-  install(ctx: PluginContext): void  // 安装回调
+  name: string // 唯一标识
+  install(ctx: PluginContext): void // 安装回调
 }
 
 interface PluginContext {
-  canvas: Canvas                  // Fabric.js 画布实例
-  eventBus: EventBus              // 事件总线（订阅选择、缩放等）
-  historyManager: HistoryManager  // 撤销/重做管理器
+  canvas: Canvas // Fabric.js 画布实例
+  eventBus: EventBus // 事件总线（订阅选择、缩放等）
+  historyManager: HistoryManager // 撤销/重做管理器
 }
 ```
 
@@ -42,8 +42,8 @@ const exportPngPlugin: EditorPlugin = {
     toolbar?.appendChild(btn)
 
     // 3. 可选：监听事件做响应
-    ctx.eventBus.on('selectionChange', /* ... */)
-  }
+    ctx.eventBus.on('selectionChange' /* ... */)
+  },
 }
 ```
 
@@ -59,12 +59,12 @@ pluginSystem.installAll({ canvas, eventBus, historyManager })
 
 ## 内置插件列表
 
-| 插件名 | 功能 |
-|--------|------|
-| `align` | 对齐（左/居中/右/顶/垂直居中/底） |
-| `layer` | 层级控制（上移/下移/置顶/置底） |
-| `text-format` | 文字格式（字号/加粗/斜体/下划线/对齐/颜色） |
-| `distribute` | 等间距分布（水平/垂直） |
-| `gradient` | 渐变编辑器 |
-| `shadow` | 阴影编辑器 |
-| `arrow-merger` | 箭头预处理（marker → polygon） |
+| 插件名         | 功能                                        |
+| -------------- | ------------------------------------------- |
+| `align`        | 对齐（左/居中/右/顶/垂直居中/底）           |
+| `layer`        | 层级控制（上移/下移/置顶/置底）             |
+| `text-format`  | 文字格式（字号/加粗/斜体/下划线/对齐/颜色） |
+| `distribute`   | 等间距分布（水平/垂直）                     |
+| `gradient`     | 渐变编辑器                                  |
+| `shadow`       | 阴影编辑器                                  |
+| `arrow-merger` | 箭头预处理（marker → polygon）              |

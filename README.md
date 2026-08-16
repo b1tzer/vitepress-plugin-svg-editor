@@ -22,12 +22,14 @@ export default defineConfig({
   vite: {
     plugins: [
       svgEditorPlugin({
-        storage: 'vitepress',  // 'vitepress' | 'localStorage'
+        storage: 'vitepress', // 'vitepress' | 'localStorage'
       }),
     ],
   },
   markdown: {
-    config(md) { md.use(svgDiagramMarkdownPlugin) }
+    config(md) {
+      md.use(svgDiagramMarkdownPlugin)
+    },
   },
 })
 ```
@@ -58,11 +60,11 @@ Click the **✏️ Edit SVG** button that appears on hover (dev mode only) to op
 
 ## Plugin Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `storage` | `'vitepress'` \| `'localStorage'` | `'vitepress'` | Save strategy |
-| `saveEndpoint` | `string` | `'/__svg-save__'` | Save API endpoint (vitepress mode only) |
-| `markdownSyntax` | `boolean` | `true` | Enable Markdown image interception |
+| Option           | Type                              | Default           | Description                             |
+| ---------------- | --------------------------------- | ----------------- | --------------------------------------- |
+| `storage`        | `'vitepress'` \| `'localStorage'` | `'vitepress'`     | Save strategy                           |
+| `saveEndpoint`   | `string`                          | `'/__svg-save__'` | Save API endpoint (vitepress mode only) |
+| `markdownSyntax` | `boolean`                         | `true`            | Enable Markdown image interception      |
 
 ## Architecture
 

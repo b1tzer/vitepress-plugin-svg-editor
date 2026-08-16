@@ -12,9 +12,8 @@ const PAGE_URL = '/'
 const LOAD_TIMEOUT = 30000
 
 test.describe('编辑器核心功能验证（dev 模式）', () => {
-
   test.beforeEach(async ({ page }) => {
-    page.on('pageerror', e => console.log('  ⚠️ JS错误:', e.message))
+    page.on('pageerror', (e) => console.log('  ⚠️ JS错误:', e.message))
     await page.goto(PAGE_URL, { waitUntil: 'networkidle', timeout: LOAD_TIMEOUT })
   })
 
@@ -57,14 +56,17 @@ test.describe('编辑器核心功能验证（dev 模式）', () => {
 
     const buttons = await page.evaluate(() => {
       const btns = document.querySelectorAll('.editor-overlay button')
-      return Array.from(btns).map(b => ({
+      return Array.from(btns).map((b) => ({
         text: b.textContent?.trim() || '',
         tip: b.getAttribute('data-tip') || '',
       }))
     })
-    console.log('[Toolbar Buttons]', buttons.map(b => b.tip || b.text))
+    console.log(
+      '[Toolbar Buttons]',
+      buttons.map((b) => b.tip || b.text)
+    )
     expect(buttons.length).toBeGreaterThan(0)
-    const tips = buttons.map(b => b.tip).join(',')
+    const tips = buttons.map((b) => b.tip).join(',')
     expect(tips).toContain('撤销')
   })
 
@@ -74,8 +76,13 @@ test.describe('编辑器核心功能验证（dev 模式）', () => {
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const rect = new (window as any).fabric.Rect({
-        left: 100, top: 100, width: 150, height: 80,
-        fill: '#2196F3', stroke: '#1565C0', strokeWidth: 2,
+        left: 100,
+        top: 100,
+        width: 150,
+        height: 80,
+        fill: '#2196F3',
+        stroke: '#1565C0',
+        strokeWidth: 2,
       })
       c.add(rect)
       c.renderAll()
@@ -86,23 +93,29 @@ test.describe('编辑器核心功能验证（dev 模式）', () => {
 
     await page.keyboard.press('Control+z')
     await page.waitForTimeout(500)
-    const countAfterUndo = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().length)
+    const countAfterUndo = await page.evaluate(
+      () => (window as any).__fabricCanvas.getObjects().length
+    )
     console.log(`[undo] objects: ${countAfter} → ${countAfterUndo}`)
 
     await page.keyboard.press('Control+y')
     await page.waitForTimeout(500)
-    const countAfterRedo = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().length)
+    const countAfterRedo = await page.evaluate(
+      () => (window as any).__fabricCanvas.getObjects().length
+    )
     console.log(`[redo] objects: ${countAfterUndo} → ${countAfterRedo}`)
     expect(countAfterRedo).toBe(countAfter)
   })
 
   test('B5. 编辑器关闭后无 JS 错误残留', async ({ page }) => {
     const errors: string[] = []
-    page.on('pageerror', e => errors.push(e.message))
+    page.on('pageerror', (e) => errors.push(e.message))
 
     await openEditor(page)
     await page.keyboard.press('Escape')
-    await page.waitForSelector('.editor-overlay', { state: 'hidden', timeout: 5000 }).catch(() => {})
+    await page
+      .waitForSelector('.editor-overlay', { state: 'hidden', timeout: 5000 })
+      .catch(() => {})
     await page.waitForTimeout(1000)
 
     expect(errors.length).toBe(0)
@@ -136,14 +149,16 @@ test.describe('编辑器核心功能验证（dev 模式）', () => {
 
   test('B7. Console 无编译错误', async ({ page }) => {
     const consoleErrors: string[] = []
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text())
     })
 
     await openEditor(page)
     await page.waitForTimeout(1000)
 
-    const realErrors = consoleErrors.filter(e => !e.includes('favicon') && !e.includes('extension'))
+    const realErrors = consoleErrors.filter(
+      (e) => !e.includes('favicon') && !e.includes('extension')
+    )
     if (realErrors.length > 0) {
       console.log('[Console Errors]', realErrors)
     }
