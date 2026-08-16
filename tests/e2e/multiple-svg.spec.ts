@@ -6,7 +6,7 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { openEditor, addRect, getCanvasSummary } from './helpers'
+import { openEditor, addRect, getCanvasSummary, closeEditor } from './helpers'
 
 // ═══════════════════ 配置 ═══════════════════
 // 选一个有多张 SVG 的页面
@@ -44,14 +44,8 @@ test.describe('多 SVG 页面', () => {
       const summary = await getCanvasSummary(page)
       console.log(`    第 ${i} 张: objects=${summary.objectCount}, zoom=${summary.zoom}`)
 
-      // 关闭编辑器
-      const closeBtn = page
-        .locator('.editor-overlay .close-btn, .editor-overlay [aria-label="关闭"]')
-        .first()
-      if (await closeBtn.isVisible()) {
-        await closeBtn.click({ force: true })
-        await page.waitForTimeout(800)
-      }
+      // 关闭编辑器（使用统一的 closeEditor，内部点击 .btn-close）
+      await closeEditor(page)
     }
 
     // 无 page error
@@ -86,12 +80,8 @@ test.describe('多 SVG 页面', () => {
         fill: '#2196F3',
       })
 
-      // 关闭编辑器
-      const closeBtn = page.locator('.editor-overlay .close-btn').first()
-      if (await closeBtn.isVisible()) {
-        await closeBtn.click({ force: true })
-        await page.waitForTimeout(800)
-      }
+      // 关闭编辑器（使用统一的 closeEditor）
+      await closeEditor(page)
 
       // 每轮后检查错误数不增加
       const currentErrors = errors.filter((e) => e.includes('Error') || e.includes('Uncaught'))
@@ -121,19 +111,11 @@ test.describe('多 SVG 页面', () => {
     // A → B 切换
     console.log('  打开 SVG 0...')
     await openEditor(page, 0)
-    const closeBtn0 = page.locator('.editor-overlay .close-btn').first()
-    if (await closeBtn0.isVisible()) {
-      await closeBtn0.click({ force: true })
-      await page.waitForTimeout(500)
-    }
+    await closeEditor(page)
 
     console.log('  打开 SVG 1...')
     await openEditor(page, 1)
-    const closeBtn1 = page.locator('.editor-overlay .close-btn').first()
-    if (await closeBtn1.isVisible()) {
-      await closeBtn1.click({ force: true })
-      await page.waitForTimeout(500)
-    }
+    await closeEditor(page)
 
     // 再次打开 SVG 0 验证无问题
     console.log('  重新打开 SVG 0...')
