@@ -9,6 +9,8 @@
 import fs from 'fs'
 import path from 'path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
+import type { Plugin, ViteDevServer } from 'vite'
+import type MarkdownIt from 'markdown-it'
 
 export interface SvgEditorPluginOptions {
   /**
@@ -30,61 +32,6 @@ export interface SvgEditorPluginOptions {
 
   /** 是否注册 markdown-it 图片拦截（默认 true） */
   markdownSyntax?: boolean
-}
-
-/**
- * Vite DevServer 的最小结构化接口。
- *
- * 项目未直接依赖 vite（vite 由 vitepress 传递依赖，顶层 node_modules 不存在 vite），
- * 因此无法 `import type { ViteDevServer } from 'vite'`。这里用结构化类型描述
- * configureServer 钩子实际用到的 `server.middlewares.use`，保持类型安全且不引入新依赖。
- */
-interface ViteDevServerLike {
-  middlewares: {
-    use(
-      path: string,
-      handler: (req: IncomingMessage, res: ServerResponse, next: () => void) => void
-    ): void
-  }
-}
-
-/**
- * Vite 插件对象的最小结构化接口（svgEditorPlugin 返回值）。
- * 仅描述本插件实际实现的 name / configureServer / config 三个钩子。
- */
-interface VitePluginLike {
-  name: string
-  configureServer(server: ViteDevServerLike): void
-  config(): {
-    optimizeDeps: { include: string[] }
-    define: Record<string, string>
-  }
-}
-
-/**
- * markdown-it Token 的最小结构化接口。
- * markdown-it 及其类型同样非直接依赖，仅描述 renderer.rules.image 用到的字段。
- */
-interface MarkdownItToken {
-  content: string
-  attrGet(name: string): string | null
-}
-
-/** markdown-it 实例的最小结构化接口 */
-interface MarkdownItLike {
-  renderer: {
-    rules: {
-      image?:
-        | ((
-            tokens: MarkdownItToken[],
-            idx: number,
-            options: unknown,
-            env: unknown,
-            self: unknown
-          ) => string)
-        | undefined
-    }
-  }
 }
 
 /** 最大请求体大小（与 SvgLoader 的 10MB 上限对齐），防止内存 DoS */
@@ -119,14 +66,14 @@ export function resolveSafeSvgPath(publicDir: string, svgPath: string): string |
   return fullPath
 }
 
-export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): VitePluginLike {
+export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): Plugin {
   const storage = options.storage || 'vitepress'
   const saveEndpoint = options.saveEndpoint || '/__svg-save__'
 
   return {
     name: 'vitepress-plugin-svg-editor',
 
-    configureServer(server: ViteDevServerLike) {
+    configureServer(server: ViteDevServer) {
       // 仅 VitePress 模式启动保存端点（localStorage 不需要服务端）
       if (storage !== 'vitepress') return
 
@@ -218,20 +165,14 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): VitePlugi
 }
 
 export function svgDiagramMarkdownPlugin(
-  md: MarkdownItLike,
+  md: MarkdownIt,
   options: { markdownSyntax?: boolean } = {}
-) {
+): void {
   if (options.markdownSyntax === false) return
 
   const defaultImageRender = md.renderer.rules.image
 
-  md.renderer.rules.image = (
-    tokens: MarkdownItToken[],
-    idx: number,
-    renderOpts: unknown,
-    env: unknown,
-    self: unknown
-  ) => {
+  md.renderer.rules.image = (tokens, idx, renderOpts, env, self) => {
     const token = tokens[idx]
     const src = token.attrGet('src') || ''
 
