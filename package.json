@@ -13,6 +13,17 @@
   ],
   "license": "MIT",
   "author": "b1tzer",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/b1tzer/vitepress-plugin-svg-editor.git"
+  },
+  "homepage": "https://github.com/b1tzer/vitepress-plugin-svg-editor#readme",
+  "bugs": {
+    "url": "https://github.com/b1tzer/vitepress-plugin-svg-editor/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "main": "./dist/node/index.cjs",
   "module": "./dist/node/index.mjs",
   "types": "./dist/node/index.d.ts",

@@ -13,30 +13,34 @@ pnpm add vitepress-plugin-svg-editor fabric
 ### Configuration
 
 `.vitepress/config.ts`:
+
 ```ts
 import { defineConfig } from 'vitepress'
 import { svgEditorPlugin, svgDiagramMarkdownPlugin } from 'vitepress-plugin-svg-editor'
 
 export default defineConfig({
-  plugins: [
-    svgEditorPlugin({
-      saveDir: 'docs/public/diagrams',  // default
-      storage: 'vitepress',              // 'vitepress' | 'localStorage'
-    })
-  ],
+  vite: {
+    plugins: [
+      svgEditorPlugin({
+        storage: 'vitepress',  // 'vitepress' | 'localStorage'
+      }),
+    ],
+  },
   markdown: {
     config(md) { md.use(svgDiagramMarkdownPlugin) }
-  }
+  },
 })
 ```
 
 `.vitepress/theme/index.ts`:
+
 ```ts
 import DefaultTheme from 'vitepress/theme'
-import 'vitepress-plugin-svg-editor/client'
+import { enhanceApp } from 'vitepress-plugin-svg-editor/client'
 
 export default {
   extends: DefaultTheme,
+  enhanceApp,
 }
 ```
 
@@ -57,7 +61,6 @@ Click the **✏️ Edit SVG** button that appears on hover (dev mode only) to op
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `storage` | `'vitepress'` \| `'localStorage'` | `'vitepress'` | Save strategy |
-| `saveDir` | `string` | `'docs/public/diagrams'` | SVG file directory (vitepress mode only) |
 | `saveEndpoint` | `string` | `'/__svg-save__'` | Save API endpoint (vitepress mode only) |
 | `markdownSyntax` | `boolean` | `true` | Enable Markdown image interception |
 
