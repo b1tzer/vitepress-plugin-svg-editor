@@ -60,20 +60,21 @@ Click the **✏️ Edit SVG** button that appears on hover (dev mode only) to op
 
 ## Plugin Options
 
-| Option           | Type                              | Default           | Description                             |
-| ---------------- | --------------------------------- | ----------------- | --------------------------------------- |
-| `storage`        | `'vitepress'` \| `'localStorage'` | `'vitepress'`     | Save strategy                           |
-| `saveEndpoint`   | `string`                          | `'/__svg-save__'` | Save API endpoint (vitepress mode only) |
-| `markdownSyntax` | `boolean`                         | `true`            | Enable Markdown image interception      |
+| Option           | Type                              | Default           | Description                                  |
+| ---------------- | --------------------------------- | ----------------- | -------------------------------------------- |
+| `storage`        | `'vitepress'` \| `'localStorage'` | `'vitepress'`     | Save strategy                               |
+| `saveEndpoint`   | `string`                          | `'/__svg-save__'` | Save API endpoint (vitepress mode only)     |
+| `markdownSyntax` | `boolean`                         | `true`            | Enable Markdown image interception          |
 
 ## Architecture
 
 ```
 src/
-├── core/          # Framework-free kernel (CanvasManager, SvgLoader, EventBus, PluginSystem...)
-├── adapters/      # StorageAdapter, ThemeAdapter, RenderAdapter + default implementations
-├── plugins/       # Built-in editing plugins (align, layer, text-format, distribute, gradient, shadow)
-├── components/    # Vue components (SvgDiagram, SvgEditor, EditorToolbar, EditorCanvas)
+├── core/          # Framework-free kernel (CanvasManager, HistoryManager, SvgLoader, SvgSerializer, EventBus...)
+├── adapters/      # Storage adapters (IStorageAdapter, VitePressSaveAdapter, LocalStorageAdapter)
+├── plugins/       # Pure-function editing plugins (align, layer, text-format, distribute, gradient, shadow, arrow-merger)
+├── components/    # Vue components (SvgDiagram, SvgEditor, EditorToolbar, EditorCanvas, EditorLeftPanel, EditorContextPanel)
+├── composables/   # Vue composables (useTheme, useSave, useLayer, useSelection...)
 └── node/          # VitePress plugin entry (svgEditorPlugin, svgDiagramMarkdownPlugin)
 ```
 

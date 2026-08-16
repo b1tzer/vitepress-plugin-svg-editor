@@ -22,7 +22,7 @@ VitePress 文档站点需要嵌入**可交互的 SVG 编辑器**。核心需求�
 
 ## 决策
 
-**选择 Fabric.js v5.x**。
+**选择 Fabric.js v6.x**。
 
 ### 理由
 

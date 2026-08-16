@@ -30,26 +30,41 @@
 
 ## 主题定制
 
-编辑器通过 CSS 变量暴露样式定制点：
+### 编辑器明暗主题
+
+编辑器通过 `.theme-light` / `.theme-dark` class 自动切换明暗主题，由 `showThemeToggle` prop 控制是否显示切换按钮：
+
+```html
+<SvgEditor src="/diagrams/my-chart.svg" :show-theme-toggle="true" />
+```
+
+`showThemeToggle` 为 `true`（默认）时，工具栏会显示明暗主题切换按钮；设为 `false` 则隐藏该按钮。
+
+### 图表配色变量
+
+SVG 图表内部颜色建议使用以下 CSS 变量（亮色/暗色自动适配）：
 
 ```css
-/* docs/.vitepress/theme/custom.css */
-.editor-overlay {
-  /* 覆盖背景遮罩 */
-  --svg-editor-overlay-bg: rgba(15, 15, 15, 0.85);
+:root {
+  --diagram-surface-1: #ffffff;  /* 背景面 */
+  --diagram-stroke-1: #bdbdbd;   /* 边框线 */
+  --diagram-text-1: #333333;     /* 文字 */
+  --diagram-accent-1: #1565c0;   /* 强调色 */
+  --diagram-arrow: #555555;      /* 箭头/连线 */
 }
-
-.editor-panel {
-  /* 覆盖面板样式 */
-  --svg-editor-panel-bg: #1a1a1a;
-  --svg-editor-panel-radius: 12px;
-}
-
-.editor-toolbar button {
-  /* 覆盖工具栏按钮 */
-  --svg-editor-btn-hover-bg: rgba(255, 255, 255, 0.1);
+.dark {
+  --diagram-surface-1: #1a1a1a;
+  /* ... 暗色配色 */
 }
 ```
+
+在你的 SVG 中直接引用这些变量：
+
+```xml
+<rect fill="var(--diagram-surface-1)" stroke="var(--diagram-stroke-1)" />
+```
+
+编辑保存时，插件会自动将 CSS 变量还原，保证明暗主题下图表颜色同步变化。
 
 ## Markdown 语法
 

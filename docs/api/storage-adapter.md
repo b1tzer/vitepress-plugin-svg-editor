@@ -1,69 +1,35 @@
-# StorageAdapter API
+# 存储适配器
 
-> 存储适配器接口定义与内置实现参考。
+> 内置存储策略说明。适配器接口为**内部实现细节**，不对外导出。
 
-## 接口定义
+## 内置存储策略
 
-```ts
-interface StorageAdapter {
-  save(content: string, path: string): Promise<SaveResult>
-  load(path: string): Promise<LoadResult>
-}
+插件通过 `svgEditorPlugin({ storage })` 提供两种存储方式：
 
-interface SaveResult {
-  success: boolean
-  error?: string
-}
+| 适配器                 | 用途                                        | 何时使用             |
+| ---------------------- | ------------------------------------------- | -------------------- |
+| `VitePressSaveAdapter` | 通过 VitePress 开发服务器 POST 端点写回文件 | 本地开发、静态站点   |
+| `LocalStorageAdapter`  | 保存到浏览器 localStorage                   | 纯前端预览、无服务端 |
 
-interface LoadResult {
-  success: boolean
-  content?: string
-  error?: string
-}
-```
-
-## 方法
-
-### `save(content, path)`
-
-将 SVG 内容保存到指定路径。
-
-- **参数**: `content: string` — SVG 文本内容，`path: string` — 保存路径（如 `/diagrams/foo.svg`）
-- **返回**: `Promise<SaveResult>` — `success: true` 表示保存成功，否则 `error` 包含错误信息
-- **异常**: 不抛出异常，所有错误通过 `{ success: false, error }` 返回
-
-### `load(path)`
-
-从指定路径加载 SVG 内容。
-
-- **参数**: `path: string` — 文件路径
-- **返回**: `Promise<LoadResult>` — `success: true` 时 `content` 包含 SVG 文本
-
-## 内置实现
-
-### VitePressSaveAdapter
-
-通过 VitePress 开发服务器 POST 端点保存到文件系统。
+在 `svgEditorPlugin` 中通过 `storage` 选项选择：
 
 ```ts
-const adapter = new VitePressSaveAdapter()
-await adapter.save(svgContent, '/diagrams/architecture.svg')
-// → POST /__svg-save__  { path, content }
-// → 写入 docs/public/diagrams/architecture.svg
+svgEditorPlugin({ storage: 'vitepress' })     // 默认，写入 docs/public（原路保存）
+svgEditorPlugin({ storage: 'localStorage' })  // 仅浏览器 localStorage
 ```
+
+## VitePressSaveAdapter 行为
+
+`storage: 'vitepress'` 时，保存请求会 `POST` 到 `saveEndpoint`（默认 `/__svg-save__`），由 Vite 开发服务器将 SVG **原路写回** `docs/public` 目录下的原始路径。
 
 安全策略：
 
-- 仅允许写入 `saveDir` 白名单内的路径
+- 仅允许写入 `docs/public` 目录内的路径
 - 仅接受 `.svg` 后缀的文件
 - 拒绝包含 `../` 的路径遍历攻击
+- 请求体上限 10MB，防止内存 DoS
 
-### LocalStorageAdapter
+## 关于接口
 
-保存到浏览器 localStorage（仅预览模式）。
+> ⚠️ 注意：`IStorageAdapter` 接口（含 `VitePressSaveAdapter` / `LocalStorageAdapter` 实现）属于**内部实现细节**，并未从包的任何入口导出，**不属于公开 API**。当前公开配置仅支持上述两种内置策略，暂不支持从外部注入自定义适配器实例。相关能力请关注后续版本。
 
-```ts
-const adapter = new LocalStorageAdapter()
-await adapter.save(svgContent, 'my-diagram')
-// → localStorage.setItem('svg:my-diagram', svgContent)
-```

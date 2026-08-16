@@ -34,7 +34,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      svgEditorPlugin({ saveDir: 'docs/public/diagrams' }), // ← 注册保存端点
+      svgEditorPlugin(), // ← 注册保存端点（原路写回 docs/public）
     ],
   },
 })
@@ -46,15 +46,11 @@ export default defineConfig({
 
 ```ts
 import DefaultTheme from 'vitepress/theme'
-import { SvgDiagram, SvgEditor } from 'vitepress-plugin-svg-editor/client'
-import './custom.css'
+import { enhanceApp } from 'vitepress-plugin-svg-editor/client'
 
 export default {
   extends: DefaultTheme,
-  enhanceApp({ app }) {
-    app.component('SvgDiagram', SvgDiagram)
-    app.component('SvgEditor', SvgEditor)
-  },
+  enhanceApp,
 }
 ```
 

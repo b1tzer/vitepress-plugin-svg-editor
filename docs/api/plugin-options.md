@@ -13,7 +13,6 @@ export default defineConfig({
       svgEditorPlugin({
         storage: 'vitepress',
         saveEndpoint: '/__svg-save__',
-        saveDir: 'docs/public/diagrams',
         markdownSyntax: true,
       }),
     ],
@@ -36,12 +35,6 @@ export default defineConfig({
 - **类型**: `string`
 - **默认值**: `'/__svg-save__'`
 - **说明**: 保存端点路径。仅在 `storage='vitepress'` 时生效。如果与项目中其他路由冲突，可自定义。
-
-### `saveDir`
-
-- **类型**: `string`
-- **默认值**: `'docs/public/diagrams'`
-- **说明**: SVG 文件保存目录（相对于 VitePress 项目根目录）。保存端点会以此目录为白名单，拒绝写入其他路径。
 
 ### `markdownSyntax`
 
