@@ -152,7 +152,7 @@ onMounted(() => {
 | 工具                       | 配置文件                                       | 门禁                     |
 | -------------------------- | ---------------------------------------------- | ------------------------ |
 | **单元测试（布局稳定性）** | `tests/components/EditorToolbar.test.ts`       | vitest 自动运行          |
-| **Playwright 视觉回归**    | `tests/visual/editor-layout-stability.spec.ts` | `pnpm test:visual`       |
+| **Playwright 视觉回归**    | `tests/e2e/visual/editor-layout-stability.spec.ts` | `pnpm test:visual`       |
 | **Lighthouse CI**          | `.lighthouserc.json`                           | CLS > 0.05 → ❌ 阻止合并 |
 
 ### CLS 监控工具 API
