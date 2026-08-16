@@ -5,7 +5,7 @@
  */
 
 import * as fabric from 'fabric'
-import type { Canvas } from 'fabric'
+import type { ActiveSelection, Canvas, Group } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import * as AlignPlugin from '../plugins/align'
 import * as LayerPlugin from '../plugins/layer'
@@ -27,26 +27,44 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
   const { canvasMgr, selection, withSave } = deps
 
   function align(type: string) {
-    withSave((fc: any) =>
-      (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)
-    )
+    const alignFns: Record<string, (canvas: Canvas) => void> = {
+      alignLeft: AlignPlugin.alignLeft,
+      alignRight: AlignPlugin.alignRight,
+      alignCenterH: AlignPlugin.alignCenterH,
+      alignTop: AlignPlugin.alignTop,
+      alignBottom: AlignPlugin.alignBottom,
+      alignCenterV: AlignPlugin.alignCenterV,
+    }
+    const fn = alignFns[`align${type.charAt(0).toUpperCase() + type.slice(1)}`]
+    if (fn) withSave(fn)
   }
 
   function groupSelected() {
     const fc = canvasMgr.canvas
     const a = fc?.getActiveObject()
-    if (!a || a.type !== FABRIC_TYPE.ACTIVE_SELECTION) return
-    ;(a as any).toGroup()
-    fc!.renderAll()
+    if (!fc || !a || a.type !== FABRIC_TYPE.ACTIVE_SELECTION) return
+    // Fabric v6 已移除 ActiveSelection#toGroup()，需手动：取子对象 → 移除 → 建 Group → 添加。
+    // issue #8034 未合入前，需先 canvas.remove 再入组，避免对象仍挂在 canvas 上导致重复引用。
+    const objects = (a as ActiveSelection).getObjects()
+    fc.discardActiveObject()
+    fc.remove(...objects)
+    const group = new fabric.Group(objects)
+    fc.add(group)
+    fc.setActiveObject(group)
+    fc.renderAll()
     withSave(() => {})
   }
 
   function ungroupSelected() {
     const fc = canvasMgr.canvas
     const a = fc?.getActiveObject()
-    if (!a || a.type !== FABRIC_TYPE.GROUP) return
-    ;(a as any).toActiveSelection()
-    fc!.renderAll()
+    if (!fc || !a || a.type !== FABRIC_TYPE.GROUP) return
+    // Fabric v6 已移除 Group#toActiveSelection()，需手动：removeAll 取子对象 → 移除 Group → 建 ActiveSelection。
+    const objects = (a as Group).removeAll()
+    fc.remove(a)
+    const sel = new fabric.ActiveSelection(objects, { canvas: fc })
+    fc.setActiveObject(sel)
+    fc.renderAll()
     withSave(() => {})
   }
 
@@ -54,7 +72,7 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
     const fc = canvasMgr.canvas
     if (!fc) return
     // 排除 workspace 背景 / clipPath 等 excludeFromExport 的内部对象，只全选用户可见元素
-    const objs = fc.getObjects().filter((o: any) => !o.excludeFromExport)
+    const objs = fc.getObjects().filter((o) => !o.excludeFromExport)
     if (!objs.length) return
     fc.discardActiveObject()
     const sel = new fabric.ActiveSelection(objs, { canvas: fc })
@@ -64,20 +82,20 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
   }
 
   function layerForward() {
-    withSave((fc: any) => LayerPlugin.forward(fc))
+    withSave((fc) => LayerPlugin.forward(fc))
   }
   function layerBackward() {
-    withSave((fc: any) => LayerPlugin.backward(fc))
+    withSave((fc) => LayerPlugin.backward(fc))
   }
   function layerToFront() {
-    withSave((fc: any) => LayerPlugin.toFront(fc))
+    withSave((fc) => LayerPlugin.toFront(fc))
   }
   function layerToBack() {
-    withSave((fc: any) => LayerPlugin.toBack(fc))
+    withSave((fc) => LayerPlugin.toBack(fc))
   }
 
   function distribute(dir: string) {
-    withSave((fc: any) =>
+    withSave((fc) =>
       dir === 'horizontal'
         ? DistributePlugin.distributeHorizontal(fc)
         : DistributePlugin.distributeVertical(fc)

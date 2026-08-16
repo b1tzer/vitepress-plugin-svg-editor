@@ -10,12 +10,23 @@
  * 通过构造函数注入 EventBus 实现 DIP
  */
 
-import type { Canvas } from 'fabric'
+import type { Canvas, FabricObject, ModifiedEvent } from 'fabric'
 import type { IEventBus } from '../shared/types'
 import { FABRIC_TYPE } from '../shared/FabricTypes'
 import { ensureObjectInteractive } from '../shared/Interactive'
 import { MoveCommand, ResizeCommand, PropertyChangeCommand } from '../history/Command'
 import type { ICommand } from '../history/Command'
+
+/** 文本对象 + 编辑器缩放时临时记录的原始字号（运行时自定义属性） */
+type ScalingText = FabricObject & {
+  fontSize: number
+  __scalingFontSize?: number
+}
+
+/** 可悬停对象 + hover 高亮时保存的原始边框色（运行时自定义属性） */
+type Hoverable = FabricObject & {
+  _origBorderColor?: string
+}
 
 export class InteractionManager {
   private _eventBus: IEventBus
@@ -26,10 +37,10 @@ export class InteractionManager {
 
   /** 注册画布交互事件（在 CanvasManager 中调用） */
   setupEvents(canvas: Canvas): void {
-    const fc = canvas as any
+    const fc = canvas
 
     // ── object:added — 确保所有对象可交互（跳过编辑器内部对象，如 workspace 背景）──
-    fc.on('object:added', (e: any) => {
+    fc.on('object:added', (e) => {
       if (e.target && !e.target.excludeFromExport) {
         ensureObjectInteractive(e.target)
       }
@@ -45,21 +56,23 @@ export class InteractionManager {
       })
     }
 
-    fc.on('mouse:over', (e: any) => {
+    fc.on('mouse:over', (e) => {
       if (e.target && e.target.selectable) {
         fc.setCursor('pointer')
         if (!fc.getActiveObject()) {
-          e.target._origBorderColor = e.target.borderColor
-          e.target.set({ borderColor: '#0078d4' })
+          const target = e.target as Hoverable
+          target._origBorderColor = target.borderColor
+          target.set({ borderColor: '#0078d4' })
           scheduleHoverRender()
         }
       }
     })
 
-    fc.on('mouse:out', (e: any) => {
+    fc.on('mouse:out', (e) => {
       fc.setCursor('default')
       if (e.target && !fc.getActiveObject()) {
-        e.target.set({ borderColor: e.target._origBorderColor || '#0078d4' })
+        const target = e.target as Hoverable
+        target.set({ borderColor: target._origBorderColor || '#0078d4' })
         scheduleHoverRender()
       }
     })
@@ -70,21 +83,24 @@ export class InteractionManager {
     fc.on('selection:cleared', () => this._eventBus.emit('selectionChange'))
 
     // ── Textbox 缩放时保持字号不变（Office 行为）──
-    fc.on('object:scaling', (e: any) => {
+    fc.on('object:scaling', (e) => {
       const obj = e.target
       if (!obj || (obj.type !== FABRIC_TYPE.TEXTBOX && obj.type !== FABRIC_TYPE.I_TEXT)) return
-      if (obj.__scalingFontSize == null) obj.__scalingFontSize = obj.fontSize
-      obj.set({ fontSize: obj.__scalingFontSize / Math.max(obj.scaleY, 0.1) })
+      const textObj = obj as ScalingText
+      const orig = textObj.__scalingFontSize ?? textObj.fontSize
+      textObj.__scalingFontSize = orig
+      textObj.set({ fontSize: orig / Math.max(textObj.scaleY, 0.1) })
     })
 
-    fc.on('object:modified', (e: any) => {
+    fc.on('object:modified', (e) => {
       const obj = e.target
       if (obj && (obj.type === FABRIC_TYPE.TEXTBOX || obj.type === FABRIC_TYPE.I_TEXT)) {
-        if (obj.__scalingFontSize != null) {
-          const origFontSize = obj.__scalingFontSize
+        const textObj = obj as ScalingText
+        if (textObj.__scalingFontSize != null) {
+          const origFontSize = textObj.__scalingFontSize
           const newWidth = Math.max(obj.width * obj.scaleX, 30)
           obj.set({ width: newWidth, scaleX: 1, scaleY: 1, fontSize: origFontSize })
-          delete obj.__scalingFontSize
+          delete textObj.__scalingFontSize
           obj.setCoords()
           fc.requestRenderAll()
         }
@@ -107,17 +123,17 @@ export class InteractionManager {
    * 无法识别（多选、缺失 transform.original、或属性无变化）时返回 undefined，
    * 由调用方回退到全量快照兜底。
    */
-  private _buildTransformCommand(obj: any, e: any): ICommand | undefined {
+  private _buildTransformCommand(obj: FabricObject, e: ModifiedEvent): ICommand | undefined {
     if (!obj || obj.type === FABRIC_TYPE.ACTIVE_SELECTION || obj.type === FABRIC_TYPE.GROUP)
       return undefined
-    const orig = e?.transform?.original
+    const orig = e.transform?.original
     if (!orig) return undefined
 
+    // saveObjectTransform 仅保存 scaleX/scaleY/skew/angle/left/top/flip 等变换分量，
+    // 不包含 width/height（Fabric 缩放只改 scaleX/scaleY，不改变对象自身宽高）。
     const scaleChanged =
       (orig.scaleX ?? 1) !== (obj.scaleX ?? 1) ||
-      (orig.scaleY ?? 1) !== (obj.scaleY ?? 1) ||
-      (orig.width ?? 0) !== (obj.width ?? 0) ||
-      (orig.height ?? 0) !== (obj.height ?? 0)
+      (orig.scaleY ?? 1) !== (obj.scaleY ?? 1)
 
     if (scaleChanged) {
       const oldState = {
@@ -125,8 +141,8 @@ export class InteractionManager {
         top: orig.top || 0,
         scaleX: orig.scaleX ?? 1,
         scaleY: orig.scaleY ?? 1,
-        width: orig.width || 0,
-        height: orig.height || 0,
+        width: obj.width || 0,
+        height: obj.height || 0,
       }
       const newState = {
         left: obj.left || 0,
