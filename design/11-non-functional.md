@@ -49,7 +49,7 @@
 
 | 威胁                                     | 防护措施                                                                |
 | ---------------------------------------- | ----------------------------------------------------------------------- |
-| 路径遍历（`../../etc/passwd`）           | `StorageAdapter` 中校验路径必须在 `saveDir` 白名单内，拒绝 `../`        |
+| 路径遍历（`../../etc/passwd`）           | `StorageAdapter` 中校验路径必须在 `docs/public` 白名单内，拒绝 `../`    |
 | XSS（SVG 内嵌 `<script>`）               | `SvgLoader` 加载时自动移除 `<script>`、`onclick`、`onload` 等标签和属性 |
 | CSS 注入（SVG `<style>` 中引用外部资源） | 默认剥离 `@import url(...)`，可通过 `preprocess` 钩子自定义策略         |
 | SSRF（SVG 引用外部图片）                 | 默认禁止加载外部 URL 的 `<image href="http://...">`，仅允许 data: URI   |

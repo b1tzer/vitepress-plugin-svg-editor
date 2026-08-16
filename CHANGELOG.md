@@ -8,7 +8,7 @@
 - **Adapter layer**: `StorageAdapter` / `VitePressSaveAdapter` / `LocalStorageAdapter`, `ThemeAdapter` / `VitePressThemeAdapter`, `RenderAdapter` / `FabricRenderAdapter`
 - **Plugin system**: `register` / `unregister` / `get` / `installAll` APIs for extensible editing plugins
 - **Event bus**: type-safe publish/subscribe decoupling CanvasManager callbacks
-- **VitePress save endpoint**: path traversal protection (saveDir prefix + .svg suffix validation)
+- **VitePress save endpoint**: path traversal protection (docs/public prefix + .svg suffix validation)
 - **Markdown syntax**: `![alt](xxx.svg)` auto-converts to editable `<SvgDiagram>`, `markdownSyntax: false` exit mechanism
 - **Component refactoring**: `SvgEditor.vue` split into `EditorToolbar` / `EditorCanvas` sub-components with `aria-label` coverage
 - **Unit tests**: LocalStorageAdapter + VitePressThemeAdapter (vitest + happy-dom)

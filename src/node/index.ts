@@ -24,12 +24,6 @@ export interface SvgEditorPluginOptions {
   /** 保存端点路径（仅 storage='vitepress' 时生效，默认 /__svg-save__） */
   saveEndpoint?: string
 
-  /**
-   * @deprecated 保存目录已统一为 VitePress 的 docs/public（原路保存），此选项不再作为白名单使用。
-   * 保留仅为向后兼容，新代码无需设置。
-   */
-  saveDir?: string
-
   /** 是否注册 markdown-it 图片拦截（默认 true） */
   markdownSyntax?: boolean
 }

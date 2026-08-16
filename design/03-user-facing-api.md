@@ -40,7 +40,6 @@ export default defineConfig({
     svgEditorPlugin({
       // 所有配置都有默认值，这里只覆盖需要的
       storage: 'vitepress', // 'vitepress' | 'localStorage' | CustomStorageAdapter
-      saveDir: 'public/diagrams/', // 默认保存目录
       theme: 'auto', // 'auto' | 'light' | 'dark' | ThemeAdapter
     }),
   ],
@@ -77,13 +76,6 @@ interface SvgEditorPluginOptions {
    * - CustomStorageAdapter 实例：自定义保存逻辑
    */
   storage?: 'vitepress' | 'localStorage' | StorageAdapter
-
-  /**
-   * SVG 文件保存目录（相对于 VitePress 项目根目录）
-   * 默认：'public/diagrams/'
-   * 仅 storage='vitepress' 时生效
-   */
-  saveDir?: string
 
   /**
    * 保存端点路径

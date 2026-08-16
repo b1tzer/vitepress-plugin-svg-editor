@@ -246,9 +246,7 @@ import { svgEditorPlugin } from 'vitepress-plugin-svg-editor'
 
 export default defineConfig({
   plugins: [
-    svgEditorPlugin({
-      saveDir: 'public/diagrams/',
-    }),
+    svgEditorPlugin(),
   ],
 })
 ```
@@ -331,7 +329,7 @@ pnpm test:e2e
 | Fabric.js CDN URL  | `config.mts` transformHead                                                  | 插件内置 + `cdnUrl` 配置项                   |
 | /**svg-save** 端点 | `config.mts` vite plugin                                                    | 插件内置 `VitePressSaveAdapter`              |
 | 预处理逻辑         | `theme/components/editor/preprocessor.js`                                   | 插件内置 + `preprocess` 钩子                 |
-| 目录白名单         | `config.mts` save-tool                                                      | `StorageAdapter.saveDir` 配置                |
+| 目录白名单         | `config.mts` save-tool                                                      | `StorageAdapter`（docs/public 原路保存）     |
 
 ---
 
