@@ -32,7 +32,7 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { navigateAndOpenEditor, screenshot, screenshotCanvas } from './helpers'
+import { navigateAndOpenEditor } from './helpers'
 
 const EDITOR_URL = '/'
 const SVG_IDX = 1
