@@ -1,144 +1,135 @@
 /**
- * 编辑器布局稳定性视觉回归测试
+ * 编辑器布局稳定性测试（CLS 防护）
  *
- * 目的：防止任何导致画布跳动、面板尺寸变化的代码变更进入主分支
- * 原理：通过 Playwright 的 toHaveScreenshot 进行像素级比对
+ * 目的：防止任何导致画布跳动、面板尺寸突变的代码变更进入主分支。
+ *
+ * 为什么用「语义化 DOM 测量断言」而非像素级 toHaveScreenshot？
+ *   - Fabric.js canvas 是动态绘制内容，像素级对比受浏览器版本 / GPU / 抗锯齿 /
+ *     异步加载时机影响；跨平台（macOS vs Linux CI）字体渲染差异会造成大量 flaky。
+ *   - 本测试直接测量关键布局元素（工具栏 / 三栏面板）的 getBoundingClientRect，
+ *     精确断言「选中 / 取消选中 / 切换主题」等内部状态变化不会引起布局跳动。
+ *     相比像素 diff，它能直接定位「哪个元素跳了多少像素」，更快、更抗 flaky。
  *
  * 测试场景：
- *   1. 编辑器初始加载后的布局快照
- *   2. 选中/取消选中对象时，画布区域不跳动
- *   3. 右侧面板始终固定宽度，不随内容变化
+ *   1. 编辑器初始加载后，工具栏与三栏布局基线存在且尺寸合理
+ *   2. 选中对象不改变右侧属性面板宽度（固定容器 + 内部 v-if 的 CLS 铁律）
+ *   3. 取消选中不引起任何布局元素跳动
+ *   4. 切换明暗主题只改颜色，不改变任何布局元素的尺寸 / 位置
  */
 
 import { test, expect } from '@playwright/test'
+import { navigateAndOpenEditor } from '../helpers'
 
-const EDITOR_PAGE = '/guide/get-started' // 修改为你的 VitePress 编辑器页面
+const PAGE_URL = '/features.html'
 
-test.describe('Editor Layout Stability (CLS Prevention)', () => {
+/** 读取关键布局元素的 boundingBox（四舍五入到整数像素） */
+function getLayoutSnapshot(page: any) {
+  return page.evaluate(() => {
+    const box = (selector: string) => {
+      const el = document.querySelector(selector)
+      if (!el) return null
+      const r = el.getBoundingClientRect()
+      return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }
+    }
+    return {
+      overlay: box('.editor-overlay'),
+      toolbar: box('.editor-toolbar'),
+      leftPanel: box('.left-panel'),
+      canvas: box('.editor-canvas'),
+      contextPanel: box('.context-panel'),
+    }
+  })
+}
+
+test.describe('Editor Layout Stability（CLS 防护）', () => {
   test.beforeEach(async ({ page }) => {
-    // 禁用 CSS 动画，避免截图时机差异
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          animation-delay: 0s !important;
-          transition-duration: 0s !important;
-          transition-delay: 0s !important;
-        }
-      `,
+    await navigateAndOpenEditor(page, PAGE_URL)
+  })
+
+  test('1. 打开编辑器后工具栏与三栏布局基线存在且尺寸合理', async ({ page }) => {
+    const s = await getLayoutSnapshot(page)
+    // 所有关键布局元素都应存在
+    expect(s.overlay).not.toBeNull()
+    expect(s.toolbar).not.toBeNull()
+    expect(s.leftPanel).not.toBeNull()
+    expect(s.canvas).not.toBeNull()
+    expect(s.contextPanel).not.toBeNull()
+
+    // 工具栏高度 > 0（防止 v-if 移除导致高度塌陷）
+    expect(s.toolbar!.h).toBeGreaterThan(10)
+    // 三栏宽度均 > 0
+    expect(s.leftPanel!.w).toBeGreaterThan(0)
+    expect(s.canvas!.w).toBeGreaterThan(0)
+    expect(s.contextPanel!.w).toBeGreaterThan(0)
+  })
+
+  test('2. 选中对象不改变右侧属性面板宽度（固定宽度，内容切换不撑开/塌陷）', async ({ page }) => {
+    const before = await getLayoutSnapshot(page)
+    const contextWidth = before.contextPanel!.w
+
+    // 选中第一个对象
+    await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const objs = c.getObjects()
+      if (objs.length) {
+        c.setActiveObject(objs[0])
+        c.renderAll()
+      }
     })
-    await page.goto(EDITOR_PAGE)
-    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(300)
+
+    const after = await getLayoutSnapshot(page)
+    // 属性面板宽度必须保持不变（CLS 铁律：固定容器 + 内部 v-if）
+    expect(after.contextPanel!.w).toBe(contextWidth)
+    // 画布和左面板的水平位置也不应因选中而跳动
+    expect(after.canvas!.x).toBe(before.canvas!.x)
+    expect(after.leftPanel!.x).toBe(before.leftPanel!.x)
   })
 
-  test('1. 编辑器整体布局基线快照', async ({ page }) => {
-    // 点击 SVG 打开编辑器
-    const svgLink = page.locator('a[href$=".svg"]').first()
-    if (await svgLink.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await svgLink.click()
-    } else {
-      test.skip(true, 'SVG editor link not found on page')
-      return
-    }
-
-    // 等待编辑器面板出现
-    const editorPanel = page.locator('.editor-panel')
-    await expect(editorPanel).toBeVisible({ timeout: 5000 })
-
-    // 基线快照：编辑器刚打开时的布局
-    await expect(editorPanel).toHaveScreenshot({
-      // 使用文件路径无关的名称，方便跨平台
+  test('3. 取消选中不引起任何布局元素跳动', async ({ page }) => {
+    // 先选中再取消，制造内部状态变化
+    await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const objs = c.getObjects()
+      if (objs.length) c.setActiveObject(objs[0])
+      c.renderAll()
     })
+    await page.waitForTimeout(200)
+
+    const before = await getLayoutSnapshot(page)
+    await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      c.discardActiveObject()
+      c.renderAll()
+    })
+    await page.waitForTimeout(300)
+
+    const after = await getLayoutSnapshot(page)
+    // 所有关键布局元素位置与尺寸都不应改变
+    for (const key of ['toolbar', 'leftPanel', 'canvas', 'contextPanel'] as const) {
+      expect(after[key]).toEqual(before[key])
+    }
   })
 
-  test('2. 编辑器主要区域不因 props 变化而跳动', async ({ page }) => {
-    const svgLink = page.locator('a[href$=".svg"]').first()
-    if (!(await svgLink.isVisible({ timeout: 3000 }).catch(() => false))) {
-      test.skip(true, 'SVG editor link not found')
-      return
-    }
-    await svgLink.click()
+  test('4. 切换明暗主题只改颜色，不改变布局尺寸', async ({ page }) => {
+    const before = await getLayoutSnapshot(page)
 
-    const editorPanel = page.locator('.editor-panel')
-    await expect(editorPanel).toBeVisible({ timeout: 5000 })
+    // 点击主题切换按钮
+    const toggled = await page.evaluate(() => {
+      const btn = document.querySelector('.theme-toggle-btn') as HTMLButtonElement
+      if (btn) {
+        btn.click()
+        return true
+      }
+      return false
+    })
+    await page.waitForTimeout(300)
 
-    // 记录初始时顶部工具栏的高度
-    const topBar = page.locator('.toolbar-top')
-    const initialTopBox = await topBar.boundingBox()
-    expect(initialTopBox).not.toBeNull()
-
-    // 记录初始时底部工具栏的高度
-    const bottomBar = page.locator('.toolbar-bottom')
-    const initialBottomBox = await bottomBar.boundingBox()
-    expect(initialBottomBox).not.toBeNull()
-
-    // 验证顶部栏高度不为 0（如果 v-if 移除导致高度塌陷，这里会抓到）
-    expect(initialTopBox!.height).toBeGreaterThan(10)
-    expect(initialBottomBox!.height).toBeGreaterThan(10)
-
-    // 等待 2 秒，模拟各种内部 props 更新
-    await page.waitForTimeout(2000)
-
-    // 再次测量，确认高度未变
-    const finalTopBox = await topBar.boundingBox()
-    const finalBottomBox = await bottomBar.boundingBox()
-    expect(finalTopBox!.height).toBe(initialTopBox!.height)
-    expect(finalBottomBox!.height).toBe(initialBottomBox!.height)
-  })
-
-  test('3. 右侧属性面板始终占位，不会被 v-if 移除', async ({ page }) => {
-    const svgLink = page.locator('a[href$=".svg"]').first()
-    if (!(await svgLink.isVisible({ timeout: 3000 }).catch(() => false))) {
-      test.skip(true, 'SVG editor link not found')
-      return
-    }
-    await svgLink.click()
-
-    const editorPanel = page.locator('.editor-panel')
-    await expect(editorPanel).toBeVisible({ timeout: 5000 })
-
-    // 右侧面板应在 DOM 中始终存在
-    const contextPanel = page.locator('.context-panel')
-    await expect(contextPanel).toBeAttached({ timeout: 3000 })
-
-    // 记录面板宽度
-    const initialBox = await contextPanel.boundingBox()
-    expect(initialBox).not.toBeNull()
-
-    // 点画布空白区域（取消选中）
-    const canvasEl = page.locator('canvas').first()
-    if (await canvasEl.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await canvasEl.click({ position: { x: 10, y: 10 } })
-      await page.waitForTimeout(500)
-    }
-
-    // 面板仍应在 DOM 中，宽度不变
-    const afterDeselectBox = await contextPanel.boundingBox()
-    expect(afterDeselectBox).not.toBeNull()
-    expect(afterDeselectBox!.width).toBeCloseTo(initialBox!.width, -1)
-  })
-
-  test('4. 编辑器中不应出现意外的 display:none 导致布局塌陷', async ({ page }) => {
-    const svgLink = page.locator('a[href$=".svg"]').first()
-    if (!(await svgLink.isVisible({ timeout: 3000 }).catch(() => false))) {
-      test.skip(true, 'SVG editor link not found')
-      return
-    }
-    await svgLink.click()
-
-    const editorPanel = page.locator('.editor-panel')
-    await expect(editorPanel).toBeVisible({ timeout: 5000 })
-
-    // 检查关键布局元素没有 display:none 内联样式
-    const topBar = page.locator('.toolbar-top')
-    const bottomBar = page.locator('.toolbar-bottom')
-    const contextPanel = page.locator('.context-panel')
-
-    for (const el of [topBar, bottomBar, contextPanel]) {
-      const display = await el.evaluate(
-        (node: HTMLElement) => window.getComputedStyle(node).display
-      )
-      expect(display).not.toBe('none')
+    const after = await getLayoutSnapshot(page)
+    if (toggled) {
+      for (const key of ['toolbar', 'leftPanel', 'canvas', 'contextPanel'] as const) {
+        expect(after[key]).toEqual(before[key])
+      }
     }
   })
 })
