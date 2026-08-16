@@ -1,16 +1,17 @@
 /**
- * 生产构建预览验证 — 确保 vitepress build + preview 模式下所有核心功能正常
+ * 编辑器核心功能验证 — 确保 dev 模式下所有核心功能正常
+ *
+ * 注：原为生产构建（build + preview 4173）验证，因测试钩子（__fabricCanvas /
+ * window.fabric 等）已用 import.meta.env.DEV 包裹，生产构建不再暴露这些全局变量，
+ * 故本 spec 改为 dev 模式（5173，playwright.config.ts 默认 baseURL）验证。
  */
 import { test, expect } from '@playwright/test'
 import { openEditor } from './helpers'
 
-// build+preview 使用 4173 端口
-test.use({ baseURL: 'http://localhost:4173' })
-
 const PAGE_URL = '/'
 const LOAD_TIMEOUT = 30000
 
-test.describe('生产构建预览 — 核心功能验证', () => {
+test.describe('编辑器核心功能验证（dev 模式）', () => {
 
   test.beforeEach(async ({ page }) => {
     page.on('pageerror', e => console.log('  ⚠️ JS错误:', e.message))
@@ -30,7 +31,7 @@ test.describe('生产构建预览 — 核心功能验证', () => {
   test('B2. 编辑器打开且 Canvas 正确渲染（完整加载路径）', async ({ page }) => {
     await openEditor(page)
 
-    const canvas = page.locator('.editor-overlay canvas')
+    const canvas = page.locator('.editor-overlay canvas').first()
     await expect(canvas).toBeVisible()
     const canvasBox = await canvas.boundingBox()
     expect(canvasBox).not.toBeNull()

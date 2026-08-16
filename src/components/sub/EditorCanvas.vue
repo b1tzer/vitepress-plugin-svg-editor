@@ -16,6 +16,7 @@
  */
 
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import type { Canvas } from 'fabric'
 
 const props = withDefaults(defineProps<{
   loading: boolean
@@ -24,10 +25,13 @@ const props = withDefaults(defineProps<{
   canvasHeight: number
   themeMode: string
   viewportVersion: number
+  /** Fabric 画布实例（由父组件在 init 后传入，用于 resize 手柄投影，替代 window 全局变量） */
+  fabricCanvas?: Canvas | null
 }>(), {
   canvasWidth: 800,
   canvasHeight: 600,
   themeMode: 'light',
+  fabricCanvas: null,
 })
 
 const emit = defineEmits<{
@@ -49,6 +53,7 @@ let _af: number | null = null
 let _zw: ReturnType<typeof watch> | null = null
 let _cw: ReturnType<typeof watch> | null = null
 let _vw: ReturnType<typeof watch> | null = null
+let _fcw: ReturnType<typeof watch> | null = null
 let _lastRulerKey = ''
 
 defineExpose({ canvasAreaRef, scrollRef })
@@ -83,9 +88,9 @@ function clampSize(v: number): number {
   return Math.max(MIN_SIZE, Math.round(v))
 }
 
-/** 读取 Fabric 画布实例（CanvasManager 初始化时挂载到 window） */
-function getFabricCanvas(): any {
-  return (window as any).__fabricCanvas || null
+/** 读取 Fabric 画布实例（由父组件通过 fabricCanvas prop 传入，不再依赖 window 全局变量） */
+function getFabricCanvas(): Canvas | null {
+  return props.fabricCanvas || null
 }
 
 /** 根据 viewportTransform 投影 workspace 三个手柄的屏幕坐标（相对 fabric canvas 左上角） */
@@ -301,9 +306,10 @@ onMounted(() => {
   watch(() => props.themeMode, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
   _cw = watch(() => [props.canvasWidth, props.canvasHeight], () => scheduleHandleUpdate())
   _vw = watch(() => props.viewportVersion, () => scheduleHandleUpdate())
+  _fcw = watch(() => props.fabricCanvas, () => scheduleHandleUpdate())
   nextTick(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler); scheduleHandleUpdate() })
 })
-onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.(); _cw?.(); _vw?.(); cancelHandleUpdate() })
+onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.(); _cw?.(); _vw?.(); _fcw?.(); cancelHandleUpdate() })
 </script>
 
 <template>

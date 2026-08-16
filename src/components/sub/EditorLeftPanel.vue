@@ -8,7 +8,7 @@
  */
 
 import { ref, computed } from 'vue'
-import { ICONS } from '../../core/icons'
+import { ICONS } from '../../core/shared/icons'
 
 const props = defineProps<{
   canvasObjects: Array<{ id: string; type: string; name: string; visible: boolean }>

@@ -7,34 +7,39 @@
  * 中：EditorCanvas（Fabric.js 画布 + 标尺）
  * 右：EditorContextPanel（属性面板）
  * 顶：EditorToolbar（全局操作栏）
+ *
+ * 职责（issue #15 第 2 条）：仅负责组件组合与事件转发；
+ * 剪贴板/主题/选择状态/保存/图层/键盘等逻辑已下沉到 composable。
  */
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import * as fabric from 'fabric'
+import { ref, shallowRef, onMounted, onUnmounted, nextTick } from 'vue'
+import type { Canvas } from 'fabric'
 import EditorToolbar from './sub/EditorToolbar.vue'
 import EditorCanvas from './sub/EditorCanvas.vue'
 import EditorLeftPanel from './sub/EditorLeftPanel.vue'
 import EditorContextPanel from './sub/EditorContextPanel.vue'
-import { LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/colors'
-import { SvgLoader } from '../core/SvgLoader'
-import { SvgSerializer } from '../core/SvgSerializer'
-import { CanvasManager } from '../core/CanvasManager.ts'
-import { HistoryManager } from '../core/HistoryManager.ts'
-import { mergeArrows } from '../plugins/arrow-merger.ts'
+import { SvgLoader } from '../core/serialization/SvgLoader'
+import { SvgSerializer } from '../core/serialization/SvgSerializer'
+import { CanvasManager } from '../core/canvas/CanvasManager'
+import { HistoryManager } from '../core/history/HistoryManager'
+import { mergeArrows } from '../plugins/arrow-merger'
 import { VitePressSaveAdapter } from '../adapters/storage/VitePressSaveAdapter'
 import { LocalStorageAdapter } from '../adapters/storage/LocalStorageAdapter'
 import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
-import * as AlignPlugin from '../plugins/align.ts'
-import * as LayerPlugin from '../plugins/layer.ts'
-import * as TextFormatPlugin from '../plugins/text-format.ts'
-import * as DistributePlugin from '../plugins/distribute.ts'
-import { applyGradient } from '../plugins/gradient.ts'
-import { toggleShadow, applyShadow } from '../plugins/shadow.ts'
-import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes.ts'
-import { ensureObjectInteractive } from '../core/editor/Interactive'
-import { createShape, convertTextToTextbox } from '../core/editor/ObjectFactory'
-import { createKeyboardHandlers } from '../core/editor/KeyboardMap'
+import { ensureObjectInteractive } from '../core/shared/Interactive'
+import { createShape } from '../core/editor/ObjectFactory'
+import { mountSvgObjects } from '../core/editor/SvgObjectMounter'
 import { useEditorState } from '../composables/useEditorState'
-import { mark, measure, timed, initPerfMonitor } from '../utils/perf'
+import { useClipboard } from '../composables/useClipboard'
+import { useTheme } from '../composables/useTheme'
+import { useSelection } from '../composables/useSelection'
+import { useSave } from '../composables/useSave'
+import { useLayer } from '../composables/useLayer'
+import { useKeyboard } from '../composables/useKeyboard'
+import { useCanvasSize } from '../composables/useCanvasSize'
+import { useToolbar } from '../composables/useToolbar'
+import { useMutation } from '../composables/useMutation'
+import { exposeTestHooks, clearTestHooks } from '../core/shared/testHooks'
+import { mark, measure, timedAsync, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
 const storageAdapter: IStorageAdapter = (typeof __SVG_EDITOR_STORAGE__ !== 'undefined' && __SVG_EDITOR_STORAGE__ === 'localStorage')
@@ -42,7 +47,7 @@ const storageAdapter: IStorageAdapter = (typeof __SVG_EDITOR_STORAGE__ !== 'unde
   : new VitePressSaveAdapter(typeof __SVG_EDITOR_SAVE_ENDPOINT__ === 'string' ? __SVG_EDITOR_SAVE_ENDPOINT__ : '/__svg-save__')
 // ── 序列化器（统一后处理链，复用 SvgSerializer 而非手写）──
 const serializer = new SvgSerializer()
-// ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验，复用 SvgLoader 而非直接 preprocessSvg）──
+// ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验）──
 const svgLoader = new SvgLoader()
 
 const props = defineProps({
@@ -55,231 +60,78 @@ const emit = defineEmits(['close', 'saved'])
 const DEFAULT_SVG_WIDTH = 800
 const DEFAULT_SVG_HEIGHT = 500
 
-// ── Vue 响应式状态 ──
+// ── 编排层保留的 Vue 响应式状态 ──
 const canvasRef = ref<any>(null)
+const fabricCanvasRef = shallowRef<Canvas | null>(null)
 const overlayRef = ref<HTMLDivElement | null>(null)
 const loading = ref(true)
-const saving = ref(false)
-const svgWidth = ref(0)
-const svgHeight = ref(0)
-const selectionInfo = ref('')
-const currentFill = ref('')
-const currentStroke = ref('')
-const currentFontSize = ref(12)
-const currentFontWeight = ref('normal')
-const currentFontStyle = ref('normal')
-const currentUnderline = ref(false)
-const currentTextAlign = ref('left')
-const currentTextFill = ref('')
-const currentStrokeWidth = ref(1)
-const currentStrokeDash = ref(false)
-const currentRotation = ref(0)
-const currentOpacity = ref(100)
-const gradientType = ref('none')
-const gradientAngle = ref(0)
-const gradientColor1 = ref('#1565C0')
-const gradientColor2 = ref('#E3F2FD')
-const shadowEnabled = ref(false)
-const shadowColor = ref('#000000')
-const shadowBlur = ref(5)
-const shadowOffsetX = ref(3)
-const shadowOffsetY = ref(3)
-const originalViewBox = ref('')
 const spacePressed = ref(false)
 const isPanning = ref(false)
-const themeMode = ref(
-  typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-)
 const panelCollapsed = ref(false)
 const leftPanelCollapsed = ref(false)
-const hasTextInSelection = ref(false)
-const errorMessage = ref('')
-let _errorTimer: ReturnType<typeof setTimeout> | null = null
-function showError(msg: string) {
-  errorMessage.value = msg
-  if (_errorTimer) clearTimeout(_errorTimer)
-  _errorTimer = setTimeout(() => { errorMessage.value = '' }, 4000)
-}
 function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
 function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
-
-// 画布对象列表（供图层面板使用）
-const canvasObjects = ref<Array<{ id: string; type: string; name: string; visible: boolean }>>([])
 
 // 核心管理器
 const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
-// 暴露到 window，供 E2E 测试 helper 直接保存/撤销快照（测试侧 add 操作需走快照才能被撤销）
-;(window as any).__historyMgr = historyMgr
-let _keyHandlerFn: any = null
-let _keyUpHandler: any = null
-let _stopPerfMonitor: (() => void) | null = null
 
-const { zoomLevel, viewportVersion, canUndo, canRedo } = useEditorState(
+// ── 主题切换 ──
+const { themeMode, toggleTheme } = useTheme(canvasMgr)
+
+// ── 图层管理 ──
+const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = useLayer(canvasMgr)
+
+// ── 选择状态同步 ──
+const selection = useSelection(canvasMgr)
+const {
+  selectionInfo, currentFill, currentStroke, currentFontSize, currentFontWeight, currentFontStyle,
+  currentUnderline, currentTextAlign, currentTextFill, currentStrokeWidth, currentStrokeDash,
+  currentRotation, currentOpacity, gradientType, gradientAngle, gradientColor1, gradientColor2,
+  shadowEnabled, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, hasTextInSelection,
+  updateSelectionInfo,
+} = selection
+
+// ── 画布尺寸管理 ──
+const { svgWidth, svgHeight, originalViewBox, handleResize, onResizePreview, onResizeCommit } = useCanvasSize(canvasMgr)
+
+// ── 变更事务（withSave 独立，供 useToolbar / useClipboard / addElement 注入）──
+const { withSave } = useMutation({ canvasMgr, historyMgr, refreshLayerList })
+
+// ── 工具栏操作（聚合层：组合 history/style/text/structure 四个子 ops）──
+const {
+  undo, redo, deleteObj, align,
+  applyFill, applyStroke, applyTextFill,
+  applyStrokeWidth, toggleStrokeDash,
+  applyFontSize, toggleBold, toggleItalic, toggleUnderline, applyTextAlign,
+  applyRotation, groupSelected, ungroupSelected, selectAll, applyOpacity,
+  applyGradientUI, toggleShadowUI, applyShadowUI,
+  layerForward, layerBackward, layerToFront, layerToBack, distribute,
+} = useToolbar({
   canvasMgr,
   historyMgr,
-  {
-    onSelectionChange: updateSelectionInfo,
-    onModified: (command) => {
-      if (command) historyMgr.record(command)
-      else historyMgr.save(canvasMgr.canvas!, () => {}, () => {})
-      refreshLayerList()
-    },
-  },
-)
+  refreshLayerList,
+  getSvgSize: () => ({ w: svgWidth.value, h: svgHeight.value }),
+  selection,
+  withSave,
+})
 
-// ── 图层面板刷新 ──
-function refreshLayerList() {
-  const fc = canvasMgr.canvas
-  if (!fc) { canvasObjects.value = []; return }
-  canvasObjects.value = fc.getObjects().map((obj: any, i: number) => ({
-    id: `layer-${i}`,
-    type: obj.type || 'unknown',
-    name: getObjectName(obj, i),
-    visible: obj.visible !== false,
-  }))
-}
+// ── 剪贴板 ──
+const { copy: copyObj, paste: pasteObj } = useClipboard({
+  getCanvas: () => canvasMgr.canvas,
+  afterChange: () => { withSave(() => {}) },
+})
 
-function getObjectName(obj: any, idx: number): string {
-  if (TEXT_TYPES.includes(obj.type)) {
-    return (obj.text || '').substring(0, 15) || '文本'
-  }
-  const typeMap: Record<string, string> = { rect: '矩形', circle: '圆', triangle: '三角', ellipse: '椭圆', line: '线条', path: '路径', polygon: '多边形', group: '组合' }
-  return typeMap[obj.type] || obj.type || `元素 ${idx + 1}`
-}
-
-// ── 选择状态更新 ──
-function updateSelectionInfo() {
-  const fc = canvasMgr.canvas
-  if (!fc) return
-  const active = fc.getActiveObject()
-  if (!active) { selectionInfo.value = ''; return }
-  const isMulti = active.type === FABRIC_TYPE.ACTIVE_SELECTION
-  selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
-
-  // 判断选中集合中是否包含文本对象（支持多选时显示文字对齐按钮）
-  if (isMulti) {
-    hasTextInSelection.value = (active as any)._objects.some(
-      (o: any) => TEXT_TYPES.includes(o.type)
-    )
-  } else {
-    hasTextInSelection.value = TEXT_TYPES.includes(active.type)
-  }
-
-  if (active.fill && typeof active.fill === 'string') currentFill.value = active.fill
-  if (active.stroke && typeof active.stroke === 'string') currentStroke.value = active.stroke
-  if (active.strokeWidth != null) currentStrokeWidth.value = active.strokeWidth
-  currentStrokeDash.value = !!(active as any).strokeDashArray
-  currentRotation.value = Math.round(active.angle || 0)
-  currentOpacity.value = Math.round((active.opacity != null ? active.opacity : 1) * 100)
-
-  const f = active.fill as any
-  if (f && typeof f === 'object' && f.type) {
-    gradientType.value = f.type
-    gradientAngle.value = f.type === 'linear' ? Math.round(Math.atan2(f.coords?.y2 - f.coords?.y1, f.coords?.x2 - f.coords?.x1) * 180 / Math.PI) : 0
-    const stops = f.colorStops || []
-    if (stops[0]) gradientColor1.value = stops[0].color
-    if (stops[1]) gradientColor2.value = stops[1].color
-  } else { gradientType.value = 'none' }
-
-  const s = active.shadow as any
-  if (s) { shadowEnabled.value = true; shadowColor.value = s.color || '#000'; shadowBlur.value = s.blur || 5; shadowOffsetX.value = s.offsetX || 3; shadowOffsetY.value = s.offsetY || 3 }
-  else { shadowEnabled.value = false }
-
-  const textObj = TextFormatPlugin.getTextObjects(fc)[0]
-  if (textObj) {
-    if (textObj.fontSize) currentFontSize.value = textObj.fontSize
-    if (textObj.fontWeight) currentFontWeight.value = textObj.fontWeight
-    if (textObj.fontStyle) currentFontStyle.value = textObj.fontStyle
-    if (textObj.underline !== undefined) currentUnderline.value = textObj.underline
-    if (textObj.textAlign) currentTextAlign.value = textObj.textAlign
-    if (textObj.fill && typeof textObj.fill === 'string') currentTextFill.value = textObj.fill
-  }
-}
-
-// ── 工具栏操作 ──
-function withSave(fn: (fc: any) => void) { const fc = canvasMgr.canvas; if (!fc) return; fn(fc); historyMgr.save(fc, () => {}, () => {}); refreshLayerList() }
-function undo() { historyMgr.undo(canvasMgr.canvas!, () => { canvasMgr.rebuildWorkspace(svgWidth.value, svgHeight.value); refreshLayerList() }) }
-function redo() { historyMgr.redo(canvasMgr.canvas!, () => { canvasMgr.rebuildWorkspace(svgWidth.value, svgHeight.value); refreshLayerList() }) }
-function copyObj() {
-  const a = canvasMgr.canvas?.getActiveObject()
-  if (!a) return
-  if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) {
-    // 多选（ActiveSelection）：保存子对象引用（粘贴时逐个 clone），
-    // 避免对 ActiveSelection 本身二次 clone 触发 t2 is not iterable
-    window._clipboard = (a as any).getObjects()
-  } else {
-    ;(a as any).clone((c: any) => { window._clipboard = c })
-  }
-}
-function pasteObj() {
-  if (!window._clipboard) return
-  const fc = canvasMgr.canvas
-  if (!fc) return
-  const clipboard = window._clipboard
-
-  const addAndSelect = (objs: any[]) => {
-    if (!objs.length) return
-    fc.discardActiveObject()
-    objs.forEach((c: any) => {
-      c.set({ left: (c.left || 0) + 20, top: (c.top || 0) + 20 })
-      fc.add(c)
-    })
-    if (objs.length > 1) {
-      fc.setActiveObject(new fabric.ActiveSelection(objs, { canvas: fc }))
-    } else {
-      fc.setActiveObject(objs[0])
-    }
-    fc.renderAll()
-    withSave(() => {})
-  }
-
-  if (Array.isArray(clipboard)) {
-    const sources = clipboard.filter((o: any) => !!o)
-    if (!sources.length) return
-    const clones: any[] = []
-    let pending = sources.length
-    sources.forEach((o: any) => {
-      ;(o as any).clone((c: any) => {
-        clones.push(c)
-        pending -= 1
-        if (pending === 0) addAndSelect(clones)
-      })
-    })
-  } else {
-    ;(clipboard as any).clone((c: any) => addAndSelect([c]))
-  }
-}
-function deleteObj() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) { (a as any).forEachObject((o: any) => fc!.remove(o)); fc!.discardActiveObject() } else fc!.remove(a); fc!.renderAll(); withSave(() => {}) }
-function align(type: string) { withSave((fc: any) => (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)) }
-function applyFill(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('fill', hex) }) }
-function applyStroke(hex: string) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('stroke', hex) }) }
-function applyTextFill(hex: string) { withSave((fc: any) => { TextFormatPlugin.applyTextFill(fc, hex); currentTextFill.value = hex }) }
-function applyStrokeWidth(w: number) { withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('strokeWidth', w); currentStrokeWidth.value = w }) }
-function toggleStrokeDash() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a) return; const next = !currentStrokeDash.value; (a as any).set('strokeDashArray', next ? [6, 3] : null); currentStrokeDash.value = next; fc!.renderAll(); withSave(() => {}) }
-function applyFontSize(size: number) { withSave((fc: any) => TextFormatPlugin.applyFontSize(fc, size)); currentFontSize.value = size }
-function toggleBold() { withSave((fc: any) => { currentFontWeight.value = TextFormatPlugin.toggleBold(fc) || 'normal' }) }
-function toggleItalic() { withSave((fc: any) => { currentFontStyle.value = TextFormatPlugin.toggleItalic(fc) || 'normal' }) }
-function toggleUnderline() { withSave((fc: any) => { currentUnderline.value = TextFormatPlugin.toggleUnderline(fc) }) }
-function applyRotation(angle: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.rotate(angle); currentRotation.value = angle; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
-function groupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== FABRIC_TYPE.ACTIVE_SELECTION) return; (a as any).toGroup(); fc!.renderAll(); withSave(() => {}) }
-function ungroupSelected() { const fc = canvasMgr.canvas; const a = fc?.getActiveObject(); if (!a || a.type !== FABRIC_TYPE.GROUP) return; (a as any).toActiveSelection(); fc!.renderAll(); withSave(() => {}) }
-function selectAll() {
-  const fc = canvasMgr.canvas
-  if (!fc) return
-  // 排除 workspace 背景 / clipPath 等 excludeFromExport 的内部对象，只全选用户可见元素
-  const objs = fc.getObjects().filter((o: any) => !o.excludeFromExport)
-  if (!objs.length) return
-  fc.discardActiveObject()
-  const sel = new fabric.ActiveSelection(objs, { canvas: fc })
-  fc.setActiveObject(sel)
-  fc.renderAll()
-  updateSelectionInfo()
-}
-function applyOpacity(value: number) { const a = canvasMgr.canvas?.getActiveObject(); if (!a) return; a.set('opacity', value / 100); currentOpacity.value = value; canvasMgr.canvas!.renderAll(); withSave(() => {}) }
-function applyGradientUI() { const fc = canvasMgr.canvas; if (!fc) return; applyGradient(fc, { type: gradientType.value as any, angle: gradientAngle.value, color1: gradientColor1.value, color2: gradientColor2.value }); withSave(() => {}) }
-function toggleShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; shadowEnabled.value = toggleShadow(fc); withSave(() => {}) }
-function applyShadowUI() { const fc = canvasMgr.canvas; if (!fc) return; applyShadow(fc, { color: shadowColor.value, blur: shadowBlur.value, offsetX: shadowOffsetX.value, offsetY: shadowOffsetY.value }); withSave(() => {}) }
+// ── 保存 ──
+const { saving, errorMessage, save, showError } = useSave({
+  getCanvas: () => canvasMgr.canvas,
+  serializer,
+  storageAdapter,
+  src: props.src,
+  getOriginalViewBox: () => originalViewBox.value,
+  onSaved: () => emit('saved'),
+  onClose: () => emit('close'),
+})
 
 // ── 左侧面板：添加元素（使用逻辑坐标，viewport transform 负责缩放映射）──
 function addElement(type: string) {
@@ -297,114 +149,42 @@ function addElement(type: string) {
   }
 }
 
-// ── 图层面板：选择图层 ──
-function selectLayer(id: string) {
-  const fc = canvasMgr.canvas
-  if (!fc) return
-  const idx = parseInt(id.replace('layer-', ''))
-  const obj = fc.getObjects()[idx]
-  if (obj) { fc.setActiveObject(obj); fc.renderAll() }
-}
+// ── 编辑器状态桥接（含 EventBus 监听清理）──
+const { zoomLevel, viewportVersion, canUndo, canRedo } = useEditorState(
+  canvasMgr,
+  historyMgr,
+  {
+    onSelectionChange: updateSelectionInfo,
+    onModified: (command) => {
+      if (command) historyMgr.record(command)
+      else historyMgr.save(canvasMgr.canvas!, () => {}, () => {})
+      refreshLayerList()
+    },
+  },
+)
 
-// ── 图层面板：切换可见性 ──
-function toggleLayerVisibility(id: string) {
-  const fc = canvasMgr.canvas
-  if (!fc) return
-  const idx = parseInt(id.replace('layer-', ''))
-  const obj = fc.getObjects()[idx]
-  if (obj) { obj.set('visible', !obj.visible); fc.renderAll(); refreshLayerList() }
-}
-
-// ── 画布尺寸调整 ──
-/**
- * 同步更新 originalViewBox 的宽高（保留 minX/minY）
- * 保存时 restoreViewBox 会用此值覆盖 Fabric 输出，确保修改画布尺寸后 SVG 实际尺寸生效。
- */
-function updateViewBox(w: number, h: number) {
-  const vb = originalViewBox.value
-  const ww = Math.max(1, Math.round(w))
-  const hh = Math.max(1, Math.round(h))
-  if (!vb) {
-    originalViewBox.value = `0 0 ${ww} ${hh}`
-    return
-  }
-  const parts = vb.split(/[\s,]+/).map(Number)
-  const minX = parts.length >= 2 && !isNaN(parts[0]) ? parts[0] : 0
-  const minY = parts.length >= 2 && !isNaN(parts[1]) ? parts[1] : 0
-  originalViewBox.value = `${minX} ${minY} ${ww} ${hh}`
-}
-
-function applyCanvasSize(w: number, h: number) {
-  svgWidth.value = w
-  svgHeight.value = h
-  canvasMgr.setLogicalSize(w, h)
-}
-
-function handleResize(w: number, h: number) {
-  applyCanvasSize(w, h)
-  updateViewBox(w, h)
-}
-
-/** resize handle 拖拽过程中实时预览（只改视觉，不改 viewBox，避免高频字符串/状态抖动） */
-function onResizePreview(w: number, h: number) {
-  applyCanvasSize(w, h)
-}
-
-/** resize handle 拖拽结束提交（同步 viewBox，保存后 SVG 尺寸真正生效） */
-function onResizeCommit(w: number, h: number) {
-  applyCanvasSize(w, h)
-  updateViewBox(w, h)
-}
-
-// ── 主题切换 ──
-function toggleTheme() {
-  const fc = canvasMgr.canvas; if (!fc) return
-  const from = themeMode.value, to = from === 'light' ? 'dark' : 'light'
-  const mapping: any = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
-  if (!mapping || !Object.keys(mapping).length) return
-  themeMode.value = to
-  function swapColor(hex: any): string { if (!hex || typeof hex !== 'string') return hex; return mapping[hex.toUpperCase()] || hex }
-  fc.getObjects().forEach((obj: any) => {
-    if (obj.excludeFromExport) return;
-    (function processObject(o: any) {
-      if (o.fill && typeof o.fill === 'string') o.set('fill', swapColor(o.fill))
-      if (o.stroke && typeof o.stroke === 'string') o.set('stroke', swapColor(o.stroke))
-      if (o._objects) o._objects.forEach(processObject)
-    })(obj)
-  })
-  canvasMgr.updateWorkspaceTheme(to === 'light')
-  fc.requestRenderAll()
-}
-
-// ── 保存 ──
-async function save() {
-  if (!canvasMgr.canvas) return
-  saving.value = true
-  try {
-    const fc = canvasMgr.canvas!
-    const svgText = timed('export:toSVG', () => serializer.serialize(fc, { originalViewBox: originalViewBox.value }))
-    const result = await storageAdapter.save(svgText, props.src)
-    if (result.success) { emit('saved'); emit('close') }
-    else { showError('保存失败: ' + result.error) }
-  } catch (e: any) { showError('保存失败: ' + e.message) }
-  finally { saving.value = false }
-}
+// ── 键盘监听（集中注册/清理）──
+const keyboard = useKeyboard()
 
 // ── 主加载流程 ──
 async function loadAndInit() {
   loading.value = true
   mark('svg:load:start')
-  onUnmounted(() => {
-    if (_keyHandlerFn) { document.removeEventListener('keydown', _keyHandlerFn); document.removeEventListener('keyup', _keyUpHandler!) }
-    canvasMgr.dispose()
-  })
   await nextTick()
   const base = import.meta.env.BASE_URL || '/'
   const url = props.src.startsWith('/') ? base + props.src.slice(1) : props.src
-  let svgText: string
-  try { const resp = await fetch(url); if (!resp.ok) throw new Error(`HTTP ${resp.status}`); svgText = await resp.text() }
-  catch (e) { console.error('[SvgEditor] 获取 SVG 失败:', url, e); loading.value = false; showError('加载 SVG 失败，请检查文件是否存在'); return }
-  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = timed('svg:preprocess', () => svgLoader.load(svgText, themeMode.value))
+
+  // 拉取 + 清洗 + 预处理（下沉到 SvgLoader.loadFromUrl，issue #19 P1）
+  let loaded: Awaited<ReturnType<typeof svgLoader.loadFromUrl>> | null = null
+  try {
+    loaded = await timedAsync('svg:preprocess', () => svgLoader.loadFromUrl(url, themeMode.value))
+  } catch (e) {
+    console.error('[SvgEditor] 获取 SVG 失败:', url, e)
+    loading.value = false
+    showError('加载 SVG 失败，请检查文件是否存在')
+    return
+  }
+  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = loaded!
   if (vb) originalViewBox.value = vb
   if (sw > 0) svgWidth.value = sw; else svgWidth.value = DEFAULT_SVG_WIDTH
   if (sh > 0) svgHeight.value = sh; else svgHeight.value = DEFAULT_SVG_HEIGHT
@@ -412,31 +192,30 @@ async function loadAndInit() {
   if (!area) return
   await new Promise(r => requestAnimationFrame(r))
   await new Promise(r => requestAnimationFrame(r))
-  // canvas 物理尺寸由 CanvasManager.init 根据 viewport 容器自适应
   const w = svgWidth.value || DEFAULT_SVG_WIDTH
   const h = svgHeight.value || DEFAULT_SVG_HEIGHT
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
   const fc = canvasMgr.init(canvasEl, w, h, themeMode.value as 'light' | 'dark')
+  fabricCanvasRef.value = fc
 
-  fabric.loadSVGFromString(svg).then(({ objects }: any) => {
-    try {
-      const merged = mergeArrows(objects)
-      const converted = merged.map(convertTextToTextbox)
-      converted.forEach((obj: any) => { ensureObjectInteractive(obj); fc.add(obj) })
-      fc.getObjects().forEach((o: any) => {
-        if (o.excludeFromExport) return
-        ensureObjectInteractive(o)
-      })
+  // 集中暴露测试钩子（issue #15 第 1 条）
+  exposeTestHooks(fc, canvasMgr, historyMgr)
+
+  // 装载 SVG 对象（下沉到 mountSvgObjects，mergeArrows 作为对象级转换注入，issue #19 P1）
+  mountSvgObjects(fc, svg, { transform: mergeArrows })
+    .then(() => {
       canvasMgr.zoomFit()
       historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
-    } catch (e) { console.error('[SvgEditor] SVG 加载失败:', e) }
-    finally {
+    })
+    .catch((e) => { console.error('[SvgEditor] SVG 加载失败:', e) })
+    .finally(() => {
       mark('svg:load:end')
       measure('svg:load', 'svg:load:start', 'svg:load:end')
       loading.value = false
-    }  })
-  const keyboardHandlers = createKeyboardHandlers(
+    })
+
+  keyboard.register(
     {
       undo, redo,
       copy: copyObj, paste: pasteObj,
@@ -453,20 +232,28 @@ async function loadAndInit() {
       isEditableFocused: () => document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA',
     },
   )
-  _keyHandlerFn = keyboardHandlers.onKeyDown
-  _keyUpHandler = keyboardHandlers.onKeyUp
-  document.addEventListener('keydown', _keyHandlerFn); document.addEventListener('keyup', _keyUpHandler)
 }
 
-onMounted(loadAndInit)
-onMounted(() => { nextTick(() => { overlayRef.value?.focus() }) })
+// ── 生命周期集中管理（issue #15 第 3 条）──
+let _stopPerfMonitor: (() => void) | null = null
+
 onMounted(() => {
-  // dev-only：启动 FPS + longtask 监测，实时观察编辑器运行时的卡顿与掉帧
-  _stopPerfMonitor = initPerfMonitor({
-    onFps: (fps) => { (window as any).__perfFps = fps },
-  })
+  loadAndInit()
+  nextTick(() => { overlayRef.value?.focus() })
+  // dev-only：启动 FPS + longtask 监测，生产构建不写入
+  if (import.meta.env.DEV) {
+    _stopPerfMonitor = initPerfMonitor({
+      onFps: (fps) => { window.__perfFps = fps },
+    })
+  }
 })
-onUnmounted(() => { _stopPerfMonitor?.() })
+
+onUnmounted(() => {
+  _stopPerfMonitor?.()
+  keyboard.cleanup()
+  clearTestHooks()
+  canvasMgr.dispose()
+})
 </script>
 
 <template>
@@ -519,6 +306,7 @@ onUnmounted(() => { _stopPerfMonitor?.() })
         <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
           :canvasWidth="svgWidth" :canvasHeight="svgHeight"
           :themeMode="themeMode" :viewportVersion="viewportVersion"
+          :fabricCanvas="fabricCanvasRef"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
           @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')"
           @resizePreview="onResizePreview"
@@ -554,11 +342,11 @@ onUnmounted(() => { _stopPerfMonitor?.() })
           :collapsed="panelCollapsed"
           @toggleCollapse="togglePanel"
           @align="align"
-          @layerForward="withSave((fc:any)=>LayerPlugin.forward(fc))"
-          @layerBackward="withSave((fc:any)=>LayerPlugin.backward(fc))"
-          @layerToFront="withSave((fc:any)=>LayerPlugin.toFront(fc))"
-          @layerToBack="withSave((fc:any)=>LayerPlugin.toBack(fc))"
-          @distribute="(dir:string)=>withSave((fc:any)=>dir==='horizontal'?DistributePlugin.distributeHorizontal(fc):DistributePlugin.distributeVertical(fc))"
+          @layerForward="layerForward"
+          @layerBackward="layerBackward"
+          @layerToFront="layerToFront"
+          @layerToBack="layerToBack"
+          @distribute="distribute"
           @group="groupSelected"
           @ungroup="ungroupSelected"
           @fill="applyFill"
@@ -569,7 +357,7 @@ onUnmounted(() => { _stopPerfMonitor?.() })
           @bold="toggleBold"
           @italic="toggleItalic"
           @underline="toggleUnderline"
-          @textAlign="(a:string)=>withSave((fc:any)=>{currentTextAlign=TextFormatPlugin.applyTextAlign(fc,a)})"
+          @textAlign="applyTextAlign"
           @textFill="applyTextFill"
           @rotation="applyRotation"
           @opacity="applyOpacity"

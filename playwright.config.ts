@@ -18,13 +18,6 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 30000,
     },
-    {
-      // build-preview.spec.ts 专用：生产构建 + 预览
-      command: 'cd examples/basic && pnpm docs:build && pnpm docs:preview',
-      port: 4173,
-      reuseExistingServer: true,
-      timeout: 60000,
-    },
   ],
   projects: [
     { name: 'chromium', testIgnore: /performance-regression\.spec\.ts/ },
