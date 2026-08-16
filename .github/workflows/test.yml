@@ -71,9 +71,9 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
-      # 先构建根包：examples 的 VitePress dev server 通过 workspace:* 引用根包，
+      # 先构建根包：examples 的 VitePress 站点（config.mts）通过 workspace:* 引用根包，
       # 而根包 exports["."].import 指向 dist/node/index.mjs。dist 被 .gitignore
-      # 忽略，CI 干净 checkout 后不存在，不 build 会导致 Vite 无法解析入口。
+      # 忽略，CI 干净 checkout 后不存在，不 build 会导致 vitepress build 无法解析入口。
       - run: pnpm build
       - run: pnpm --dir examples/basic add -D vitepress@${{ matrix.vitepress }}
       # 缓存 Playwright 浏览器，避免每个 job 重复下载数百 MB
@@ -86,10 +86,23 @@ jobs:
       - run: npx playwright install --with-deps chromium firefox
       # 显式指定 chromium/firefox，避免连带跑 perf（与 performance job 重复）
       - run: pnpm test -- --project=chromium --project=firefox
+      # 上传 HTML 报告与截图/trace：即使失败也能下载现场证据定位问题
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-test-results
+          path: test-results/
+          retention-days: 14
 
   # ═══════════════════ Build 验证 ═══════════════════
-  # 仅验证 unbuild 构建产物可正常生成。dev 模式的 E2E 已由 e2e job 覆盖，
-  # 不再需要针对生产构建的 build-preview 测试（build-preview.spec.ts 已降级为 dev 模式）。
+  # 仅验证 unbuild 构建产物可正常生成。E2E 已由 e2e job 通过 vitepress build+preview
+  # 覆盖（SVG_EDITOR_E2E=1 注入测试钩子开关），build-preview.spec.ts 已跑在 preview 模式。
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15

@@ -152,6 +152,11 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): Plugin {
         define: {
           __SVG_EDITOR_STORAGE__: JSON.stringify(storage),
           __SVG_EDITOR_SAVE_ENDPOINT__: JSON.stringify(saveEndpoint),
+          // E2E 测试模式开关：仅当显式设置 SVG_EDITOR_E2E=1 时才为 true，使 vitepress preview
+          // 静态产物也能暴露测试钩子（testHooks.ts）并渲染「编辑 SVG」按钮（SvgDiagram.vue）。
+          // 真正发布给使用者的构建不设置该变量，二者均关闭（配合 import.meta.env.DEV 的
+          // tree-shaking，生产产物零污染），仅 CI 测试专用构建开启以支持 preview 跑测。
+          __SVG_EDITOR_E2E__: JSON.stringify(process.env.SVG_EDITOR_E2E === '1'),
         },
       }
     },

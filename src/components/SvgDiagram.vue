@@ -10,7 +10,9 @@ const props = defineProps({
 })
 
 const svgContent = ref('')
-const isDev = import.meta.env.DEV
+// 编辑按钮显示条件：dev 模式，或 E2E 测试模式（SVG_EDITOR_E2E=1 注入 __SVG_EDITOR_E2E__）。
+// 默认生产构建两者均不满足，不渲染编辑按钮，保持文档站点零污染。
+const isDev = import.meta.env.DEV || __SVG_EDITOR_E2E__ === true
 const showEditor = ref(false)
 const hovered = ref(false)
 const editBtnRef = ref<HTMLButtonElement | null>(null)
@@ -36,7 +38,7 @@ watch(() => props.src, loadSvg)
   <div class="svg-container" @mouseenter="hovered = true" @mouseleave="hovered = false">
     <div v-html="svgContent" />
 
-    <!-- Dev 模式：悬浮编辑按钮 -->
+    <!-- 悬浮编辑按钮（dev 或 E2E 测试模式下显示） -->
     <button
       v-if="isDev && hovered"
       ref="editBtnRef"
