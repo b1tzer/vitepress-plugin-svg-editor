@@ -101,6 +101,44 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
 
+  # ═══════════════════ 包管理器矩阵（pnpm / yarn / npm） ═══════════════════
+  # 对齐 design/10-test-strategy.md「兼容性矩阵」：验证插件根包在三种包管理器下
+  # 均可 install + build（P0-1 零摩擦安装）。注意：examples 使用 pnpm 独有的
+  # workspace:* 协议，且根 package.json 未声明 yarn/npm 的 workspaces 字段，
+  # 因此本 job 仅验证「根包」的安装与构建，不涉及 examples workspace。
+  package-manager:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        include:
+          - pm: pnpm
+            install-cmd: 'pnpm install --frozen-lockfile'
+            build-cmd: 'pnpm build'
+          - pm: yarn
+            install-cmd: 'yarn install --no-lockfile'
+            build-cmd: 'yarn build'
+          - pm: npm
+            install-cmd: 'npm install --no-package-lock'
+            build-cmd: 'npm run build'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        if: matrix.pm == 'pnpm'
+        with:
+          version: 8
+      - uses: actions/setup-node@v4
+        if: matrix.pm == 'pnpm'
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - uses: actions/setup-node@v4
+        if: matrix.pm != 'pnpm'
+        with:
+          node-version: '20'
+      - run: ${{ matrix.install-cmd }}
+      - run: ${{ matrix.build-cmd }}
+
   # ═══════════════════ 性能回归（仅 Chromium） ═══════════════════
   # 量化 100 对象场景下的单帧渲染 / 撤销快照(toJSON) / 导出(toSVG) 耗时，
   # 对齐 design/11-non-functional.md「P0-4 性能基线」，防止运行时性能退化。

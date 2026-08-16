@@ -255,6 +255,25 @@ jobs:
       - uses: actions/checkout@v4
       - run: pnpm install
       - run: pnpm build
+
+  package-manager:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - pm: pnpm
+            install: 'pnpm install --frozen-lockfile'
+            build: 'pnpm build'
+          - pm: yarn
+            install: 'yarn install --no-lockfile'
+            build: 'yarn build'
+          - pm: npm
+            install: 'npm install --no-package-lock'
+            build: 'npm run build'
+    steps:
+      - uses: actions/checkout@v4
+      - run: ${{ matrix.install }}
+      - run: ${{ matrix.build }}
 ```
 
 ## 五、测试 check list（开发提交前自检）
