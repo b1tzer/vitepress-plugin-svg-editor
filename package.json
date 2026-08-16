@@ -45,7 +45,15 @@
   },
   "files": [
     "dist",
-    "src"
+    "src/client",
+    "src/components",
+    "src/composables",
+    "src/core",
+    "src/utils",
+    "src/plugins",
+    "src/styles",
+    "src/adapters",
+    "src/env.d.ts"
   ],
   "sideEffects": [
     "**/*.vue",
