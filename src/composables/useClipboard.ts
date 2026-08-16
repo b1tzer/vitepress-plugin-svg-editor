@@ -8,11 +8,11 @@
  */
 
 import * as fabric from 'fabric'
-import type { Canvas } from 'fabric'
+import type { ActiveSelection, Canvas, FabricObject } from 'fabric'
 import { FABRIC_TYPE } from '../core/shared/FabricTypes'
 
 /** 模块级剪贴板：单个对象或多对象数组（ActiveSelection 复制时保存子对象引用） */
-let _clipboard: any = null
+let _clipboard: FabricObject | FabricObject[] | null = null
 
 export interface UseClipboardDeps {
   /** 获取当前 Fabric 画布实例 */
@@ -22,30 +22,28 @@ export interface UseClipboardDeps {
 }
 
 export function useClipboard(deps: UseClipboardDeps) {
-  function copy(): void {
+  async function copy(): Promise<void> {
     const a = deps.getCanvas()?.getActiveObject()
     if (!a) return
     if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) {
       // 多选（ActiveSelection）：保存子对象引用（粘贴时逐个 clone），
       // 避免对 ActiveSelection 本身二次 clone 触发 t2 is not iterable
-      _clipboard = (a as any).getObjects()
+      _clipboard = (a as ActiveSelection).getObjects()
     } else {
-      ;(a as any).clone((c: any) => {
-        _clipboard = c
-      })
+      _clipboard = await a.clone()
     }
   }
 
-  function paste(): void {
+  async function paste(): Promise<void> {
     if (!_clipboard) return
     const fc = deps.getCanvas()
     if (!fc) return
     const clipboard = _clipboard
 
-    const addAndSelect = (objs: any[]) => {
+    const addAndSelect = (objs: FabricObject[]): void => {
       if (!objs.length) return
       fc.discardActiveObject()
-      objs.forEach((c: any) => {
+      objs.forEach((c) => {
         c.set({ left: (c.left || 0) + 20, top: (c.top || 0) + 20 })
         fc.add(c)
       })
@@ -59,19 +57,13 @@ export function useClipboard(deps: UseClipboardDeps) {
     }
 
     if (Array.isArray(clipboard)) {
-      const sources = clipboard.filter((o: any) => !!o)
+      const sources = clipboard.filter((o) => !!o)
       if (!sources.length) return
-      const clones: any[] = []
-      let pending = sources.length
-      sources.forEach((o: any) => {
-        ;(o as any).clone((c: any) => {
-          clones.push(c)
-          pending -= 1
-          if (pending === 0) addAndSelect(clones)
-        })
-      })
+      const clones = await Promise.all(sources.map((o) => o.clone()))
+      addAndSelect(clones)
     } else {
-      ;(clipboard as any).clone((c: any) => addAndSelect([c]))
+      const clone = await clipboard.clone()
+      addAndSelect([clone])
     }
   }
 
