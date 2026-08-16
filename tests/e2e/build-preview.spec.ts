@@ -1,9 +1,9 @@
 /**
- * 编辑器核心功能验证 — 确保 dev 模式下所有核心功能正常
+ * 编辑器核心功能验证 — 确保 preview 模式下所有核心功能正常
  *
- * 注：原为生产构建（build + preview 4173）验证，因测试钩子（__fabricCanvas /
- * window.fabric 等）已用 import.meta.env.DEV 包裹，生产构建不再暴露这些全局变量，
- * 故本 spec 改为 dev 模式（5173，playwright.config.ts 默认 baseURL）验证。
+ * 注：本 spec 跑在 vitepress build + preview 静态产物上（playwright.config.ts 的
+ * webServer 以 SVG_EDITOR_E2E=1 注入 __SVG_EDITOR_E2E__ 测试开关），使生产静态产物
+ * 也能暴露 window.__fabricCanvas 测试钩子并渲染「编辑 SVG」按钮，替代 dev server。
  */
 import { test, expect } from '@playwright/test'
 import { openEditor } from './helpers'
@@ -11,7 +11,7 @@ import { openEditor } from './helpers'
 const PAGE_URL = '/'
 const LOAD_TIMEOUT = 30000
 
-test.describe('编辑器核心功能验证（dev 模式）', () => {
+test.describe('编辑器核心功能验证（preview 模式）', () => {
   test.beforeEach(async ({ page }) => {
     page.on('pageerror', (e) => console.log('  ⚠️ JS错误:', e.message))
     await page.goto(PAGE_URL, { waitUntil: 'networkidle', timeout: LOAD_TIMEOUT })

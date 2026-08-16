@@ -67,7 +67,7 @@
 
 **工具**：Playwright（Chromium + Firefox）
 
-**环境**：需要先 `vitepress build && vitepress preview`（或 `vitepress dev`）
+**环境**：`SVG_EDITOR_E2E=1 vitepress build && vitepress preview`（生产静态产物 + 测试钩子开关，替代 dev server，避免 HMR/按需编译导致的慢与并发脆弱）
 
 | 测试 spec                    | 覆盖功能                                   | 核心步骤                                                                     |
 | ---------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
@@ -85,7 +85,7 @@
 | `markdown-syntax.spec.ts`    | Markdown 原生语法                          | `![alt](test.svg)` 在页面中被渲染为可编辑的 SVG 容器                         |
 | `multiple-svg.spec.ts`       | 多 SVG 页面                                | 含 5 张 SVG 的页面 → 逐个打开编辑器 → 无内存泄漏                             |
 | `edge-cases.spec.ts`         | 边界情况                                   | 空白 SVG、超大 SVG（>1MB）、损坏 SVG、无 viewBox 的 SVG                      |
-| `build-preview.spec.ts`      | 核心功能验证（dev 模式）                  | dev 模式（5173）下重跑核心 E2E case（生产构建不暴露测试钩子，故用 dev 替代） |
+| `build-preview.spec.ts`      | 核心功能验证（preview 模式）              | preview 模式（5173）下重跑核心 E2E case（`SVG_EDITOR_E2E=1` 注入测试钩子开关，让生产静态产物也能暴露 `window.__fabricCanvas`） |
 
 ### 2.5 兼容性矩阵测试
 
@@ -286,7 +286,7 @@ jobs:
 [ ] 含 CSS 变量的 SVG 加载后颜色解析正确
 [ ] undo 50 步恢复到初始状态（diff 为零）
 [ ] Chrome + Firefox E2E 全部通过
-[ ] dev 模式 E2E 全部通过
+[ ] preview 模式 E2E 全部通过
 [ ] 打开编辑器 → 关闭 → 再次打开，无 console error
 [ ] 多 SVG 页面逐张编辑，无内存泄漏（heap snapshot 比较）
 [ ] 构建产物 `dist/` 下无 ESM/CJS 导入错误

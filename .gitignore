@@ -1,6 +1,7 @@
 node_modules/
 dist/
 test-results/
+playwright-report/
 tests/e2e/screenshots/
 **/.vitepress/cache/
 *.log
