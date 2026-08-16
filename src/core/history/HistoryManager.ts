@@ -20,9 +20,7 @@ import { timed } from '../../utils/perf'
 const MAX_STACK = 50
 
 /** 历史条目：全量快照或增量命令（渐进替换 Command 模式） */
-type HistoryEntry =
-  | { type: 'snapshot'; json: object }
-  | { type: 'command'; cmd: ICommand }
+type HistoryEntry = { type: 'snapshot'; json: object } | { type: 'command'; cmd: ICommand }
 
 export class HistoryManager implements IHistoryManager {
   private _undoStack: HistoryEntry[] = []
@@ -41,7 +39,10 @@ export class HistoryManager implements IHistoryManager {
     // 全量快照：作为复杂操作/初始锚点的兜底。
     // 记录快照时折叠栈顶已有的增量命令（其效果已包含在新快照中），
     // 保证快照条目在栈底连续、命令条目在栈顶连续，快照撤销语义自洽。
-    while (this._undoStack.length && this._undoStack[this._undoStack.length - 1].type === 'command') {
+    while (
+      this._undoStack.length &&
+      this._undoStack[this._undoStack.length - 1].type === 'command'
+    ) {
       this._undoStack.pop()
     }
     const snapshot: HistoryEntry = {
@@ -118,11 +119,19 @@ export class HistoryManager implements IHistoryManager {
     this._enqueueRestore(canvas, entry.json, afterLoad, entry, true)
   }
 
-  canUndo(): boolean { return this._undoStack.length >= 2 }
-  canRedo(): boolean { return this._redoStack.length > 0 }
+  canUndo(): boolean {
+    return this._undoStack.length >= 2
+  }
+  canRedo(): boolean {
+    return this._redoStack.length > 0
+  }
 
-  onStateChange(fn: () => void): void { this._stateChangeListeners.add(fn) }
-  offStateChange(fn: () => void): void { this._stateChangeListeners.delete(fn) }
+  onStateChange(fn: () => void): void {
+    this._stateChangeListeners.add(fn)
+  }
+  offStateChange(fn: () => void): void {
+    this._stateChangeListeners.delete(fn)
+  }
 
   reset(): void {
     this._undoStack = []
@@ -134,16 +143,29 @@ export class HistoryManager implements IHistoryManager {
    * 快速连续 undo/redo 时，多个 loadFromJSON 会并发读写栈；
    * 通过 Promise 链保证每次恢复在前一次完成后再执行，消除竞态。
    */
-  private _enqueueRestore(canvas: Canvas, json: object, afterLoad: (() => void) | undefined, entry: HistoryEntry, isRedo: boolean): void {
-    this._restoreQueue = this._restoreQueue
-      .then(() => this._restoreSnapshot(canvas, json, afterLoad, entry, isRedo))
+  private _enqueueRestore(
+    canvas: Canvas,
+    json: object,
+    afterLoad: (() => void) | undefined,
+    entry: HistoryEntry,
+    isRedo: boolean
+  ): void {
+    this._restoreQueue = this._restoreQueue.then(() =>
+      this._restoreSnapshot(canvas, json, afterLoad, entry, isRedo)
+    )
   }
 
   /**
    * 异步恢复快照（Fabric loadFromJSON 返回 Promise）。
    * 失败时把已弹出的条目放回原栈，保证历史栈一致性。
    */
-  private _restoreSnapshot(canvas: Canvas, json: object, afterLoad: (() => void) | undefined, entry: HistoryEntry, isRedo: boolean): Promise<void> {
+  private _restoreSnapshot(
+    canvas: Canvas,
+    json: object,
+    afterLoad: (() => void) | undefined,
+    entry: HistoryEntry,
+    isRedo: boolean
+  ): Promise<void> {
     canvas.clear()
     return (canvas as any)
       .loadFromJSON(json)
@@ -166,7 +188,9 @@ export class HistoryManager implements IHistoryManager {
       })
   }
 
-  private _notify(): void { this._stateChangeListeners.forEach((fn) => fn()) }
+  private _notify(): void {
+    this._stateChangeListeners.forEach((fn) => fn())
+  }
 
   /**
    * 恢复所有 canvas 对象的可交互性

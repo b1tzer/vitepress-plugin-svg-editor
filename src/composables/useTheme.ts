@@ -13,7 +13,9 @@ export function useTheme(canvasMgr: CanvasManager): {
   toggleTheme: () => void
 } {
   const themeMode = ref<'light' | 'dark'>(
-    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light'
   )
 
   function toggleTheme(): void {

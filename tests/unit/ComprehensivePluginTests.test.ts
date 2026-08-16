@@ -19,17 +19,28 @@ import * as LayerPlugin from '../../src/plugins/layer'
 /** 创建一个带真实 set 方法的 mock Fabric 对象 */
 function makeObj(overrides: Record<string, any> = {}) {
   const obj = {
-    left: 0, top: 0, width: 80, height: 60,
-    scaleX: 1, scaleY: 1, fill: '#3b82f6', stroke: '', strokeWidth: 0, opacity: 1,
+    left: 0,
+    top: 0,
+    width: 80,
+    height: 60,
+    scaleX: 1,
+    scaleY: 1,
+    fill: '#3b82f6',
+    stroke: '',
+    strokeWidth: 0,
+    opacity: 1,
     type: 'rect',
     getBoundingRect() {
       return {
-        left: this.left, top: this.top,
+        left: this.left,
+        top: this.top,
         width: this.width * (this.scaleX || 1),
         height: this.height * (this.scaleY || 1),
       }
     },
-    set(prop: string, value: any) { (this as any)[prop] = value },
+    set(prop: string, value: any) {
+      ;(this as any)[prop] = value
+    },
     ...overrides,
   }
   // 再合并一次确保 override 的 set 不会被覆盖
@@ -42,7 +53,10 @@ function makeCanvas(active: any = null) {
   const fn = vi.fn()
   return {
     getActiveObject: () => active,
-    bringForward: fn, sendBackwards: fn, bringToFront: fn, sendToBack: fn,
+    bringObjectForward: fn,
+    sendObjectBackwards: fn,
+    bringObjectToFront: fn,
+    sendObjectToBack: fn,
     renderAll: vi.fn(),
   }
 }
@@ -53,7 +67,7 @@ function makeCanvas(active: any = null) {
 describe('AlignPlugin', () => {
   const makeMultiCanvas = (objs: any[]) => {
     return {
-      getActiveObject: () => objs.length < 2 ? null : { _objects: objs },
+      getActiveObject: () => (objs.length < 2 ? null : { _objects: objs }),
       renderAll: vi.fn(),
     }
   }
@@ -134,13 +148,13 @@ describe('AlignPlugin', () => {
 // ═════════════════════════════════════════════════════════
 describe('DistributePlugin', () => {
   const makeDistCanvas = (objs: any[]) => ({
-    getActiveObject: () => objs.length < 3 ? null : { _objects: objs },
+    getActiveObject: () => (objs.length < 3 ? null : { _objects: objs }),
     renderAll: vi.fn(),
   })
 
   it('distributeHorizontal：3 个对象等间距分布', () => {
-    const o1 = makeObj({ left: 0, width: 100 })   // x:0..100
-    const o2 = makeObj({ left: 120, width: 80 })  // x:120..200
+    const o1 = makeObj({ left: 0, width: 100 }) // x:0..100
+    const o2 = makeObj({ left: 120, width: 80 }) // x:120..200
     const o3 = makeObj({ left: 240, width: 120 }) // x:240..360
     const c = makeDistCanvas([o1, o2, o3])
     DistributePlugin.distributeHorizontal(c)
@@ -162,29 +176,29 @@ describe('DistributePlugin', () => {
 // 3. 层级插件
 // ═════════════════════════════════════════════════════════
 describe('LayerPlugin', () => {
-  it('forward：有对象时调用 bringForward + renderAll', () => {
+  it('forward：有对象时调用 bringObjectForward + renderAll', () => {
     const c = makeCanvas(makeObj())
     LayerPlugin.forward(c)
-    expect(c.bringForward).toHaveBeenCalledTimes(1)
+    expect(c.bringObjectForward).toHaveBeenCalledTimes(1)
     expect(c.renderAll).toHaveBeenCalled()
   })
 
-  it('backward：有对象时调用 sendBackwards + renderAll', () => {
+  it('backward：有对象时调用 sendObjectBackwards + renderAll', () => {
     const c = makeCanvas(makeObj())
     LayerPlugin.backward(c)
-    expect(c.sendBackwards).toHaveBeenCalledTimes(1)
+    expect(c.sendObjectBackwards).toHaveBeenCalledTimes(1)
   })
 
-  it('toFront：有对象时调用 bringToFront', () => {
+  it('toFront：有对象时调用 bringObjectToFront', () => {
     const c = makeCanvas(makeObj())
     LayerPlugin.toFront(c)
-    expect(c.bringToFront).toHaveBeenCalledTimes(1)
+    expect(c.bringObjectToFront).toHaveBeenCalledTimes(1)
   })
 
-  it('toBack：有对象时调用 sendToBack', () => {
+  it('toBack：有对象时调用 sendObjectToBack', () => {
     const c = makeCanvas(makeObj())
     LayerPlugin.toBack(c)
-    expect(c.sendToBack).toHaveBeenCalledTimes(1)
+    expect(c.sendObjectToBack).toHaveBeenCalledTimes(1)
   })
 
   it('无选中对象时不抛异常', () => {
@@ -211,7 +225,9 @@ describe('GradientPlugin.applyGradient', () => {
   it('无选中时不抛异常', async () => {
     const { applyGradient } = await import('../../src/plugins/gradient')
     const c = { getActiveObject: () => null, renderAll: vi.fn() }
-    expect(() => applyGradient(c, { type: 'linear', angle: 45, color1: '#ff0', color2: '#0ff' })).not.toThrow()
+    expect(() =>
+      applyGradient(c, { type: 'linear', angle: 45, color1: '#ff0', color2: '#0ff' })
+    ).not.toThrow()
   })
 })
 

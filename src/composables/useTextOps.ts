@@ -26,23 +26,34 @@ export function useTextOps(deps: UseTextOpsDeps) {
   }
 
   function toggleBold() {
-    withSave((fc: any) => { selection.currentFontWeight.value = TextFormatPlugin.toggleBold(fc) || 'normal' })
+    withSave((fc: any) => {
+      selection.currentFontWeight.value = TextFormatPlugin.toggleBold(fc) || 'normal'
+    })
   }
 
   function toggleItalic() {
-    withSave((fc: any) => { selection.currentFontStyle.value = TextFormatPlugin.toggleItalic(fc) || 'normal' })
+    withSave((fc: any) => {
+      selection.currentFontStyle.value = TextFormatPlugin.toggleItalic(fc) || 'normal'
+    })
   }
 
   function toggleUnderline() {
-    withSave((fc: any) => { selection.currentUnderline.value = TextFormatPlugin.toggleUnderline(fc) ?? false })
+    withSave((fc: any) => {
+      selection.currentUnderline.value = TextFormatPlugin.toggleUnderline(fc) ?? false
+    })
   }
 
   function applyTextAlign(align: string) {
-    withSave((fc: any) => { selection.currentTextAlign.value = TextFormatPlugin.applyTextAlign(fc, align) })
+    withSave((fc: any) => {
+      selection.currentTextAlign.value = TextFormatPlugin.applyTextAlign(fc, align)
+    })
   }
 
   function applyTextFill(hex: string) {
-    withSave((fc: any) => { TextFormatPlugin.applyTextFill(fc, hex); selection.currentTextFill.value = hex })
+    withSave((fc: any) => {
+      TextFormatPlugin.applyTextFill(fc, hex)
+      selection.currentTextFill.value = hex
+    })
   }
 
   return { applyFontSize, toggleBold, toggleItalic, toggleUnderline, applyTextAlign, applyTextFill }

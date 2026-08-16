@@ -10,7 +10,7 @@ describe('InteractionManager', () => {
   let eventBus: EventBus
   let interaction: InteractionManager
   let canvas: any
-  let eventCallbacks: Record<string, Function>
+  let eventCallbacks: Record<string, (...args: unknown[]) => void>
 
   beforeEach(() => {
     eventBus = new EventBus()
@@ -21,7 +21,7 @@ describe('InteractionManager', () => {
       requestRenderAll: vi.fn(),
       getActiveObject: vi.fn(() => null),
       setCursor: vi.fn(),
-      on: vi.fn((event: string, callback: Function) => {
+      on: vi.fn((event: string, callback: (...args: unknown[]) => void) => {
         eventCallbacks[event] = callback
       }),
     }
@@ -53,9 +53,7 @@ describe('InteractionManager', () => {
     })
     // 第一次 set: { selectable: true, evented: true }
     // 第二次 set: { fill: 'rgba(0,0,0,0.001)' }
-    expect(setMock).toHaveBeenCalledWith(
-      expect.objectContaining({ fill: 'rgba(0,0,0,0.001)' })
-    )
+    expect(setMock).toHaveBeenCalledWith(expect.objectContaining({ fill: 'rgba(0,0,0,0.001)' }))
   })
 
   it('object:added 应对 text 不设置透明填充（文本自身可点击）', () => {

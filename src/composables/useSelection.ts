@@ -39,14 +39,17 @@ export function useSelection(canvasMgr: CanvasManager) {
     const fc = canvasMgr.canvas
     if (!fc) return
     const active = fc.getActiveObject()
-    if (!active) { selectionInfo.value = ''; return }
+    if (!active) {
+      selectionInfo.value = ''
+      return
+    }
     const isMulti = active.type === FABRIC_TYPE.ACTIVE_SELECTION
     selectionInfo.value = isMulti ? `${(active as any)._objects.length} 个选中` : active.type
 
     // 判断选中集合中是否包含文本对象（支持多选时显示文字对齐按钮）
     if (isMulti) {
-      hasTextInSelection.value = (active as any)._objects.some(
-        (o: any) => TEXT_TYPES.includes(o.type)
+      hasTextInSelection.value = (active as any)._objects.some((o: any) =>
+        TEXT_TYPES.includes(o.type)
       )
     } else {
       hasTextInSelection.value = (TEXT_TYPES as readonly string[]).includes(active.type)
@@ -62,20 +65,34 @@ export function useSelection(canvasMgr: CanvasManager) {
     const f = active.fill as any
     if (f && typeof f === 'object' && f.type) {
       gradientType.value = f.type
-      gradientAngle.value = f.type === 'linear' ? Math.round(Math.atan2(f.coords?.y2 - f.coords?.y1, f.coords?.x2 - f.coords?.x1) * 180 / Math.PI) : 0
+      gradientAngle.value =
+        f.type === 'linear'
+          ? Math.round(
+              (Math.atan2(f.coords?.y2 - f.coords?.y1, f.coords?.x2 - f.coords?.x1) * 180) / Math.PI
+            )
+          : 0
       const stops = f.colorStops || []
       if (stops[0]) gradientColor1.value = stops[0].color
       if (stops[1]) gradientColor2.value = stops[1].color
-    } else { gradientType.value = 'none' }
+    } else {
+      gradientType.value = 'none'
+    }
 
     const s = active.shadow as any
-    if (s) { shadowEnabled.value = true; shadowColor.value = s.color || '#000'; shadowBlur.value = s.blur || 5; shadowOffsetX.value = s.offsetX || 3; shadowOffsetY.value = s.offsetY || 3 }
-    else { shadowEnabled.value = false }
+    if (s) {
+      shadowEnabled.value = true
+      shadowColor.value = s.color || '#000'
+      shadowBlur.value = s.blur || 5
+      shadowOffsetX.value = s.offsetX || 3
+      shadowOffsetY.value = s.offsetY || 3
+    } else {
+      shadowEnabled.value = false
+    }
 
     const textObj = TextFormatPlugin.getTextObjects(fc)[0]
     if (textObj) {
       if (textObj.fontSize) currentFontSize.value = textObj.fontSize
-      if (textObj.fontWeight) currentFontWeight.value = textObj.fontWeight
+      if (textObj.fontWeight) currentFontWeight.value = String(textObj.fontWeight)
       if (textObj.fontStyle) currentFontStyle.value = textObj.fontStyle
       if (textObj.underline !== undefined) currentUnderline.value = textObj.underline
       if (textObj.textAlign) currentTextAlign.value = textObj.textAlign

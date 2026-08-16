@@ -31,19 +31,19 @@ const elementGroups = [
   {
     label: '基础形状',
     items: [
-      { type: 'rect',     name: '矩形',   icon: 'shapeRect' },
-      { type: 'circle',   name: '圆形',   icon: 'shapeCircle' },
+      { type: 'rect', name: '矩形', icon: 'shapeRect' },
+      { type: 'circle', name: '圆形', icon: 'shapeCircle' },
       { type: 'triangle', name: '三角形', icon: 'shapeTriangle' },
-      { type: 'ellipse',  name: '椭圆',   icon: 'shapeEllipse' },
-      { type: 'line',     name: '直线',   icon: 'shapeLine' },
-    ]
+      { type: 'ellipse', name: '椭圆', icon: 'shapeEllipse' },
+      { type: 'line', name: '直线', icon: 'shapeLine' },
+    ],
   },
   {
     label: '文本',
     items: [
-      { type: 'text',     name: '文本',   icon: 'bold' },
-      { type: 'textbox',  name: '文本框', icon: 'textLeft' },
-    ]
+      { type: 'text', name: '文本', icon: 'bold' },
+      { type: 'textbox', name: '文本框', icon: 'textLeft' },
+    ],
   },
 ]
 
@@ -51,7 +51,7 @@ const reversedLayers = computed(() => [...props.canvasObjects].reverse())
 
 /** 图层类型图标 key */
 function layerIconKey(type: string): string {
-  return (type === 'text' || type === 'textbox') ? 'bold' : 'shapes'
+  return type === 'text' || type === 'textbox' ? 'bold' : 'shapes'
 }
 </script>
 
@@ -182,12 +182,20 @@ function layerIconKey(type: string): string {
   overflow: hidden;
 }
 
-.left-panel:not(.collapsed) { width: 360px; }
-.left-panel.collapsed      { width: 40px; }
+.left-panel:not(.collapsed) {
+  width: 360px;
+}
+.left-panel.collapsed {
+  width: 40px;
+}
 
 /* ── 明暗主题 ── */
-.left-dark  { background: #1a1a1a; }
-.left-light { background: #f0f1f3; }
+.left-dark {
+  background: #1a1a1a;
+}
+.left-light {
+  background: #f0f1f3;
+}
 
 /* ── 折叠按钮（20×64 直角竖条，参考站 close-btn 1:1 复刻）── */
 .floating-toggle {
@@ -195,16 +203,22 @@ function layerIconKey(type: string): string {
   top: 50%;
   transform: translateY(-50%);
   z-index: 1;
-  width: 20px; height: 64px;
-  border: none; border-radius: 0;
+  width: 20px;
+  height: 64px;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: color 0.2s ease;
   padding: 0;
   background: transparent;
 }
 /* 展开态：右边界外侧 */
-.floating-toggle { right: -20px; }
+.floating-toggle {
+  right: -20px;
+}
 /* 折叠态：面板中间 */
 .left-panel.collapsed .floating-toggle {
   right: auto;
@@ -212,12 +226,28 @@ function layerIconKey(type: string): string {
   transform: translate(-50%, -50%);
 }
 
-.left-dark  .floating-toggle { color: #999; }
-.left-dark  .floating-toggle:hover { color: #5cadff; }
-.left-light .floating-toggle { color: #515a6e; }
-.left-light .floating-toggle:hover { color: #2d8cf0; }
-.floating-toggle span { display: flex; align-items: center; justify-content: center; }
-.floating-toggle span svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.left-dark .floating-toggle {
+  color: #999;
+}
+.left-dark .floating-toggle:hover {
+  color: #5cadff;
+}
+.left-light .floating-toggle {
+  color: #515a6e;
+}
+.left-light .floating-toggle:hover {
+  color: #2d8cf0;
+}
+.floating-toggle span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.floating-toggle span svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5;
+}
 
 /* ── 标签导航（65px 竖排） ── */
 .tab-nav {
@@ -230,29 +260,63 @@ function layerIconKey(type: string): string {
   flex-shrink: 0;
   border-right: 1px solid;
 }
-.left-dark  .tab-nav { border-color: rgba(255,255,255,0.05); }
-.left-light .tab-nav { border-color: rgba(0,0,0,0.06); }
+.left-dark .tab-nav {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+.left-light .tab-nav {
+  border-color: rgba(0, 0, 0, 0.06);
+}
 
 .tab-btn {
-  width: 53px; height: 48px;
-  border: none; border-radius: 8px;
+  width: 53px;
+  height: 48px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 2px;
   transition: all 0.15s ease;
   background: transparent;
 }
-.left-dark  .tab-btn { color: #777; }
-.left-light .tab-btn { color: #888; }
-.left-dark  .tab-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; }
-.left-light .tab-btn:hover { background: rgba(0,0,0,0.04); color: #555; }
-.left-dark  .tab-btn.active { background: rgba(59,130,246,0.15); color: #60a5fa; }
-.left-light .tab-btn.active { background: rgba(59,130,246,0.1); color: #2563eb; }
+.left-dark .tab-btn {
+  color: #777;
+}
+.left-light .tab-btn {
+  color: #888;
+}
+.left-dark .tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ccc;
+}
+.left-light .tab-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #555;
+}
+.left-dark .tab-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+.left-light .tab-btn.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
 
-.tab-icon { display: flex; align-items: center; justify-content: center; }
-.tab-icon :deep(svg) { width: 20px; height: 20px; stroke-width: 1.8; }
-.tab-label { font-size: 12px; }
+.tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-icon :deep(svg) {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
+}
+.tab-label {
+  font-size: 12px;
+}
 
 /* ── 内容区 ── */
 .tab-content {
@@ -269,23 +333,47 @@ function layerIconKey(type: string): string {
   margin: 12px 12px;
 }
 .search-icon {
-  position: absolute; left: 9px; top: 50%;
+  position: absolute;
+  left: 9px;
+  top: 50%;
   transform: translateY(-50%);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
-.search-icon :deep(svg) { width: 14px; height: 14px; stroke-width: 2; opacity: 0.5; }
+.search-icon :deep(svg) {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+  opacity: 0.5;
+}
 .search-input {
-  width: 100%; height: 32px;
+  width: 100%;
+  height: 32px;
   padding: 0 10px 0 32px;
-  border-radius: 6px; border: 1px solid;
-  font-size: 13px; outline: none;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 13px;
+  outline: none;
   box-sizing: border-box;
 }
-.left-dark  .search-input { background: rgba(255,255,255,0.04); color: #ccc; border-color: rgba(255,255,255,0.08); }
-.left-light .search-input { background: #fff; color: #333; border-color: rgba(0,0,0,0.1); }
-.left-dark  .search-input::placeholder { color: #555; }
-.left-light .search-input::placeholder { color: #aaa; }
+.left-dark .search-input {
+  background: rgba(255, 255, 255, 0.04);
+  color: #ccc;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.left-light .search-input {
+  background: #fff;
+  color: #333;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.left-dark .search-input::placeholder {
+  color: #555;
+}
+.left-light .search-input::placeholder {
+  color: #aaa;
+}
 
 /* ── 元素视图 ── */
 .elements-view {
@@ -294,13 +382,20 @@ function layerIconKey(type: string): string {
   padding: 0 12px 16px;
 }
 
-.element-group { margin-bottom: 16px; }
+.element-group {
+  margin-bottom: 16px;
+}
 .group-title {
-  font-size: 13px; font-weight: 600;
+  font-size: 13px;
+  font-weight: 600;
   margin-bottom: 8px;
 }
-.left-dark  .group-title { color: #888; }
-.left-light .group-title { color: #666; }
+.left-dark .group-title {
+  color: #888;
+}
+.left-light .group-title {
+  color: #666;
+}
 
 .element-grid {
   display: grid;
@@ -322,14 +417,38 @@ function layerIconKey(type: string): string {
   background: transparent;
   min-height: 68px;
 }
-.left-dark  .element-card { border-color: rgba(255,255,255,0.06); color: #999; }
-.left-dark  .element-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.12); color: #e0e0e0; }
-.left-light .element-card { border-color: rgba(0,0,0,0.08); color: #666; }
-.left-light .element-card:hover { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.15); color: #333; }
+.left-dark .element-card {
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #999;
+}
+.left-dark .element-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e0e0e0;
+}
+.left-light .element-card {
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #666;
+}
+.left-light .element-card:hover {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #333;
+}
 
-.element-preview { display: flex; align-items: center; justify-content: center; }
-.element-preview :deep(svg) { width: 22px; height: 22px; stroke-width: 1.8; }
-.element-name { font-size: 12px; }
+.element-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.element-preview :deep(svg) {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.8;
+}
+.element-name {
+  font-size: 12px;
+}
 
 /* ── 图层视图 ── */
 .layers-view {
@@ -338,10 +457,18 @@ function layerIconKey(type: string): string {
   padding: 0 8px 16px;
 }
 
-.layers-header { padding: 8px 4px; }
-.layers-count { font-size: 13px; }
-.left-dark  .layers-count { color: #777; }
-.left-light .layers-count { color: #888; }
+.layers-header {
+  padding: 8px 4px;
+}
+.layers-count {
+  font-size: 13px;
+}
+.left-dark .layers-count {
+  color: #777;
+}
+.left-light .layers-count {
+  color: #888;
+}
 
 .layers-empty {
   display: flex;
@@ -349,9 +476,15 @@ function layerIconKey(type: string): string {
   justify-content: center;
   padding: 32px 16px;
 }
-.empty-hint { font-size: 13px; }
-.left-dark  .empty-hint { color: #555; }
-.left-light .empty-hint { color: #aaa; }
+.empty-hint {
+  font-size: 13px;
+}
+.left-dark .empty-hint {
+  color: #555;
+}
+.left-light .empty-hint {
+  color: #aaa;
+}
 
 .layer-list {
   display: flex;
@@ -368,35 +501,77 @@ function layerIconKey(type: string): string {
   cursor: pointer;
   transition: all 0.1s ease;
 }
-.left-dark  .layer-item:hover { background: rgba(255,255,255,0.04); }
-.left-light .layer-item:hover { background: rgba(0,0,0,0.03); }
+.left-dark .layer-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.left-light .layer-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
 
 .layer-type-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 20px; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex-shrink: 0;
 }
-.layer-type-icon :deep(svg) { width: 14px; height: 14px; stroke-width: 2; }
-.left-dark  .layer-type-icon { color: #888; }
-.left-light .layer-type-icon { color: #999; }
+.layer-type-icon :deep(svg) {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
+}
+.left-dark .layer-type-icon {
+  color: #888;
+}
+.left-light .layer-type-icon {
+  color: #999;
+}
 
 .layer-name {
-  flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.left-dark  .layer-name { color: #ccc; }
-.left-light .layer-name { color: #333; }
+.left-dark .layer-name {
+  color: #ccc;
+}
+.left-light .layer-name {
+  color: #333;
+}
 
 .layer-visibility-btn {
-  width: 26px; height: 26px;
-  border: none; border-radius: 4px;
-  background: transparent; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0.6;
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
-.layer-visibility-btn:hover { opacity: 1; }
-.left-dark  .layer-visibility-btn:hover { background: rgba(255,255,255,0.08); }
-.left-light .layer-visibility-btn:hover { background: rgba(0,0,0,0.06); }
-.layer-visibility-btn span { display: flex; align-items: center; justify-content: center; }
-.layer-visibility-btn :deep(svg) { width: 15px; height: 15px; stroke-width: 1.8; }
+.layer-visibility-btn:hover {
+  opacity: 1;
+}
+.left-dark .layer-visibility-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.left-light .layer-visibility-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+.layer-visibility-btn span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.layer-visibility-btn :deep(svg) {
+  width: 15px;
+  height: 15px;
+  stroke-width: 1.8;
+}
 </style>

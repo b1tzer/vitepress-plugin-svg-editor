@@ -25,7 +25,11 @@ import type { HistoryManager } from '../history/HistoryManager'
  * @param canvasMgr  CanvasManager 实例
  * @param historyMgr HistoryManager 实例
  */
-export function exposeTestHooks(canvas: Canvas, canvasMgr: CanvasManager, historyMgr: HistoryManager): void {
+export function exposeTestHooks(
+  canvas: Canvas,
+  canvasMgr: CanvasManager,
+  historyMgr: HistoryManager
+): void {
   if (!import.meta.env.DEV) return
   window.__fabricCanvas = canvas
   window.__canvasMgr = canvasMgr

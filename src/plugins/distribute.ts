@@ -1,15 +1,17 @@
-// @ts-nocheck — fabric@5.5.2 无官方类型声明
 /**
  * 等间距分布插件 — 水平/垂直
  */
+import type { Canvas, FabricObject } from 'fabric'
 
-function getMultiSelectObjs(canvas) {
+function getMultiSelectObjs(canvas: Canvas): FabricObject[] {
   const sel = canvas.getActiveObject()
-  if (!sel || !sel._objects || sel._objects.length < 3) return []
-  return sel._objects
+  if (!sel) return []
+  const objects = (sel as { _objects?: FabricObject[] })._objects
+  if (!objects || objects.length < 3) return []
+  return objects
 }
 
-export function distributeHorizontal(canvas) {
+export function distributeHorizontal(canvas: Canvas): void {
   const objs = getMultiSelectObjs(canvas)
   if (!objs.length) return
   objs.sort((a, b) => a.left - b.left)
@@ -26,7 +28,7 @@ export function distributeHorizontal(canvas) {
   canvas.renderAll()
 }
 
-export function distributeVertical(canvas) {
+export function distributeVertical(canvas: Canvas): void {
   const objs = getMultiSelectObjs(canvas)
   if (!objs.length) return
   objs.sort((a, b) => a.top - b.top)

@@ -44,7 +44,10 @@ export function useLayer(canvasMgr: CanvasManager): {
 
   function refreshLayerList(): void {
     const fc = canvasMgr.canvas
-    if (!fc) { canvasObjects.value = []; return }
+    if (!fc) {
+      canvasObjects.value = []
+      return
+    }
     canvasObjects.value = fc.getObjects().map((obj: any) => ({
       id: getObjectId(obj),
       type: obj.type || 'unknown',
@@ -57,14 +60,21 @@ export function useLayer(canvasMgr: CanvasManager): {
     const fc = canvasMgr.canvas
     if (!fc) return
     const obj = findObjectById(fc.getObjects(), id)
-    if (obj) { fc.setActiveObject(obj); fc.renderAll() }
+    if (obj) {
+      fc.setActiveObject(obj)
+      fc.renderAll()
+    }
   }
 
   function toggleLayerVisibility(id: string): void {
     const fc = canvasMgr.canvas
     if (!fc) return
     const obj = findObjectById(fc.getObjects(), id)
-    if (obj) { obj.set('visible', !obj.visible); fc.renderAll(); refreshLayerList() }
+    if (obj) {
+      obj.set('visible', !obj.visible)
+      fc.renderAll()
+      refreshLayerList()
+    }
   }
 
   return { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility }

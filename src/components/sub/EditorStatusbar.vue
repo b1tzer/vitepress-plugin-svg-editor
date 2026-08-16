@@ -39,7 +39,14 @@ defineProps<{
   gap: 4px;
 }
 
-.zoom { min-width: 48px; }
-.size { min-width: 120px; }
-.selection { color: #aaa; font-weight: 500; }
+.zoom {
+  min-width: 48px;
+}
+.size {
+  min-width: 120px;
+}
+.selection {
+  color: #aaa;
+  font-weight: 500;
+}
 </style>

@@ -38,7 +38,9 @@ export class ZoomPanController {
     this._canvas = canvas
   }
 
-  unbindCanvas(): void { this._canvas = null }
+  unbindCanvas(): void {
+    this._canvas = null
+  }
 
   /**
    * 设置逻辑画布尺寸（workspace Rect 目标宽高）
@@ -49,8 +51,12 @@ export class ZoomPanController {
     this._baseH = h
   }
 
-  getBaseWidth(): number { return this._baseW }
-  getBaseHeight(): number { return this._baseH }
+  getBaseWidth(): number {
+    return this._baseW
+  }
+  getBaseHeight(): number {
+    return this._baseH
+  }
 
   /**
    * 应用当前 zoom 到 viewportTransform
@@ -64,9 +70,9 @@ export class ZoomPanController {
     if (!fc) return
     const z = this._zoomLevel / 100
     const vt = (fc as any).viewportTransform
-    const oldZ = (vt && vt.length >= 6 && vt[0]) ? vt[0] : 1
-    const tx = (vt && vt.length >= 6) ? vt[4] : 0
-    const ty = (vt && vt.length >= 6) ? vt[5] : 0
+    const oldZ = vt && vt.length >= 6 && vt[0] ? vt[0] : 1
+    const tx = vt && vt.length >= 6 ? vt[4] : 0
+    const ty = vt && vt.length >= 6 ? vt[5] : 0
     const ax = anchor ? anchor.x : fc.getWidth() / 2
     const ay = anchor ? anchor.y : fc.getHeight() / 2
     const logicX = (ax - tx) / oldZ
@@ -81,7 +87,7 @@ export class ZoomPanController {
 
   /** 滚轮缩放（rAF 节流，以鼠标位置为锚点；无锚点时回退为视口中心） */
   handleWheel(deltaY: number, point?: { x: number; y: number }): void {
-    this._pendingZoom = Math.round(this._zoomLevel * (0.999 ** deltaY))
+    this._pendingZoom = Math.round(this._zoomLevel * 0.999 ** deltaY)
     this._pendingZoom = Math.min(Math.max(10, this._pendingZoom), 2000)
     this._pendingPoint = point || null
     if (this._zoomRafId === null) {
@@ -122,13 +128,19 @@ export class ZoomPanController {
       this._eventBus.emit('zoomChange', this._zoomLevel)
       return
     }
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity
     objects.forEach((o: any) => {
       const b = o.getBoundingRect()
-      minX = Math.min(minX, b.left); minY = Math.min(minY, b.top)
-      maxX = Math.max(maxX, b.left + b.width); maxY = Math.max(maxY, b.top + b.height)
+      minX = Math.min(minX, b.left)
+      minY = Math.min(minY, b.top)
+      maxX = Math.max(maxX, b.left + b.width)
+      maxY = Math.max(maxY, b.top + b.height)
     })
-    const bw = maxX - minX, bh = maxY - minY
+    const bw = maxX - minX,
+      bh = maxY - minY
     if (bw <= 0 || bh <= 0) return
     // viewport = canvas 物理尺寸（即 EditorCanvas 容器尺寸）
     const vpW = fc.getWidth() - 120
@@ -147,7 +159,9 @@ export class ZoomPanController {
     this._eventBus.emit('zoomChange', this._zoomLevel)
   }
 
-  getZoomLevel(): number { return this._zoomLevel }
+  getZoomLevel(): number {
+    return this._zoomLevel
+  }
 
   // ── 空格拖拽平移 ──
   setSpacePressed(pressed: boolean): void {
@@ -155,8 +169,12 @@ export class ZoomPanController {
     if (!pressed && !this._isPanning) this._canvas?.setCursor('default')
   }
 
-  isSpacePressed(): boolean { return this._spacePressed }
-  isPanning(): boolean { return this._isPanning }
+  isSpacePressed(): boolean {
+    return this._spacePressed
+  }
+  isPanning(): boolean {
+    return this._isPanning
+  }
 
   handlePanMouseDown(e: MouseEvent, canvas: Canvas): boolean {
     // 两种平移触发方式（行业通识）：

@@ -15,7 +15,7 @@
 import type { CanvasEvents, IEventBus } from './types'
 
 export class EventBus implements IEventBus {
-  private _handlers: Map<keyof CanvasEvents, Set<Function>> = new Map()
+  private _handlers: Map<keyof CanvasEvents, Set<CanvasEvents[keyof CanvasEvents]>> = new Map()
 
   /** 注册事件监听 */
   on<K extends keyof CanvasEvents>(event: K, handler: CanvasEvents[K]): void {

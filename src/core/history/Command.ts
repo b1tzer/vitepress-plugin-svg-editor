@@ -68,9 +68,15 @@ export class MoveCommand implements ICommand {
 
   private _getTypeName(): string {
     const typeMap: Record<string, string> = {
-      rect: '矩形', circle: '圆形', triangle: '三角形',
-      ellipse: '椭圆', line: '线条', path: '路径',
-      'i-text': '文本', text: '文本', textbox: '文本框',
+      rect: '矩形',
+      circle: '圆形',
+      triangle: '三角形',
+      ellipse: '椭圆',
+      line: '线条',
+      path: '路径',
+      'i-text': '文本',
+      text: '文本',
+      textbox: '文本框',
       group: '组合',
     }
     return typeMap[this._obj.type || ''] || this._obj.type || '元素'
@@ -98,8 +104,22 @@ export class ResizeCommand implements ICommand {
 
   constructor(
     obj: FabricObject,
-    oldState: { left: number; top: number; scaleX: number; scaleY: number; width: number; height: number },
-    newState: { left: number; top: number; scaleX: number; scaleY: number; width: number; height: number },
+    oldState: {
+      left: number
+      top: number
+      scaleX: number
+      scaleY: number
+      width: number
+      height: number
+    },
+    newState: {
+      left: number
+      top: number
+      scaleX: number
+      scaleY: number
+      width: number
+      height: number
+    }
   ) {
     this._obj = obj
     this._oldLeft = oldState.left
@@ -117,11 +137,25 @@ export class ResizeCommand implements ICommand {
   }
 
   execute(): void {
-    this._apply(this._newLeft, this._newTop, this._newScaleX, this._newScaleY, this._newWidth, this._newHeight)
+    this._apply(
+      this._newLeft,
+      this._newTop,
+      this._newScaleX,
+      this._newScaleY,
+      this._newWidth,
+      this._newHeight
+    )
   }
 
   undo(): void {
-    this._apply(this._oldLeft, this._oldTop, this._oldScaleX, this._oldScaleY, this._oldWidth, this._oldHeight)
+    this._apply(
+      this._oldLeft,
+      this._oldTop,
+      this._oldScaleX,
+      this._oldScaleY,
+      this._oldWidth,
+      this._oldHeight
+    )
   }
 
   getLabel(): string {

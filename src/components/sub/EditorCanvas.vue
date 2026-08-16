@@ -18,28 +18,41 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import type { Canvas } from 'fabric'
 
-const props = withDefaults(defineProps<{
-  loading: boolean
-  zoomLevel: number
-  canvasWidth: number
-  canvasHeight: number
-  themeMode: string
-  viewportVersion: number
-  /** Fabric 画布实例（由父组件在 init 后传入，用于 resize 手柄投影，替代 window 全局变量） */
-  fabricCanvas?: Canvas | null
-}>(), {
-  canvasWidth: 800,
-  canvasHeight: 600,
-  themeMode: 'light',
-  fabricCanvas: null,
-})
+const props = withDefaults(
+  defineProps<{
+    loading: boolean
+    zoomLevel: number
+    canvasWidth: number
+    canvasHeight: number
+    themeMode: string
+    viewportVersion: number
+    /** Fabric 画布实例（由父组件在 init 后传入，用于 resize 手柄投影，替代 window 全局变量） */
+    fabricCanvas?: Canvas | null
+  }>(),
+  {
+    canvasWidth: 800,
+    canvasHeight: 600,
+    themeMode: 'light',
+    fabricCanvas: null,
+  }
+)
 
 const emit = defineEmits<{
   (e: 'canvasWheel', deltaY: number): void
-  (e: 'canvasAreaMouseEvent', clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void
+  (
+    e: 'canvasAreaMouseEvent',
+    clientX: number,
+    clientY: number,
+    type: 'mousedown' | 'mousemove' | 'mouseup'
+  ): void
   (e: 'resizePreview', w: number, h: number): void
   (e: 'resizeCommit', w: number, h: number): void
-  (e: 'middlePan', type: 'mousedown' | 'mousemove' | 'mouseup', clientX: number, clientY: number): void
+  (
+    e: 'middlePan',
+    type: 'mousedown' | 'mousemove' | 'mouseup',
+    clientX: number,
+    clientY: number
+  ): void
 }>()
 
 const containerRef = ref<HTMLDivElement | null>(null)
@@ -76,7 +89,14 @@ const CORNER_SIZE = 32
 const CORNER_INSET = 24
 
 type HandleKey = 'r' | 'b' | 'br'
-interface ResizeHandle { key: HandleKey; left: number; top: number; width: number; height: number; cursor: string }
+interface ResizeHandle {
+  key: HandleKey
+  left: number
+  top: number
+  width: number
+  height: number
+  cursor: string
+}
 
 const handles = ref<ResizeHandle[]>([])
 let _rafId: number | null = null
@@ -107,8 +127,11 @@ function updateHandles() {
     _lastHandleKey = ''
     return
   }
-  const z = vt[0], tx = vt[4], ty = vt[5]
-  const w = props.canvasWidth, h = props.canvasHeight
+  const z = vt[0],
+    tx = vt[4],
+    ty = vt[5]
+  const w = props.canvasWidth,
+    h = props.canvasHeight
   // 去重：拖拽元素移动时 viewportTransform 不变，此时无需更新手柄 DOM；
   // 仅在缩放/平移（z/tx/ty 变化）或画布尺寸变化时，才触发 Vue 响应式 + DOM 写入，
   // 从而避免每帧无效 reflow 与 Fabric 的 canvas 渲染抢主线程。
@@ -118,14 +141,35 @@ function updateHandles() {
 
   // 手柄内边缘（靠近画布的一侧）统一距画布边界 HANDLE_GAP，
   // 让手柄整体悬浮在边界外侧，与画布之间保留真实空隙，避免误操作。
-  const canvasRight = w * z + tx   // 画布右边界屏幕坐标
-  const canvasBottom = h * z + ty  // 画布底边界屏幕坐标
+  const canvasRight = w * z + tx // 画布右边界屏幕坐标
+  const canvasBottom = h * z + ty // 画布底边界屏幕坐标
   const gap = HANDLE_GAP
 
   handles.value = [
-    { key: 'r',  left: canvasRight + gap, top: (h / 2) * z + ty - BAR_R_H / 2, width: BAR_R_W, height: BAR_R_H, cursor: 'ew-resize' },
-    { key: 'b',  left: (w / 2) * z + tx - BAR_B_W / 2, top: canvasBottom + gap, width: BAR_B_W, height: BAR_B_H, cursor: 'ns-resize' },
-    { key: 'br', left: canvasRight + gap - CORNER_INSET, top: canvasBottom + gap - CORNER_INSET, width: CORNER_SIZE, height: CORNER_SIZE, cursor: 'nwse-resize' },
+    {
+      key: 'r',
+      left: canvasRight + gap,
+      top: (h / 2) * z + ty - BAR_R_H / 2,
+      width: BAR_R_W,
+      height: BAR_R_H,
+      cursor: 'ew-resize',
+    },
+    {
+      key: 'b',
+      left: (w / 2) * z + tx - BAR_B_W / 2,
+      top: canvasBottom + gap,
+      width: BAR_B_W,
+      height: BAR_B_H,
+      cursor: 'ns-resize',
+    },
+    {
+      key: 'br',
+      left: canvasRight + gap - CORNER_INSET,
+      top: canvasBottom + gap - CORNER_INSET,
+      width: CORNER_SIZE,
+      height: CORNER_SIZE,
+      cursor: 'nwse-resize',
+    },
   ]
 }
 
@@ -137,7 +181,9 @@ function computeSize(e: MouseEvent): { w: number; h: number } | null {
   if (!fc || !area) return null
   const vt = fc.viewportTransform
   if (!vt || vt.length < 6) return null
-  const z = vt[0], tx = vt[4], ty = vt[5]
+  const z = vt[0],
+    tx = vt[4],
+    ty = vt[5]
   const rect = area.getBoundingClientRect()
   const sx = e.clientX - rect.left
   const sy = e.clientY - rect.top
@@ -147,7 +193,10 @@ function computeSize(e: MouseEvent): { w: number; h: number } | null {
   let h = props.canvasHeight
   if (_draggingHandle === 'r') w = clampSize(lx)
   else if (_draggingHandle === 'b') h = clampSize(ly)
-  else if (_draggingHandle === 'br') { w = clampSize(lx); h = clampSize(ly) }
+  else if (_draggingHandle === 'br') {
+    w = clampSize(lx)
+    h = clampSize(ly)
+  }
   return { w, h }
 }
 
@@ -185,7 +234,10 @@ function scheduleHandleUpdate() {
 }
 
 function cancelHandleUpdate() {
-  if (_rafId !== null) { cancelAnimationFrame(_rafId); _rafId = null }
+  if (_rafId !== null) {
+    cancelAnimationFrame(_rafId)
+    _rafId = null
+  }
 }
 
 function drawRuler() {
@@ -193,11 +245,16 @@ function drawRuler() {
   const container = containerRef.value
   if (!cvs || !container) return
   const dpr = window.devicePixelRatio || 1
-  const w = container.clientWidth, h = container.clientHeight
-  cvs.width = w * dpr; cvs.height = h * dpr
-  cvs.style.width = w + 'px'; cvs.style.height = h + 'px'
-  const ctx = cvs.getContext('2d'); if (!ctx) return
-  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h)
+  const w = container.clientWidth,
+    h = container.clientHeight
+  cvs.width = w * dpr
+  cvs.height = h * dpr
+  cvs.style.width = w + 'px'
+  cvs.style.height = h + 'px'
+  const ctx = cvs.getContext('2d')
+  if (!ctx) return
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, w, h)
 
   const z = props.zoomLevel / 100
   const light = props.themeMode !== 'dark'
@@ -210,37 +267,68 @@ function drawRuler() {
   ctx.fillRect(0, RULER, RULER, h - RULER)
 
   let step = 10
-  for (const s of [1,2,5,10,20,50,100,200,500,1000]) { if (s * z >= 30) { step = s; break } }
+  for (const s of [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]) {
+    if (s * z >= 30) {
+      step = s
+      break
+    }
+  }
 
   const key = `${step}_${w}_${h}_${light}`
   if (key === _lastRulerKey) return
   _lastRulerKey = key
 
-  ctx.strokeStyle = tColor; ctx.fillStyle = fColor
-  ctx.font = '10px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
+  ctx.strokeStyle = tColor
+  ctx.fillStyle = fColor
+  ctx.font = '10px -apple-system,sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
   for (let x = RULER; x < w; x += step * z) {
     const v = Math.round((x - RULER) / z)
     if (v % (step * 5) === 0) {
-      ctx.beginPath(); ctx.moveTo(x, RULER); ctx.lineTo(x, RULER - 10); ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(x, RULER)
+      ctx.lineTo(x, RULER - 10)
+      ctx.stroke()
       ctx.fillText(String(v), x, RULER - 3)
-    } else { ctx.beginPath(); ctx.moveTo(x, RULER); ctx.lineTo(x, RULER - 5); ctx.stroke() }
+    } else {
+      ctx.beginPath()
+      ctx.moveTo(x, RULER)
+      ctx.lineTo(x, RULER - 5)
+      ctx.stroke()
+    }
   }
 
-  ctx.textBaseline = 'middle'; ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'right'
   for (let y = RULER; y < h; y += step * z) {
     const v = Math.round((y - RULER) / z)
     if (v % (step * 5) === 0) {
-      ctx.beginPath(); ctx.moveTo(RULER, y); ctx.lineTo(RULER - 10, y); ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(RULER, y)
+      ctx.lineTo(RULER - 10, y)
+      ctx.stroke()
       ctx.fillText(String(v), RULER - 3, y)
-    } else { ctx.beginPath(); ctx.moveTo(RULER, y); ctx.lineTo(RULER - 5, y); ctx.stroke() }
+    } else {
+      ctx.beginPath()
+      ctx.moveTo(RULER, y)
+      ctx.lineTo(RULER - 5, y)
+      ctx.stroke()
+    }
   }
 
   ctx.fillStyle = light ? '#e8eaed' : '#2a2a2a'
   ctx.fillRect(0, 0, RULER, RULER)
   ctx.strokeStyle = light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.06)'
   ctx.strokeRect(0, 0, RULER, RULER)
-  ctx.beginPath(); ctx.moveTo(RULER, RULER); ctx.lineTo(w, RULER); ctx.stroke()
-  ctx.beginPath(); ctx.moveTo(RULER, RULER); ctx.lineTo(RULER, h); ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(RULER, RULER)
+  ctx.lineTo(w, RULER)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(RULER, RULER)
+  ctx.lineTo(RULER, h)
+  ctx.stroke()
 }
 
 // ── 画布区域外滚轮/框选事件代理 ──
@@ -300,35 +388,93 @@ function onCanvasOutsideMouseUp(e: MouseEvent) {
 }
 
 onMounted(() => {
-  _ro = new ResizeObserver(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
+  _ro = new ResizeObserver(() => {
+    if (_af) cancelAnimationFrame(_af)
+    _af = requestAnimationFrame(drawRuler)
+  })
   if (containerRef.value) _ro.observe(containerRef.value)
-  _zw = watch(() => props.zoomLevel, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler); scheduleHandleUpdate() })
-  watch(() => props.themeMode, () => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler) })
-  _cw = watch(() => [props.canvasWidth, props.canvasHeight], () => scheduleHandleUpdate())
-  _vw = watch(() => props.viewportVersion, () => scheduleHandleUpdate())
-  _fcw = watch(() => props.fabricCanvas, () => scheduleHandleUpdate())
-  nextTick(() => { if (_af) cancelAnimationFrame(_af); _af = requestAnimationFrame(drawRuler); scheduleHandleUpdate() })
+  _zw = watch(
+    () => props.zoomLevel,
+    () => {
+      if (_af) cancelAnimationFrame(_af)
+      _af = requestAnimationFrame(drawRuler)
+      scheduleHandleUpdate()
+    }
+  )
+  watch(
+    () => props.themeMode,
+    () => {
+      if (_af) cancelAnimationFrame(_af)
+      _af = requestAnimationFrame(drawRuler)
+    }
+  )
+  _cw = watch(
+    () => [props.canvasWidth, props.canvasHeight],
+    () => scheduleHandleUpdate()
+  )
+  _vw = watch(
+    () => props.viewportVersion,
+    () => scheduleHandleUpdate()
+  )
+  _fcw = watch(
+    () => props.fabricCanvas,
+    () => scheduleHandleUpdate()
+  )
+  nextTick(() => {
+    if (_af) cancelAnimationFrame(_af)
+    _af = requestAnimationFrame(drawRuler)
+    scheduleHandleUpdate()
+  })
 })
-onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.(); _cw?.(); _vw?.(); _fcw?.(); cancelHandleUpdate() })
+onUnmounted(() => {
+  _ro?.disconnect()
+  if (_af) cancelAnimationFrame(_af)
+  _zw?.()
+  _cw?.()
+  _vw?.()
+  _fcw?.()
+  cancelHandleUpdate()
+})
 </script>
 
 <template>
   <div class="editor-canvas" :class="'theme-' + themeMode" ref="containerRef">
     <canvas ref="rulerCanvasRef" class="ruler-canvas" />
-    <div class="canvas-scroll" ref="scrollRef"
+    <div
+      class="canvas-scroll"
+      ref="scrollRef"
       @wheel.prevent="onCanvasWheel"
-      @mousedown="onCanvasMouseDown">
+      @mousedown="onCanvasMouseDown"
+    >
       <div class="canvas-area" ref="canvasAreaRef">
         <canvas class="fabric-canvas" />
         <template v-for="handle in handles" :key="handle.key">
           <div
             class="resize-handle"
             :class="'handle-' + handle.key"
-            :style="{ left: handle.left + 'px', top: handle.top + 'px', width: handle.width + 'px', height: handle.height + 'px', cursor: handle.cursor }"
+            :style="{
+              left: handle.left + 'px',
+              top: handle.top + 'px',
+              width: handle.width + 'px',
+              height: handle.height + 'px',
+              cursor: handle.cursor,
+            }"
             @mousedown="onHandleMouseDown(handle.key, $event)"
           >
-            <svg v-if="handle.key === 'br'" viewBox="0 0 32 32" class="corner-shape" aria-hidden="true">
-              <path d="M 28 6 L 28 28 L 6 28" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+            <svg
+              v-if="handle.key === 'br'"
+              viewBox="0 0 32 32"
+              class="corner-shape"
+              aria-hidden="true"
+            >
+              <path
+                d="M 28 6 L 28 28 L 6 28"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
         </template>
@@ -342,32 +488,73 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
 </template>
 
 <style scoped>
-.editor-canvas { flex:1; position:relative; overflow:hidden;
+.editor-canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
   /* 棋盘格方格大小（px），修改此变量即可整体调整方格尺寸（明暗主题共用） */
   --grid-size: 35px;
-  background-color:#e8e8e8;
-  background-image:linear-gradient(45deg,#d4d4d4 25%,transparent 25%),linear-gradient(-45deg,#d4d4d4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d4d4d4 75%),linear-gradient(-45deg,transparent 75%,#d4d4d4 75%);
-  background-size:var(--grid-size) var(--grid-size); background-position:0 0,0 calc(var(--grid-size) / 2),calc(var(--grid-size) / 2) calc(var(--grid-size) / -2),calc(var(--grid-size) / -2) 0; }
+  background-color: #e8e8e8;
+  background-image:
+    linear-gradient(45deg, #d4d4d4 25%, transparent 25%),
+    linear-gradient(-45deg, #d4d4d4 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d4d4d4 75%),
+    linear-gradient(-45deg, transparent 75%, #d4d4d4 75%);
+  background-size: var(--grid-size) var(--grid-size);
+  background-position:
+    0 0,
+    0 calc(var(--grid-size) / 2),
+    calc(var(--grid-size) / 2) calc(var(--grid-size) / -2),
+    calc(var(--grid-size) / -2) 0;
+}
 .editor-canvas.theme-dark {
-  background-color:#1a1a1a;
-  background-image:linear-gradient(45deg,#2a2a2a 25%,transparent 25%),linear-gradient(-45deg,#2a2a2a 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#2a2a2a 75%),linear-gradient(-45deg,transparent 75%,#2a2a2a 75%);
-  background-size:var(--grid-size) var(--grid-size); background-position:0 0,0 calc(var(--grid-size) / 2),calc(var(--grid-size) / 2) calc(var(--grid-size) / -2),calc(var(--grid-size) / -2) 0; }
-.ruler-canvas { pointer-events:none; position:absolute; top:0; left:0; z-index:10; }
+  background-color: #1a1a1a;
+  background-image:
+    linear-gradient(45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(-45deg, #2a2a2a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #2a2a2a 75%),
+    linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+  background-size: var(--grid-size) var(--grid-size);
+  background-position:
+    0 0,
+    0 calc(var(--grid-size) / 2),
+    calc(var(--grid-size) / 2) calc(var(--grid-size) / -2),
+    calc(var(--grid-size) / -2) 0;
+}
+.ruler-canvas {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
 
 /* canvas 填满整个视口容器（左/上偏移 24px = 标尺区域），由 CanvasManager 设置 Fabric canvas 尺寸 */
 .canvas-scroll {
-  position:absolute; top:24px; left:24px; right:0; bottom:0;
-  overflow:hidden;
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
 }
-.canvas-area { width:100%; height:100%; position:relative; }
-.fabric-canvas { display:block; }
+.canvas-area {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.fabric-canvas {
+  display: block;
+}
 
 /* 画布尺寸调整手柄（DOM 层）— 带透明度的灰色小条（无描边，边缘颜色与填充一致） */
 .resize-handle {
   position: absolute;
   box-sizing: border-box;
   z-index: 20;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 /* 右侧/底部长条：半透明灰色圆角条 */
@@ -377,20 +564,58 @@ onUnmounted(() => { _ro?.disconnect(); if (_af) cancelAnimationFrame(_af); _zw?.
   border-radius: 4px;
 }
 /* 右下角 L 形拐角：SVG 用 currentColor 继承文字颜色 */
-.handle-br { color: rgba(128, 128, 128, 0.45); }
-.handle-br .corner-shape { display: block; width: 100%; height: 100%; }
+.handle-br {
+  color: rgba(128, 128, 128, 0.45);
+}
+.handle-br .corner-shape {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
 /* hover：颜色与 SVG 元素激活（选中）边框色 #0078d4 一致，去掉放大效果 */
 .handle-r:hover,
-.handle-b:hover { background: #0078d4; }
-.handle-br:hover { color: #0078d4; }
+.handle-b:hover {
+  background: #0078d4;
+}
+.handle-br:hover {
+  color: #0078d4;
+}
 
 .editor-canvas.theme-dark .handle-r,
-.editor-canvas.theme-dark .handle-b { background: rgba(180, 180, 180, 0.4); }
-.editor-canvas.theme-dark .handle-br { color: rgba(180, 180, 180, 0.4); }
+.editor-canvas.theme-dark .handle-b {
+  background: rgba(180, 180, 180, 0.4);
+}
+.editor-canvas.theme-dark .handle-br {
+  color: rgba(180, 180, 180, 0.4);
+}
 
 /* 加载态 */
-.loading { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:rgba(17,17,17,.85); color:#666; font-size:14px; z-index:30; pointer-events:none; }
-.loading-spinner { width:28px; height:28px; border:3px solid rgba(255,255,255,.1); border-top-color:#3b82f6; border-radius:50%; animation:spin .8s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(17, 17, 17, 0.85);
+  color: #666;
+  font-size: 14px;
+  z-index: 30;
+  pointer-events: none;
+}
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

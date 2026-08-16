@@ -4,8 +4,6 @@
  * 使用 Pipeline 责任链模式，替代原来硬编码的 SvgSerializer.serialize 中的步骤顺序。
  */
 
-// @ts-nocheck — String.replace 回调参数因正则动态性无法严格类型化
-
 import { Pipeline } from './Pipeline'
 import {
   cleanFabricSvg,
@@ -30,7 +28,10 @@ export function createPostprocessPipeline(originalViewBox?: string): Pipeline<st
     .use({ name: 'cleanFabricSvg', process: cleanFabricSvg })
 
   if (originalViewBox) {
-    pipeline.use({ name: 'restoreViewBox', process: (svg: string) => restoreViewBox(svg, originalViewBox) })
+    pipeline.use({
+      name: 'restoreViewBox',
+      process: (svg: string) => restoreViewBox(svg, originalViewBox),
+    })
   }
 
   pipeline

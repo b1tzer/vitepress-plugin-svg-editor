@@ -1,24 +1,36 @@
-// @ts-nocheck — fabric@5.5.2 无官方类型声明
 /**
  * 层级控制插件 — 上移/下移/置顶/置底
  */
+import type { Canvas } from 'fabric'
 
-export function forward(canvas) {
+export function forward(canvas: Canvas): void {
   const a = canvas.getActiveObject()
-  if (a) { canvas.bringForward(a); canvas.renderAll() }
+  if (a) {
+    canvas.bringObjectForward(a)
+    canvas.renderAll()
+  }
 }
 
-export function backward(canvas) {
+export function backward(canvas: Canvas): void {
   const a = canvas.getActiveObject()
-  if (a) { canvas.sendBackwards(a); canvas.renderAll() }
+  if (a) {
+    canvas.sendObjectBackwards(a)
+    canvas.renderAll()
+  }
 }
 
-export function toFront(canvas) {
+export function toFront(canvas: Canvas): void {
   const a = canvas.getActiveObject()
-  if (a) { canvas.bringToFront(a); canvas.renderAll() }
+  if (a) {
+    canvas.bringObjectToFront(a)
+    canvas.renderAll()
+  }
 }
 
-export function toBack(canvas) {
+export function toBack(canvas: Canvas): void {
   const a = canvas.getActiveObject()
-  if (a) { canvas.sendToBack(a); canvas.renderAll() }
+  if (a) {
+    canvas.sendObjectToBack(a)
+    canvas.renderAll()
+  }
 }

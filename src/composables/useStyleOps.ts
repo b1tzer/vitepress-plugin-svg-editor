@@ -24,15 +24,25 @@ export function useStyleOps(deps: UseStyleOpsDeps) {
   const { canvasMgr, selection, withSave } = deps
 
   function applyFill(hex: string) {
-    withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('fill', hex) })
+    withSave((fc: any) => {
+      const a = fc.getActiveObject()
+      if (a) a.set('fill', hex)
+    })
   }
 
   function applyStroke(hex: string) {
-    withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('stroke', hex) })
+    withSave((fc: any) => {
+      const a = fc.getActiveObject()
+      if (a) a.set('stroke', hex)
+    })
   }
 
   function applyStrokeWidth(w: number) {
-    withSave((fc: any) => { const a = fc.getActiveObject(); if (a) a.set('strokeWidth', w); selection.currentStrokeWidth.value = w })
+    withSave((fc: any) => {
+      const a = fc.getActiveObject()
+      if (a) a.set('strokeWidth', w)
+      selection.currentStrokeWidth.value = w
+    })
   }
 
   function toggleStrokeDash() {
@@ -96,7 +106,14 @@ export function useStyleOps(deps: UseStyleOpsDeps) {
   }
 
   return {
-    applyFill, applyStroke, applyStrokeWidth, toggleStrokeDash,
-    applyOpacity, applyRotation, applyGradientUI, toggleShadowUI, applyShadowUI,
+    applyFill,
+    applyStroke,
+    applyStrokeWidth,
+    toggleStrokeDash,
+    applyOpacity,
+    applyRotation,
+    applyGradientUI,
+    toggleShadowUI,
+    applyShadowUI,
   }
 }

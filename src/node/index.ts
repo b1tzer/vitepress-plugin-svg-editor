@@ -75,7 +75,13 @@ interface MarkdownItLike {
   renderer: {
     rules: {
       image?:
-        | ((tokens: MarkdownItToken[], idx: number, options: unknown, env: unknown, self: unknown) => string)
+        | ((
+            tokens: MarkdownItToken[],
+            idx: number,
+            options: unknown,
+            env: unknown,
+            self: unknown
+          ) => string)
         | undefined
     }
   }
@@ -126,67 +132,72 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): VitePlugi
 
       // VitePress 默认 public 目录：保存边界统一到 docs/public 根目录（原路保存）
       const publicDir = path.resolve(process.cwd(), 'docs/public')
-      server.middlewares.use(saveEndpoint, (req: IncomingMessage, res: ServerResponse, next: () => void) => {
-        if (req.method !== 'POST') return next()
+      server.middlewares.use(
+        saveEndpoint,
+        (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+          if (req.method !== 'POST') return next()
 
-        // 🔒 仅接受 JSON 请求体
-        const contentType = String(req.headers['content-type'] || '').split(';')[0].trim()
-        if (contentType !== 'application/json') {
-          res.statusCode = 415
-          res.end('Unsupported Media Type: only application/json is allowed')
-          return
+          // 🔒 仅接受 JSON 请求体
+          const contentType = String(req.headers['content-type'] || '')
+            .split(';')[0]
+            .trim()
+          if (contentType !== 'application/json') {
+            res.statusCode = 415
+            res.end('Unsupported Media Type: only application/json is allowed')
+            return
+          }
+
+          // 🔒 流式读取并限制请求体大小，超过上限立即拒绝（不继续累积内存）
+          const chunks: Buffer[] = []
+          let bodySize = 0
+          let tooLarge = false
+          req.on('data', (chunk: Buffer) => {
+            if (tooLarge) return
+            bodySize += chunk.length
+            if (bodySize > MAX_BODY_SIZE) {
+              tooLarge = true
+              return
+            }
+            chunks.push(chunk)
+          })
+          req.on('end', () => {
+            if (tooLarge) {
+              res.statusCode = 413
+              res.end('Payload Too Large: SVG content exceeds 10MB limit')
+              return
+            }
+
+            try {
+              const body = Buffer.concat(chunks).toString('utf-8')
+              const { path: svgPath, content } = JSON.parse(body)
+
+              // 🔒 校验字段类型，避免非法负载
+              if (typeof svgPath !== 'string' || typeof content !== 'string') {
+                res.statusCode = 400
+                res.end('Bad Request: path and content must be strings')
+                return
+              }
+
+              // 🔒 路径校验：必须仍在 publicDir 内 + 仅 .svg 后缀
+              const fullPath = resolveSafeSvgPath(publicDir, svgPath)
+              if (!fullPath) {
+                res.statusCode = 403
+                res.end('Forbidden: only SVG files under docs/public are allowed')
+                return
+              }
+
+              // 确保父目录存在（支持保存到未预先创建的子目录）
+              fs.mkdirSync(path.dirname(fullPath), { recursive: true })
+              fs.writeFileSync(fullPath, content, 'utf-8')
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ ok: true, file: fullPath }))
+            } catch (e) {
+              res.statusCode = 500
+              res.end(e instanceof Error ? e.message : String(e))
+            }
+          })
         }
-
-        // 🔒 流式读取并限制请求体大小，超过上限立即拒绝（不继续累积内存）
-        const chunks: Buffer[] = []
-        let bodySize = 0
-        let tooLarge = false
-        req.on('data', (chunk: Buffer) => {
-          if (tooLarge) return
-          bodySize += chunk.length
-          if (bodySize > MAX_BODY_SIZE) {
-            tooLarge = true
-            return
-          }
-          chunks.push(chunk)
-        })
-        req.on('end', () => {
-          if (tooLarge) {
-            res.statusCode = 413
-            res.end('Payload Too Large: SVG content exceeds 10MB limit')
-            return
-          }
-
-          try {
-            const body = Buffer.concat(chunks).toString('utf-8')
-            const { path: svgPath, content } = JSON.parse(body)
-
-            // 🔒 校验字段类型，避免非法负载
-            if (typeof svgPath !== 'string' || typeof content !== 'string') {
-              res.statusCode = 400
-              res.end('Bad Request: path and content must be strings')
-              return
-            }
-
-            // 🔒 路径校验：必须仍在 publicDir 内 + 仅 .svg 后缀
-            const fullPath = resolveSafeSvgPath(publicDir, svgPath)
-            if (!fullPath) {
-              res.statusCode = 403
-              res.end('Forbidden: only SVG files under docs/public are allowed')
-              return
-            }
-
-            // 确保父目录存在（支持保存到未预先创建的子目录）
-            fs.mkdirSync(path.dirname(fullPath), { recursive: true })
-            fs.writeFileSync(fullPath, content, 'utf-8')
-            res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ ok: true, file: fullPath }))
-          } catch (e) {
-            res.statusCode = 500
-            res.end(e instanceof Error ? e.message : String(e))
-          }
-        })
-      })
+      )
     },
 
     config() {
@@ -206,12 +217,21 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): VitePlugi
   }
 }
 
-export function svgDiagramMarkdownPlugin(md: MarkdownItLike, options: { markdownSyntax?: boolean } = {}) {
+export function svgDiagramMarkdownPlugin(
+  md: MarkdownItLike,
+  options: { markdownSyntax?: boolean } = {}
+) {
   if (options.markdownSyntax === false) return
 
   const defaultImageRender = md.renderer.rules.image
 
-  md.renderer.rules.image = (tokens: MarkdownItToken[], idx: number, renderOpts: unknown, env: unknown, self: unknown) => {
+  md.renderer.rules.image = (
+    tokens: MarkdownItToken[],
+    idx: number,
+    renderOpts: unknown,
+    env: unknown,
+    self: unknown
+  ) => {
     const token = tokens[idx]
     const src = token.attrGet('src') || ''
 

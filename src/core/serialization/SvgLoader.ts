@@ -54,7 +54,7 @@ export class SvgLoader {
     if (rawSvg.length > SECURITY.maxFileSize) {
       throw new Error(
         `SVG 文件过大（${(rawSvg.length / 1024 / 1024).toFixed(1)}MB），超过上限 ` +
-        `${SECURITY.maxFileSize / 1024 / 1024}MB。请检查文件是否包含过多数据。`
+          `${SECURITY.maxFileSize / 1024 / 1024}MB。请检查文件是否包含过多数据。`
       )
     }
     // 🔒 安全清洗：移除 XSS / CSS 注入向量

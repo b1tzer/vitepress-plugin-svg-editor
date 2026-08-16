@@ -1,0 +1,9 @@
+dist
+node_modules
+**/.vitepress/cache
+**/.vitepress/dist
+pnpm-lock.yaml
+test-results
+playwright-report
+coverage
+CHANGELOG.md

@@ -108,7 +108,8 @@ export class InteractionManager {
    * 由调用方回退到全量快照兜底。
    */
   private _buildTransformCommand(obj: any, e: any): ICommand | undefined {
-    if (!obj || obj.type === FABRIC_TYPE.ACTIVE_SELECTION || obj.type === FABRIC_TYPE.GROUP) return undefined
+    if (!obj || obj.type === FABRIC_TYPE.ACTIVE_SELECTION || obj.type === FABRIC_TYPE.GROUP)
+      return undefined
     const orig = e?.transform?.original
     if (!orig) return undefined
 
@@ -120,14 +121,20 @@ export class InteractionManager {
 
     if (scaleChanged) {
       const oldState = {
-        left: orig.left || 0, top: orig.top || 0,
-        scaleX: orig.scaleX ?? 1, scaleY: orig.scaleY ?? 1,
-        width: orig.width || 0, height: orig.height || 0,
+        left: orig.left || 0,
+        top: orig.top || 0,
+        scaleX: orig.scaleX ?? 1,
+        scaleY: orig.scaleY ?? 1,
+        width: orig.width || 0,
+        height: orig.height || 0,
       }
       const newState = {
-        left: obj.left || 0, top: obj.top || 0,
-        scaleX: obj.scaleX ?? 1, scaleY: obj.scaleY ?? 1,
-        width: obj.width || 0, height: obj.height || 0,
+        left: obj.left || 0,
+        top: obj.top || 0,
+        scaleX: obj.scaleX ?? 1,
+        scaleY: obj.scaleY ?? 1,
+        width: obj.width || 0,
+        height: obj.height || 0,
       }
       return new ResizeCommand(obj, oldState, newState)
     }

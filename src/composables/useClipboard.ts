@@ -30,7 +30,9 @@ export function useClipboard(deps: UseClipboardDeps) {
       // 避免对 ActiveSelection 本身二次 clone 触发 t2 is not iterable
       _clipboard = (a as any).getObjects()
     } else {
-      ;(a as any).clone((c: any) => { _clipboard = c })
+      ;(a as any).clone((c: any) => {
+        _clipboard = c
+      })
     }
   }
 

@@ -27,9 +27,7 @@ export function setPerfEnabled(enabled: boolean): void {
 
 /** 是否处于可用状态（开关开启 + 环境支持 performance.mark） */
 export function isPerfEnabled(): boolean {
-  return _enabled
-    && typeof performance !== 'undefined'
-    && typeof performance.mark === 'function'
+  return _enabled && typeof performance !== 'undefined' && typeof performance.mark === 'function'
 }
 
 // ── 1. User Timing API 基础封装 ──
@@ -112,9 +110,10 @@ export function startLongTaskMonitor(opts: LongTaskMonitorOptions = {}): () => v
   if (!isPerfEnabled()) return () => {}
   const { threshold = 100, onLongTask } = opts
 
-  const supported = typeof PerformanceObserver !== 'undefined'
-    && PerformanceObserver.supportedEntryTypes
-    && PerformanceObserver.supportedEntryTypes.includes('longtask')
+  const supported =
+    typeof PerformanceObserver !== 'undefined' &&
+    PerformanceObserver.supportedEntryTypes &&
+    PerformanceObserver.supportedEntryTypes.includes('longtask')
   if (!supported) return () => {}
 
   const observer = new PerformanceObserver((list) => {
@@ -179,7 +178,9 @@ export interface MemorySample {
 /** 采样当前 JS 堆内存（仅 Chromium 支持，其余返回 null） */
 export function sampleMemory(): MemorySample | null {
   if (!isPerfEnabled()) return null
-  const mem = (performance as unknown as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory
+  const mem = (
+    performance as unknown as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number } }
+  ).memory
   if (!mem) return null
   return {
     usedJSHeapSize: mem.usedJSHeapSize,
@@ -211,5 +212,8 @@ export function initPerfMonitor(opts: PerfMonitorOptions = {}): () => void {
     interval: opts.fpsInterval,
     onFps: opts.onFps,
   })
-  return () => { stopLongTask(); stopFps() }
+  return () => {
+    stopLongTask()
+    stopFps()
+  }
 }

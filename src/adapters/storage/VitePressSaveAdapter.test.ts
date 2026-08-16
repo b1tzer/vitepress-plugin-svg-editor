@@ -10,55 +10,70 @@ describe('VitePressSaveAdapter', () => {
   })
 
   it('save 成功时应返回 success: true', async () => {
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ ok: true, file: '/diagrams/test.svg' }),
-      })
-    ))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ ok: true, file: '/diagrams/test.svg' }),
+        })
+      )
+    )
     const result = await adapter.save('<svg></svg>', '/diagrams/test.svg')
     expect(result.success).toBe(true)
     expect(result.path).toBe('/diagrams/test.svg')
   })
 
   it('save 失败时应返回 success: false + error', async () => {
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({
-        ok: false,
-        status: 403,
-        text: () => Promise.resolve('Forbidden'),
-      })
-    ))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 403,
+          text: () => Promise.resolve('Forbidden'),
+        })
+      )
+    )
     const result = await adapter.save('<svg></svg>', '/diagrams/test.svg')
     expect(result.success).toBe(false)
     expect(result.error).toBe('Forbidden')
   })
 
   it('save 网络异常时应捕获 error', async () => {
-    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('Network error'))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('Network error')))
+    )
     const result = await adapter.save('<svg></svg>', '/diagrams/test.svg')
     expect(result.success).toBe(false)
     expect(result.error).toBe('Network error')
   })
 
   it('load 成功时应返回 SVG 文本', async () => {
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve('<svg>loaded</svg>'),
-      })
-    ))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve('<svg>loaded</svg>'),
+        })
+      )
+    )
     const result = await adapter.load('/diagrams/test.svg')
     expect(result).toBe('<svg>loaded</svg>')
   })
 
   it('load 失败时应抛出错误', async () => {
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({
-        ok: false,
-        status: 404,
-      })
-    ))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          status: 404,
+        })
+      )
+    )
     await expect(adapter.load('/diagrams/missing.svg')).rejects.toThrow('HTTP 404')
   })
 

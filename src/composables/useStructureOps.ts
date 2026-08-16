@@ -27,7 +27,9 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
   const { canvasMgr, selection, withSave } = deps
 
   function align(type: string) {
-    withSave((fc: any) => (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc))
+    withSave((fc: any) =>
+      (AlignPlugin as any)[`align${type.charAt(0).toUpperCase() + type.slice(1)}`](fc)
+    )
   }
 
   function groupSelected() {
@@ -61,17 +63,36 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
     selection.updateSelectionInfo()
   }
 
-  function layerForward() { withSave((fc: any) => LayerPlugin.forward(fc)) }
-  function layerBackward() { withSave((fc: any) => LayerPlugin.backward(fc)) }
-  function layerToFront() { withSave((fc: any) => LayerPlugin.toFront(fc)) }
-  function layerToBack() { withSave((fc: any) => LayerPlugin.toBack(fc)) }
+  function layerForward() {
+    withSave((fc: any) => LayerPlugin.forward(fc))
+  }
+  function layerBackward() {
+    withSave((fc: any) => LayerPlugin.backward(fc))
+  }
+  function layerToFront() {
+    withSave((fc: any) => LayerPlugin.toFront(fc))
+  }
+  function layerToBack() {
+    withSave((fc: any) => LayerPlugin.toBack(fc))
+  }
 
   function distribute(dir: string) {
-    withSave((fc: any) => dir === 'horizontal' ? DistributePlugin.distributeHorizontal(fc) : DistributePlugin.distributeVertical(fc))
+    withSave((fc: any) =>
+      dir === 'horizontal'
+        ? DistributePlugin.distributeHorizontal(fc)
+        : DistributePlugin.distributeVertical(fc)
+    )
   }
 
   return {
-    align, groupSelected, ungroupSelected, selectAll,
-    layerForward, layerBackward, layerToFront, layerToBack, distribute,
+    align,
+    groupSelected,
+    ungroupSelected,
+    selectAll,
+    layerForward,
+    layerBackward,
+    layerToFront,
+    layerToBack,
+    distribute,
   }
 }

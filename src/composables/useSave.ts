@@ -33,7 +33,9 @@ export function useSave(deps: UseSaveDeps): {
   function showError(msg: string): void {
     errorMessage.value = msg
     if (_errorTimer) clearTimeout(_errorTimer)
-    _errorTimer = setTimeout(() => { errorMessage.value = '' }, 4000)
+    _errorTimer = setTimeout(() => {
+      errorMessage.value = ''
+    }, 4000)
   }
 
   async function save(): Promise<void> {
@@ -41,7 +43,9 @@ export function useSave(deps: UseSaveDeps): {
     if (!fc) return
     saving.value = true
     try {
-      const svgText = timed('export:toSVG', () => deps.serializer.serialize(fc, { originalViewBox: deps.getOriginalViewBox() }))
+      const svgText = timed('export:toSVG', () =>
+        deps.serializer.serialize(fc, { originalViewBox: deps.getOriginalViewBox() })
+      )
       const result = await deps.storageAdapter.save(svgText, deps.src)
       if (result.success) {
         deps.onSaved()

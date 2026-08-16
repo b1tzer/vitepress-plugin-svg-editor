@@ -2,11 +2,27 @@ name: Test
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, dev]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, dev]
 
 jobs:
+  # ═══════════════════ 类型检查 + 代码规范（lint）═══════════════════
+  # vue-tsc 覆盖 .vue SFC 类型检查（tsc --noEmit 无法检查 .vue），
+  # ESLint 在 error 层面拦截代码质量问题（warning 不阻塞，渐进清零）。
+  typecheck-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm typecheck
+      - run: pnpm lint
+
   # ═══════════════════ 单元测试 + 组件测试 + 集成测试 ═══════════════════
   unit-and-component:
     runs-on: ubuntu-latest

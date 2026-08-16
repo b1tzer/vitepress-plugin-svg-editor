@@ -93,7 +93,7 @@ export interface KeyboardSpecialHandlers {
  */
 export function createKeyboardHandlers(
   actions: KeyboardActions,
-  special: KeyboardSpecialHandlers,
+  special: KeyboardSpecialHandlers
 ): { onKeyDown: (e: KeyboardEvent) => void; onKeyUp: (e: KeyboardEvent) => void } {
   const onKeyDown = (e: KeyboardEvent): void => {
     // 空格平移：命中即返回，不再走后续分支
@@ -133,4 +133,3 @@ export function createKeyboardHandlers(
 
   return { onKeyDown, onKeyUp }
 }
-

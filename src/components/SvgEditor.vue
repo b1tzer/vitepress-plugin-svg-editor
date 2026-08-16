@@ -42,9 +42,14 @@ import { exposeTestHooks, clearTestHooks } from '../core/shared/testHooks'
 import { mark, measure, timedAsync, initPerfMonitor } from '../utils/perf'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
-const storageAdapter: IStorageAdapter = (typeof __SVG_EDITOR_STORAGE__ !== 'undefined' && __SVG_EDITOR_STORAGE__ === 'localStorage')
-  ? new LocalStorageAdapter()
-  : new VitePressSaveAdapter(typeof __SVG_EDITOR_SAVE_ENDPOINT__ === 'string' ? __SVG_EDITOR_SAVE_ENDPOINT__ : '/__svg-save__')
+const storageAdapter: IStorageAdapter =
+  typeof __SVG_EDITOR_STORAGE__ !== 'undefined' && __SVG_EDITOR_STORAGE__ === 'localStorage'
+    ? new LocalStorageAdapter()
+    : new VitePressSaveAdapter(
+        typeof __SVG_EDITOR_SAVE_ENDPOINT__ === 'string'
+          ? __SVG_EDITOR_SAVE_ENDPOINT__
+          : '/__svg-save__'
+      )
 // ── 序列化器（统一后处理链，复用 SvgSerializer 而非手写）──
 const serializer = new SvgSerializer()
 // ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验）──
@@ -69,8 +74,12 @@ const spacePressed = ref(false)
 const isPanning = ref(false)
 const panelCollapsed = ref(false)
 const leftPanelCollapsed = ref(false)
-function togglePanel() { panelCollapsed.value = !panelCollapsed.value }
-function toggleLeftPanel() { leftPanelCollapsed.value = !leftPanelCollapsed.value }
+function togglePanel() {
+  panelCollapsed.value = !panelCollapsed.value
+}
+function toggleLeftPanel() {
+  leftPanelCollapsed.value = !leftPanelCollapsed.value
+}
 
 // 核心管理器
 const canvasMgr = new CanvasManager()
@@ -85,28 +94,68 @@ const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = 
 // ── 选择状态同步 ──
 const selection = useSelection(canvasMgr)
 const {
-  selectionInfo, currentFill, currentStroke, currentFontSize, currentFontWeight, currentFontStyle,
-  currentUnderline, currentTextAlign, currentTextFill, currentStrokeWidth, currentStrokeDash,
-  currentRotation, currentOpacity, gradientType, gradientAngle, gradientColor1, gradientColor2,
-  shadowEnabled, shadowColor, shadowBlur, shadowOffsetX, shadowOffsetY, hasTextInSelection,
+  selectionInfo,
+  currentFill,
+  currentStroke,
+  currentFontSize,
+  currentFontWeight,
+  currentFontStyle,
+  currentUnderline,
+  currentTextAlign,
+  currentTextFill,
+  currentStrokeWidth,
+  currentStrokeDash,
+  currentRotation,
+  currentOpacity,
+  gradientType,
+  gradientAngle,
+  gradientColor1,
+  gradientColor2,
+  shadowEnabled,
+  shadowColor,
+  shadowBlur,
+  shadowOffsetX,
+  shadowOffsetY,
+  hasTextInSelection,
   updateSelectionInfo,
 } = selection
 
 // ── 画布尺寸管理 ──
-const { svgWidth, svgHeight, originalViewBox, handleResize, onResizePreview, onResizeCommit } = useCanvasSize(canvasMgr)
+const { svgWidth, svgHeight, originalViewBox, handleResize, onResizePreview, onResizeCommit } =
+  useCanvasSize(canvasMgr)
 
 // ── 变更事务（withSave 独立，供 useToolbar / useClipboard / addElement 注入）──
 const { withSave } = useMutation({ canvasMgr, historyMgr, refreshLayerList })
 
 // ── 工具栏操作（聚合层：组合 history/style/text/structure 四个子 ops）──
 const {
-  undo, redo, deleteObj, align,
-  applyFill, applyStroke, applyTextFill,
-  applyStrokeWidth, toggleStrokeDash,
-  applyFontSize, toggleBold, toggleItalic, toggleUnderline, applyTextAlign,
-  applyRotation, groupSelected, ungroupSelected, selectAll, applyOpacity,
-  applyGradientUI, toggleShadowUI, applyShadowUI,
-  layerForward, layerBackward, layerToFront, layerToBack, distribute,
+  undo,
+  redo,
+  deleteObj,
+  align,
+  applyFill,
+  applyStroke,
+  applyTextFill,
+  applyStrokeWidth,
+  toggleStrokeDash,
+  applyFontSize,
+  toggleBold,
+  toggleItalic,
+  toggleUnderline,
+  applyTextAlign,
+  applyRotation,
+  groupSelected,
+  ungroupSelected,
+  selectAll,
+  applyOpacity,
+  applyGradientUI,
+  toggleShadowUI,
+  applyShadowUI,
+  layerForward,
+  layerBackward,
+  layerToFront,
+  layerToBack,
+  distribute,
 } = useToolbar({
   canvasMgr,
   historyMgr,
@@ -119,7 +168,9 @@ const {
 // ── 剪贴板 ──
 const { copy: copyObj, paste: pasteObj } = useClipboard({
   getCanvas: () => canvasMgr.canvas,
-  afterChange: () => { withSave(() => {}) },
+  afterChange: () => {
+    withSave(() => {})
+  },
 })
 
 // ── 保存 ──
@@ -150,18 +201,19 @@ function addElement(type: string) {
 }
 
 // ── 编辑器状态桥接（含 EventBus 监听清理）──
-const { zoomLevel, viewportVersion, canUndo, canRedo } = useEditorState(
-  canvasMgr,
-  historyMgr,
-  {
-    onSelectionChange: updateSelectionInfo,
-    onModified: (command) => {
-      if (command) historyMgr.record(command)
-      else historyMgr.save(canvasMgr.canvas!, () => {}, () => {})
-      refreshLayerList()
-    },
+const { zoomLevel, viewportVersion, canUndo, canRedo } = useEditorState(canvasMgr, historyMgr, {
+  onSelectionChange: updateSelectionInfo,
+  onModified: (command) => {
+    if (command) historyMgr.record(command)
+    else
+      historyMgr.save(
+        canvasMgr.canvas!,
+        () => {},
+        () => {}
+      )
+    refreshLayerList()
   },
-)
+})
 
 // ── 键盘监听（集中注册/清理）──
 const keyboard = useKeyboard()
@@ -175,7 +227,7 @@ async function loadAndInit() {
   const url = props.src.startsWith('/') ? base + props.src.slice(1) : props.src
 
   // 拉取 + 清洗 + 预处理（下沉到 SvgLoader.loadFromUrl，issue #19 P1）
-  let loaded: Awaited<ReturnType<typeof svgLoader.loadFromUrl>> | null = null
+  let loaded: Awaited<ReturnType<typeof svgLoader.loadFromUrl>>
   try {
     loaded = await timedAsync('svg:preprocess', () => svgLoader.loadFromUrl(url, themeMode.value))
   } catch (e) {
@@ -184,14 +236,16 @@ async function loadAndInit() {
     showError('加载 SVG 失败，请检查文件是否存在')
     return
   }
-  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = loaded!
+  const { svg, originalViewBox: vb, svgWidth: sw, svgHeight: sh } = loaded
   if (vb) originalViewBox.value = vb
-  if (sw > 0) svgWidth.value = sw; else svgWidth.value = DEFAULT_SVG_WIDTH
-  if (sh > 0) svgHeight.value = sh; else svgHeight.value = DEFAULT_SVG_HEIGHT
+  if (sw > 0) svgWidth.value = sw
+  else svgWidth.value = DEFAULT_SVG_WIDTH
+  if (sh > 0) svgHeight.value = sh
+  else svgHeight.value = DEFAULT_SVG_HEIGHT
   const area = canvasRef.value?.canvasAreaRef
   if (!area) return
-  await new Promise(r => requestAnimationFrame(r))
-  await new Promise(r => requestAnimationFrame(r))
+  await new Promise((r) => requestAnimationFrame(r))
+  await new Promise((r) => requestAnimationFrame(r))
   const w = svgWidth.value || DEFAULT_SVG_WIDTH
   const h = svgHeight.value || DEFAULT_SVG_HEIGHT
   const canvasEl = area.querySelector('canvas')
@@ -206,9 +260,16 @@ async function loadAndInit() {
   mountSvgObjects(fc, svg, { transform: mergeArrows })
     .then(() => {
       canvasMgr.zoomFit()
-      historyMgr.save(fc, () => {}, () => {}); refreshLayerList()
+      historyMgr.save(
+        fc,
+        () => {},
+        () => {}
+      )
+      refreshLayerList()
     })
-    .catch((e) => { console.error('[SvgEditor] SVG 加载失败:', e) })
+    .catch((e) => {
+      console.error('[SvgEditor] SVG 加载失败:', e)
+    })
     .finally(() => {
       mark('svg:load:end')
       measure('svg:load', 'svg:load:start', 'svg:load:end')
@@ -217,20 +278,41 @@ async function loadAndInit() {
 
   keyboard.register(
     {
-      undo, redo,
-      copy: copyObj, paste: pasteObj,
-      save, selectAll,
-      bold: toggleBold, italic: toggleItalic, underline: toggleUnderline,
-      zoomIn: () => canvasMgr.zoomIn(), zoomOut: () => canvasMgr.zoomOut(), zoomFit: () => canvasMgr.zoomFit(),
-      group: groupSelected, ungroup: ungroupSelected,
+      undo,
+      redo,
+      copy: copyObj,
+      paste: pasteObj,
+      save,
+      selectAll,
+      bold: toggleBold,
+      italic: toggleItalic,
+      underline: toggleUnderline,
+      zoomIn: () => canvasMgr.zoomIn(),
+      zoomOut: () => canvasMgr.zoomOut(),
+      zoomFit: () => canvasMgr.zoomFit(),
+      group: groupSelected,
+      ungroup: ungroupSelected,
     },
     {
-      onSpaceDown: () => { spacePressed.value = true; canvasMgr.setSpacePressed(true); fc.setCursor('grab') },
-      onSpaceUp: () => { spacePressed.value = false; canvasMgr.setSpacePressed(false) },
-      onEscape: () => { spacePressed.value = false; canvasMgr.setSpacePressed(false); emit('close') },
+      onSpaceDown: () => {
+        spacePressed.value = true
+        canvasMgr.setSpacePressed(true)
+        fc.setCursor('grab')
+      },
+      onSpaceUp: () => {
+        spacePressed.value = false
+        canvasMgr.setSpacePressed(false)
+      },
+      onEscape: () => {
+        spacePressed.value = false
+        canvasMgr.setSpacePressed(false)
+        emit('close')
+      },
       onDelete: deleteObj,
-      isEditableFocused: () => document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA',
-    },
+      isEditableFocused: () =>
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA',
+    }
   )
 }
 
@@ -239,11 +321,15 @@ let _stopPerfMonitor: (() => void) | null = null
 
 onMounted(() => {
   loadAndInit()
-  nextTick(() => { overlayRef.value?.focus() })
+  nextTick(() => {
+    overlayRef.value?.focus()
+  })
   // dev-only：启动 FPS + longtask 监测，生产构建不写入
   if (import.meta.env.DEV) {
     _stopPerfMonitor = initPerfMonitor({
-      onFps: (fps) => { window.__perfFps = fps },
+      onFps: (fps) => {
+        window.__perfFps = fps
+      },
     })
   }
 })
@@ -257,7 +343,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="editor-overlay" @click.self="emit('close')" @keydown.escape="emit('close')" tabindex="-1" ref="overlayRef">
+  <div
+    class="editor-overlay"
+    @click.self="emit('close')"
+    @keydown.escape="emit('close')"
+    tabindex="-1"
+    ref="overlayRef"
+  >
     <div class="editor-app" :class="themeMode === 'light' ? 'theme-light' : 'theme-dark'">
       <!-- 错误提示 toast -->
       <Transition name="toast-fade">
@@ -303,15 +395,27 @@ onUnmounted(() => {
         />
 
         <!-- 中：画布 + 标尺 -->
-        <EditorCanvas ref="canvasRef" :loading="loading" :zoomLevel="zoomLevel"
-          :canvasWidth="svgWidth" :canvasHeight="svgHeight"
-          :themeMode="themeMode" :viewportVersion="viewportVersion"
+        <EditorCanvas
+          ref="canvasRef"
+          :loading="loading"
+          :zoomLevel="zoomLevel"
+          :canvasWidth="svgWidth"
+          :canvasHeight="svgHeight"
+          :themeMode="themeMode"
+          :viewportVersion="viewportVersion"
           :fabricCanvas="fabricCanvasRef"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
-          @canvasAreaMouseEvent="(cx: number, cy: number, type: string) => canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')"
+          @canvasAreaMouseEvent="
+            (cx: number, cy: number, type: string) =>
+              canvasMgr.injectMouseEvent(cx, cy, type as 'mousedown' | 'mousemove' | 'mouseup')
+          "
           @resizePreview="onResizePreview"
           @resizeCommit="onResizeCommit"
-          @middlePan="(type: string, cx: number, cy: number) => canvasMgr.injectMiddlePan(type as 'mousedown' | 'mousemove' | 'mouseup', cx, cy)" />
+          @middlePan="
+            (type: string, cx: number, cy: number) =>
+              canvasMgr.injectMiddlePan(type as 'mousedown' | 'mousemove' | 'mouseup', cx, cy)
+          "
+        />
 
         <!-- 右：属性面板 -->
         <EditorContextPanel
@@ -362,16 +466,16 @@ onUnmounted(() => {
           @rotation="applyRotation"
           @opacity="applyOpacity"
           @gradientChange="applyGradientUI"
-          @update:gradientType="gradientType=$event"
-          @update:gradientAngle="gradientAngle=$event"
-          @update:gradientColor1="gradientColor1=$event"
-          @update:gradientColor2="gradientColor2=$event"
+          @update:gradientType="gradientType = $event"
+          @update:gradientAngle="gradientAngle = $event"
+          @update:gradientColor1="gradientColor1 = $event"
+          @update:gradientColor2="gradientColor2 = $event"
           @toggleShadow="toggleShadowUI"
           @applyShadow="applyShadowUI"
-          @update:shadowColor="shadowColor=$event"
-          @update:shadowBlur="shadowBlur=$event"
-          @update:shadowOffsetX="shadowOffsetX=$event"
-          @update:shadowOffsetY="shadowOffsetY=$event"
+          @update:shadowColor="shadowColor = $event"
+          @update:shadowBlur="shadowBlur = $event"
+          @update:shadowOffsetX="shadowOffsetX = $event"
+          @update:shadowOffsetY="shadowOffsetY = $event"
         />
       </div>
     </div>
@@ -381,22 +485,39 @@ onUnmounted(() => {
 <style scoped>
 /* ── 全屏遮罩 ── */
 .editor-overlay {
-  position: fixed; inset: 0; z-index: 9999;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   background: rgba(15, 15, 15, 0.75);
   backdrop-filter: blur(12px) saturate(1.2);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: overlayIn 0.15s ease;
 }
-@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* ── 编辑器应用容器（铺满视口） ── */
 .editor-app {
-  width: 100vw; height: 100vh;
-  display: flex; flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
-.editor-app.theme-dark  { background: #191919; }
-.editor-app.theme-light { background: #f0f1f3; }
+.editor-app.theme-dark {
+  background: #191919;
+}
+.editor-app.theme-light {
+  background: #f0f1f3;
+}
 
 /* ── 主体：三栏弹性布局 ── */
 .editor-body {
@@ -425,7 +546,9 @@ onUnmounted(() => {
 }
 .toast-fade-enter-active,
 .toast-fade-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .toast-fade-enter-from,
 .toast-fade-leave-to {

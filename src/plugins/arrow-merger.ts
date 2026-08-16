@@ -19,20 +19,22 @@ export function mergeArrows(objects: any[]) {
         const lineCenterY = (obj.top || 0) + (obj.height || 0) / 2
         const useAbsX2 = Math.abs(obj.x2 || 0) > Math.max((obj.width || 0) / 2 + 5, 15)
         const useAbsY2 = Math.abs(obj.y2 || 0) > Math.max((obj.height || 0) / 2 + 5, 15)
-        const absX2 = useAbsX2 ? (obj.x2 || 0) : lineCenterX + (obj.x2 || 0)
-        const absY2 = useAbsY2 ? (obj.y2 || 0) : lineCenterY + (obj.y2 || 0)
+        const absX2 = useAbsX2 ? obj.x2 || 0 : lineCenterX + (obj.x2 || 0)
+        const absY2 = useAbsY2 ? obj.y2 || 0 : lineCenterY + (obj.y2 || 0)
         const polyW = (next.width || 0) * (next.scaleX || 1)
         const polyH = (next.height || 0) * (next.scaleY || 1)
         const polyCenterX = (next.left || 0) + polyW / 2
         const polyCenterY = (next.top || 0) + polyH / 2
         const dist = Math.sqrt((absX2 - polyCenterX) ** 2 + (absY2 - polyCenterY) ** 2)
         if (dist < 30) {
-          result.push(new fabric.Group([obj, next], {
-            selectable: true,
-            evented: true,
-            perPixelTargetFind: false,
-            subTargetCheck: true,
-          }))
+          result.push(
+            new fabric.Group([obj, next], {
+              selectable: true,
+              evented: true,
+              perPixelTargetFind: false,
+              subTargetCheck: true,
+            })
+          )
           used.add(i)
           used.add(i + 1)
           continue

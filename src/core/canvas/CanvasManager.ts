@@ -31,14 +31,20 @@ export class CanvasManager {
   }
 
   /** 初始化：canvas 尺寸 = viewport 容器，同步创建 workspace Rect + clipPath */
-  init(canvasEl: HTMLCanvasElement, logicalW: number, logicalH: number, themeMode?: 'light' | 'dark'): Canvas {
+  init(
+    canvasEl: HTMLCanvasElement,
+    logicalW: number,
+    logicalH: number,
+    themeMode?: 'light' | 'dark'
+  ): Canvas {
     if (themeMode) this._themeMode = themeMode
     const parent = canvasEl.parentElement
     const vpW = parent?.clientWidth || window.innerWidth - 320 || 800
     const vpH = parent?.clientHeight || window.innerHeight - 100 || 600
 
     const fc = new fabric.Canvas(canvasEl as any, {
-      width: vpW, height: vpH,
+      width: vpW,
+      height: vpH,
       backgroundColor: 'transparent',
       selection: true,
       preserveObjectStacking: true,
@@ -69,8 +75,13 @@ export class CanvasManager {
       cp.set({ width: w, height: h })
     } else {
       fc.clipPath = new fabric.Rect({
-        left: 0, top: 0, width: w, height: h,
-        selectable: false, evented: false, excludeFromExport: true,
+        left: 0,
+        top: 0,
+        width: w,
+        height: h,
+        selectable: false,
+        evented: false,
+        excludeFromExport: true,
       })
     }
     fc.requestRenderAll()
@@ -111,12 +122,16 @@ export class CanvasManager {
     // 视觉居中由 viewportTransform（zoomFit / zoom / pan）负责 — vue-fabric-editor 做法
     const ws = new fabric.Rect({
       id: 'workspace',
-      left: 0, top: 0,
-      width: w, height: h,
+      left: 0,
+      top: 0,
+      width: w,
+      height: h,
       fill: isLight ? '#ffffff' : '#1e1e1e',
       stroke: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)',
       strokeWidth: 1,
-      selectable: false, evented: false, excludeFromExport: true,
+      selectable: false,
+      evented: false,
+      excludeFromExport: true,
     })
     fc.add(ws)
     fc.sendObjectToBack(ws)
@@ -124,8 +139,13 @@ export class CanvasManager {
     // canvas.clipPath 同样位于 (0,0)，与 workspace 完全重合
     // Fabric 官方文档：canvas.clipPath 受 zoom/pan 影响，从左上角定位
     fc.clipPath = new fabric.Rect({
-      left: 0, top: 0, width: w, height: h,
-      selectable: false, evented: false, excludeFromExport: true,
+      left: 0,
+      top: 0,
+      width: w,
+      height: h,
+      selectable: false,
+      evented: false,
+      excludeFromExport: true,
     })
     fc.requestRenderAll()
   }
@@ -151,7 +171,8 @@ export class CanvasManager {
 
   _setupCanvasEvents(fc: Canvas): void {
     fc.on('mouse:wheel', (opt: TPointerEventInfo<WheelEvent>) => {
-      opt.e.preventDefault(); opt.e.stopPropagation()
+      opt.e.preventDefault()
+      opt.e.stopPropagation()
       // 以鼠标指针位置为缩放锚点（对齐浏览器/地图/Figma 的滚轮缩放直觉）
       // 注意：不能用 fc.getPointer（返回逻辑坐标），需手动换算为相对 canvas 左上角的物理坐标
       const el = fc.upperCanvasEl || fc.lowerCanvasEl
@@ -161,32 +182,75 @@ export class CanvasManager {
         y: opt.e.clientY - rect.top,
       })
     })
-    fc.on('mouse:down', (opt: TPointerEventInfo<MouseEvent>) => { this._zoomPan.handlePanMouseDown(opt.e, fc) })
-    fc.on('mouse:move', (opt: TPointerEventInfo<MouseEvent>) => { this._zoomPan.handlePanMouseMove(opt.e, fc) })
-    fc.on('mouse:up', () => { this._zoomPan.handlePanMouseUp(fc) })
+    fc.on('mouse:down', (opt: TPointerEventInfo<MouseEvent>) => {
+      this._zoomPan.handlePanMouseDown(opt.e, fc)
+    })
+    fc.on('mouse:move', (opt: TPointerEventInfo<MouseEvent>) => {
+      this._zoomPan.handlePanMouseMove(opt.e, fc)
+    })
+    fc.on('mouse:up', () => {
+      this._zoomPan.handlePanMouseUp(fc)
+    })
   }
 
   // ── 委托 ──
-  setLogicalSize(w: number, h: number): void { this.updateWorkspaceSize(w, h) }
-  zoomIn(): void { this._zoomPan.zoomIn() }
-  zoomOut(): void { this._zoomPan.zoomOut() }
-  zoomFit(): void { this._zoomPan.zoomFit() }
-  getZoomLevel(): number { return this._zoomPan.getZoomLevel() }
-  setSpacePressed(pressed: boolean): void { this._zoomPan.setSpacePressed(pressed) }
-  onZoomChange(fn: (z: number) => void): void { this._eventBus.on('zoomChange', fn) }
-  onViewportChange(fn: () => void): void { this._eventBus.on('viewportChange', fn) }
-  onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
-  onModified(fn: (command?: ICommand) => void): void { this._eventBus.on('modified', fn) }
-  offZoomChange(fn: (z: number) => void): void { this._eventBus.off('zoomChange', fn) }
-  offViewportChange(fn: () => void): void { this._eventBus.off('viewportChange', fn) }
-  offSelectionChange(fn: () => void): void { this._eventBus.off('selectionChange', fn) }
-  offModified(fn: (command?: ICommand) => void): void { this._eventBus.off('modified', fn) }
-  getEventBus(): EventBus { return this._eventBus }
-  getZoomPanController(): ZoomPanController { return this._zoomPan }
-  getInteractionManager(): InteractionManager { return this._interaction }
+  setLogicalSize(w: number, h: number): void {
+    this.updateWorkspaceSize(w, h)
+  }
+  zoomIn(): void {
+    this._zoomPan.zoomIn()
+  }
+  zoomOut(): void {
+    this._zoomPan.zoomOut()
+  }
+  zoomFit(): void {
+    this._zoomPan.zoomFit()
+  }
+  getZoomLevel(): number {
+    return this._zoomPan.getZoomLevel()
+  }
+  setSpacePressed(pressed: boolean): void {
+    this._zoomPan.setSpacePressed(pressed)
+  }
+  onZoomChange(fn: (z: number) => void): void {
+    this._eventBus.on('zoomChange', fn)
+  }
+  onViewportChange(fn: () => void): void {
+    this._eventBus.on('viewportChange', fn)
+  }
+  onSelectionChange(fn: () => void): void {
+    this._eventBus.on('selectionChange', fn)
+  }
+  onModified(fn: (command?: ICommand) => void): void {
+    this._eventBus.on('modified', fn)
+  }
+  offZoomChange(fn: (z: number) => void): void {
+    this._eventBus.off('zoomChange', fn)
+  }
+  offViewportChange(fn: () => void): void {
+    this._eventBus.off('viewportChange', fn)
+  }
+  offSelectionChange(fn: () => void): void {
+    this._eventBus.off('selectionChange', fn)
+  }
+  offModified(fn: (command?: ICommand) => void): void {
+    this._eventBus.off('modified', fn)
+  }
+  getEventBus(): EventBus {
+    return this._eventBus
+  }
+  getZoomPanController(): ZoomPanController {
+    return this._zoomPan
+  }
+  getInteractionManager(): InteractionManager {
+    return this._interaction
+  }
 
   dispose(): void {
-    if (this.canvas) { this.canvas.dispose(); this.canvas = null }
+    if (this.canvas) {
+      this.canvas.dispose()
+      this.canvas = null
+    }
     this._zoomPan.unbindCanvas()
     this._workspaceRect = null
     this._eventBus.clear()
@@ -197,7 +261,11 @@ export class CanvasManager {
     this._zoomPan.handleWheel(deltaY)
   }
 
-  injectMouseEvent(clientX: number, clientY: number, type: 'mousedown' | 'mousemove' | 'mouseup'): void {
+  injectMouseEvent(
+    clientX: number,
+    clientY: number,
+    type: 'mousedown' | 'mousemove' | 'mouseup'
+  ): void {
     if (!this.canvas) return
     const el = (this.canvas as any).upperCanvasEl || (this.canvas as any).lowerCanvasEl
     if (!el) return
@@ -210,7 +278,11 @@ export class CanvasManager {
    * Fabric 对中键（button===1）的 mouse:down 不触发，因此中键平移需由 DOM 层
    * 捕获原生 mousedown/mousemove/mouseup 后，通过此方法转发给 ZoomPanController。
    */
-  injectMiddlePan(type: 'mousedown' | 'mousemove' | 'mouseup', clientX: number, clientY: number): void {
+  injectMiddlePan(
+    type: 'mousedown' | 'mousemove' | 'mouseup',
+    clientX: number,
+    clientY: number
+  ): void {
     const fc = this.canvas
     if (!fc) return
     const e = { clientX, clientY, button: 1 } as MouseEvent

@@ -143,7 +143,9 @@ function parseMarkers(svg: string): Record<string, MarkerInfo> {
       if (poly) {
         fill = poly.getAttribute('fill') || '#000'
         const xs = (poly.getAttribute('points') || '')
-          .split(/[\s,]+/).filter((_, i) => i % 2 === 0).map(Number)
+          .split(/[\s,]+/)
+          .filter((_, i) => i % 2 === 0)
+          .map(Number)
         if (xs.length) tipX = Math.max(...xs)
       } else if (path) {
         fill = path.getAttribute('fill') || '#000'
@@ -159,21 +161,40 @@ function parseMarkers(svg: string): Record<string, MarkerInfo> {
 
   // ── 回退正则（无 DOMParser 环境）──
   // polygon 形式
-  const polyRe = /<marker\s+id="([^"]+)"[^>]*markerWidth="([^"]+)"[^>]*markerHeight="([^"]+)"[^>]*refX="([^"]+)"[^>]*refY="([^"]+)"[^>]*>\s*<polygon\s+[^>]*points="([^"]+)"[^>]*fill="([^"]+)"[^>]*\/>\s*<\/marker>/g
+  const polyRe =
+    /<marker\s+id="([^"]+)"[^>]*markerWidth="([^"]+)"[^>]*markerHeight="([^"]+)"[^>]*refX="([^"]+)"[^>]*refY="([^"]+)"[^>]*>\s*<polygon\s+[^>]*points="([^"]+)"[^>]*fill="([^"]+)"[^>]*\/>\s*<\/marker>/g
   let m
   while ((m = polyRe.exec(svg)) !== null) {
     const [, id, mw, mh, refX, , pts, fill] = m
-    const tipX = Math.max(...pts.split(/[\s,]+/).filter((_, i) => i % 2 === 0).map(Number))
-    markers[id] = { fill, refX: parseFloat(refX), tipOffset: tipX - parseFloat(refX), markerW: parseFloat(mw), markerH: parseFloat(mh) }
+    const tipX = Math.max(
+      ...pts
+        .split(/[\s,]+/)
+        .filter((_, i) => i % 2 === 0)
+        .map(Number)
+    )
+    markers[id] = {
+      fill,
+      refX: parseFloat(refX),
+      tipOffset: tipX - parseFloat(refX),
+      markerW: parseFloat(mw),
+      markerH: parseFloat(mh),
+    }
   }
 
   // path 形式
-  const pathRe = /<marker\s+id="([^"]+)"[^>]*markerWidth="([^"]+)"[^>]*markerHeight="([^"]+)"[^>]*refX="([^"]+)"[^>]*refY="([^"]+)"[^>]*>\s*<path\s+[^>]*d="([^"]+)"[^>]*fill="([^"]+)"[^>]*\/>\s*<\/marker>/g
+  const pathRe =
+    /<marker\s+id="([^"]+)"[^>]*markerWidth="([^"]+)"[^>]*markerHeight="([^"]+)"[^>]*refX="([^"]+)"[^>]*refY="([^"]+)"[^>]*>\s*<path\s+[^>]*d="([^"]+)"[^>]*fill="([^"]+)"[^>]*\/>\s*<\/marker>/g
   while ((m = pathRe.exec(svg)) !== null) {
     const [, id, mw, mh, refX, , d, fill] = m
     const nums = d.match(/[\d.]+/g)?.map(Number) || []
     const tipX = Math.max(...nums.filter((_, i) => i % 2 === 0))
-    markers[id] = { fill, refX: parseFloat(refX), tipOffset: tipX - parseFloat(refX), markerW: parseFloat(mw), markerH: parseFloat(mh) }
+    markers[id] = {
+      fill,
+      refX: parseFloat(refX),
+      tipOffset: tipX - parseFloat(refX),
+      markerW: parseFloat(mw),
+      markerH: parseFloat(mh),
+    }
   }
 
   return markers
@@ -224,7 +245,14 @@ function parseClassMarkers(svg: string): Record<string, string> {
  *   base中心 = 线终点 - refX（沿箭头反方向回退，marker 的 base 到 ref 距离）
  *   base两点 = base中心 ± (halfH * sin(angle), -halfH * cos(angle))（垂直方向展开）
  */
-function computeArrowPoints(x2: number, y2: number, angle: number, marker: MarkerInfo, prevX: number, prevY: number): string {
+function computeArrowPoints(
+  x2: number,
+  y2: number,
+  angle: number,
+  marker: MarkerInfo,
+  prevX: number,
+  prevY: number
+): string {
   const refX = marker.refX || 0
   const tipOffset = marker.tipOffset || 0
   const halfH = (marker.markerH || 8) / 2
@@ -245,36 +273,40 @@ function computeArrowPoints(x2: number, y2: number, angle: number, marker: Marke
 /**
  * 为 <line> 注入箭头三角形
  */
-function injectLineArrows(svg: string, markers: Record<string, MarkerInfo>, classMarkers: Record<string, string>): string {
-  return svg.replace(
-    /<line\s+([^>]*?)\s*\/>/g,
-    (full, attrs) => {
-      let markerId = ''
-      const inlineMe = attrs.match(/marker-end="url\(#([^)]+)\)"/)
-      if (inlineMe) {
-        markerId = inlineMe[1]
-      } else {
-        const classMatch = attrs.match(/class="([^"]+)"/)
-        if (classMatch) {
-          for (const cls of classMatch[1].split(/\s+/)) {
-            if (classMarkers[cls]) { markerId = classMarkers[cls]; break }
+function injectLineArrows(
+  svg: string,
+  markers: Record<string, MarkerInfo>,
+  classMarkers: Record<string, string>
+): string {
+  return svg.replace(/<line\s+([^>]*?)\s*\/>/g, (full, attrs) => {
+    let markerId = ''
+    const inlineMe = attrs.match(/marker-end="url\(#([^)]+)\)"/)
+    if (inlineMe) {
+      markerId = inlineMe[1]
+    } else {
+      const classMatch = attrs.match(/class="([^"]+)"/)
+      if (classMatch) {
+        for (const cls of classMatch[1].split(/\s+/)) {
+          if (classMarkers[cls]) {
+            markerId = classMarkers[cls]
+            break
           }
         }
       }
-      if (!markerId || !markers[markerId]) {
-        return full.replace(/\s*marker-end="[^"]*"/, '')
-      }
-
-      const x1 = parseFloat((attrs.match(/x1="([^"]+)"/) || [])[1] || '0')
-      const y1 = parseFloat((attrs.match(/y1="([^"]+)"/) || [])[1] || '0')
-      const x2 = parseFloat((attrs.match(/x2="([^"]+)"/) || [])[1] || '0')
-      const y2 = parseFloat((attrs.match(/y2="([^"]+)"/) || [])[1] || '0')
-      const angle = Math.atan2(y2 - y1, x2 - x1)
-      const points = computeArrowPoints(x2, y2, angle, markers[markerId], x1, y1)
-      const cleanAttrs = attrs.replace(/\s*marker-end="[^"]*"/, '')
-      return `<line ${cleanAttrs}/><polygon points="${points}" fill="${markers[markerId].fill}"/>`
     }
-  )
+    if (!markerId || !markers[markerId]) {
+      return full.replace(/\s*marker-end="[^"]*"/, '')
+    }
+
+    const x1 = parseFloat((attrs.match(/x1="([^"]+)"/) || [])[1] || '0')
+    const y1 = parseFloat((attrs.match(/y1="([^"]+)"/) || [])[1] || '0')
+    const x2 = parseFloat((attrs.match(/x2="([^"]+)"/) || [])[1] || '0')
+    const y2 = parseFloat((attrs.match(/y2="([^"]+)"/) || [])[1] || '0')
+    const angle = Math.atan2(y2 - y1, x2 - x1)
+    const points = computeArrowPoints(x2, y2, angle, markers[markerId], x1, y1)
+    const cleanAttrs = attrs.replace(/\s*marker-end="[^"]*"/, '')
+    return `<line ${cleanAttrs}/><polygon points="${points}" fill="${markers[markerId].fill}"/>`
+  })
 }
 
 /**
@@ -287,7 +319,11 @@ function injectPathArrows(svg: string, markers: Record<string, MarkerInfo>): str
       if (!markers[markerId]) return full.replace(/\s*marker-end="[^"]*"/, '')
       const dMatch = (before + ' ' + after).match(/d="([^"]+)"/)
       if (!dMatch) return full
-      const nums = dMatch[1].trim().split(/[\s,]+/).map(Number).filter(n => !isNaN(n))
+      const nums = dMatch[1]
+        .trim()
+        .split(/[\s,]+/)
+        .map(Number)
+        .filter((n) => !isNaN(n))
       if (nums.length < 2) return full
       const x2 = nums[nums.length - 2]
       const y2 = nums[nums.length - 1]

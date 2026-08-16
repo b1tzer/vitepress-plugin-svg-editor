@@ -9,7 +9,6 @@
  *   5. 清理 Fabric.js 冗余头部信息
  */
 
-// @ts-nocheck — String.replace 回调参数因正则动态性无法严格类型化
 import { CSS_COLORS } from '../shared/colors'
 /**
  * 主入口：清理 Fabric.js 输出的 SVG
@@ -41,20 +40,21 @@ export function cleanFabricSvg(svg: string): string {
  */
 function unwrapGroups(svg: string): string {
   return svg.replace(
-    /<g\s+transform="matrix\(1\s+0\s+0\s+1\s+([\d.\-]+)\s+([\d.\-]+)\)"[^>]*>\s*([\s\S]*?)<\/g>/g,
-    (full, txStr, tyStr, inner) => {
+    /<g\s+transform="matrix\(1\s+0\s+0\s+1\s+([\d.-]+)\s+([\d.-]+)\)"[^>]*>\s*([\s\S]*?)<\/g>/g,
+    (full: string, txStr: string, tyStr: string, inner: string) => {
       const tx = parseFloat(txStr)
       const ty = parseFloat(tyStr)
       const trimmed = inner.trim()
 
       // <text><tspan> 结构
       const textMatch = trimmed.match(
-        /^(<text[^>]*>)\s*<tspan\s+x="([\d.\-]+)"\s+y="([\d.\-]+)"[^>]*>([\s\S]*?)<\/tspan>\s*<\/text>$/
+        /^(<text[^>]*>)\s*<tspan\s+x="([\d.-]+)"\s+y="([\d.-]+)"[^>]*>([\s\S]*?)<\/tspan>\s*<\/text>$/
       )
       if (textMatch) {
         const [, origAttrs, lx, ly, content] = textMatch
-        const absX = tx + parseFloat(lx), absY = ty + parseFloat(ly)
-        let attrs = origAttrs
+        const absX = tx + parseFloat(lx),
+          absY = ty + parseFloat(ly)
+        const attrs = origAttrs
           .replace(/\s+xml:space="preserve"/g, '')
           .replace(/^<text/, `<text x="${absX.toFixed(1)}" y="${absY.toFixed(1)}"`)
           .replace(/>$/, '')
@@ -65,28 +65,32 @@ function unwrapGroups(svg: string): string {
       const rectMatch = trimmed.match(/^(<rect[^>]*?)\s+style="[^"]*"([^>]*\/>)\s*$/)
       if (rectMatch) {
         return trimmed
-          .replace(/ x="([\d.\-]+)"/, (m, v) => ` x="${(tx + parseFloat(v)).toFixed(1)}"`)
-          .replace(/ y="([\d.\-]+)"/, (m, v) => ` y="${(ty + parseFloat(v)).toFixed(1)}"`)
+          .replace(/ x="([\d.-]+)"/, (m, v) => ` x="${(tx + parseFloat(v)).toFixed(1)}"`)
+          .replace(/ y="([\d.-]+)"/, (m, v) => ` y="${(ty + parseFloat(v)).toFixed(1)}"`)
       }
 
       // <line> 结构
       const lineMatch = trimmed.match(/^(<line[^>]*?)\s+style="[^"]*"([^>]*\/>)\s*$/)
       if (lineMatch) {
         return trimmed
-          .replace(/ x1="([\d.\-]+)"/, (m, v) => ` x1="${(tx + parseFloat(v)).toFixed(1)}"`)
-          .replace(/ y1="([\d.\-]+)"/, (m, v) => ` y1="${(ty + parseFloat(v)).toFixed(1)}"`)
-          .replace(/ x2="([\d.\-]+)"/, (m, v) => ` x2="${(tx + parseFloat(v)).toFixed(1)}"`)
-          .replace(/ y2="([\d.\-]+)"/, (m, v) => ` y2="${(ty + parseFloat(v)).toFixed(1)}"`)
+          .replace(/ x1="([\d.-]+)"/, (m, v) => ` x1="${(tx + parseFloat(v)).toFixed(1)}"`)
+          .replace(/ y1="([\d.-]+)"/, (m, v) => ` y1="${(ty + parseFloat(v)).toFixed(1)}"`)
+          .replace(/ x2="([\d.-]+)"/, (m, v) => ` x2="${(tx + parseFloat(v)).toFixed(1)}"`)
+          .replace(/ y2="([\d.-]+)"/, (m, v) => ` y2="${(ty + parseFloat(v)).toFixed(1)}"`)
       }
 
       // <polygon> 结构
       const polyMatch = trimmed.match(/^(<polygon[^>]*?)\s+style="[^"]*"([^>]*\/>)\s*$/)
       if (polyMatch) {
-        return trimmed.replace(/ points="([^"]+)"/, (m, pts) => {
-          const newPts = pts.trim().split(/\s+/).map(pair => {
-            const [x, y] = pair.split(',').map(Number)
-            return `${(tx + x).toFixed(1)},${(ty + y).toFixed(1)}`
-          }).join(' ')
+        return trimmed.replace(/ points="([^"]+)"/, (m: string, pts: string) => {
+          const newPts = pts
+            .trim()
+            .split(/\s+/)
+            .map((pair: string) => {
+              const [x, y] = pair.split(',').map(Number)
+              return `${(tx + x).toFixed(1)},${(ty + y).toFixed(1)}`
+            })
+            .join(' ')
           return ` points="${newPts}"`
         })
       }
@@ -102,7 +106,9 @@ function unwrapGroups(svg: string): string {
 export function rgbToHex(svg: string): string {
   return svg.replace(
     /rgb\((\d+),\s*(\d+),\s*(\d+)\)/gi,
-    (_, r, g, b) => '#' + [r, g, b].map((x: string) => parseInt(x).toString(16).padStart(2, '0').toUpperCase()).join('')
+    (_, r, g, b) =>
+      '#' +
+      [r, g, b].map((x: string) => parseInt(x).toString(16).padStart(2, '0').toUpperCase()).join('')
   )
 }
 
@@ -131,5 +137,8 @@ export function restoreViewBox(svg: string, originalViewBox: string): string {
  * 移除 Fabric.js 自动添加的画布背景 rect
  */
 export function removeCanvasBg(svg: string): string {
-  return svg.replace(/<rect\s+x="0"\s+y="0"\s+width="100%"\s+height="100%"\s+fill="#F5F5F5"\s*\/?>\s*(?:<\/rect>)?\s*/gi, '')
+  return svg.replace(
+    /<rect\s+x="0"\s+y="0"\s+width="100%"\s+height="100%"\s+fill="#F5F5F5"\s*\/?>\s*(?:<\/rect>)?\s*/gi,
+    ''
+  )
 }

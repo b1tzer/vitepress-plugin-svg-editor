@@ -6,7 +6,7 @@ import { defineClientComponent } from 'vitepress'
 const SvgEditor = defineClientComponent(() => import('./SvgEditor.vue'))
 
 const props = defineProps({
-  src: { type: String, required: true }
+  src: { type: String, required: true },
 })
 
 const svgContent = ref('')
@@ -33,11 +33,7 @@ watch(() => props.src, loadSvg)
 </script>
 
 <template>
-  <div
-    class="svg-container"
-    @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
-  >
+  <div class="svg-container" @mouseenter="hovered = true" @mouseleave="hovered = false">
     <div v-html="svgContent" />
 
     <!-- Dev 模式：悬浮编辑按钮 -->
@@ -55,8 +51,8 @@ watch(() => props.src, loadSvg)
       <SvgEditor
         v-if="showEditor"
         :src="src"
-        @close="showEditor = false; editBtnRef?.focus()"
-        @saved="loadSvg(); editBtnRef?.focus()"
+        @close="((showEditor = false), editBtnRef?.focus())"
+        @saved="(loadSvg(), editBtnRef?.focus())"
       />
     </Teleport>
   </div>

@@ -5,7 +5,11 @@
  * 避免此前 `_keyHandlerFn`/`_keyUpHandler` 散落 + 非空断言带来的遗留风险。
  */
 
-import { createKeyboardHandlers, type KeyboardActions, type KeyboardSpecialHandlers } from '../core/editor/KeyboardMap'
+import {
+  createKeyboardHandlers,
+  type KeyboardActions,
+  type KeyboardSpecialHandlers,
+} from '../core/editor/KeyboardMap'
 
 export function useKeyboard(): {
   register: (actions: KeyboardActions, special: KeyboardSpecialHandlers) => void

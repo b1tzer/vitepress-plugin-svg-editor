@@ -59,5 +59,14 @@ export function useCanvasSize(canvasMgr: CanvasManager): {
     updateViewBox(w, h)
   }
 
-  return { svgWidth, svgHeight, originalViewBox, applyCanvasSize, handleResize, onResizePreview, onResizeCommit, updateViewBox }
+  return {
+    svgWidth,
+    svgHeight,
+    originalViewBox,
+    applyCanvasSize,
+    handleResize,
+    onResizePreview,
+    onResizeCommit,
+    updateViewBox,
+  }
 }

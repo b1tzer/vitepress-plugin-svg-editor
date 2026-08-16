@@ -29,7 +29,11 @@ export interface SvgObjectMounterOptions {
  * @param options 可选对象级转换（如 mergeArrows）
  * @returns 装载完成后的 Promise（不含 zoomFit / 历史快照，这些属编排层职责）
  */
-export function mountSvgObjects(canvas: Canvas, svg: string, options: SvgObjectMounterOptions = {}): Promise<void> {
+export function mountSvgObjects(
+  canvas: Canvas,
+  svg: string,
+  options: SvgObjectMounterOptions = {}
+): Promise<void> {
   const transform = options.transform
 
   return fabric.loadSVGFromString(svg).then(({ objects }: any) => {

@@ -21,21 +21,72 @@ import { FABRIC_TYPE } from '../shared/FabricTypes'
 export function createShape(type: string, centerX: number, centerY: number): any {
   switch (type) {
     case 'rect':
-      return new fabric.Rect({ left: centerX - 40, top: centerY - 30, width: 80, height: 60, fill: '#3b82f6', stroke: '', strokeWidth: 0, rx: 4, ry: 4 })
+      return new fabric.Rect({
+        left: centerX - 40,
+        top: centerY - 30,
+        width: 80,
+        height: 60,
+        fill: '#3b82f6',
+        stroke: '',
+        strokeWidth: 0,
+        rx: 4,
+        ry: 4,
+      })
     case 'circle':
-      return new fabric.Circle({ left: centerX, top: centerY, radius: 35, fill: '#10b981', stroke: '', strokeWidth: 0 })
+      return new fabric.Circle({
+        left: centerX,
+        top: centerY,
+        radius: 35,
+        fill: '#10b981',
+        stroke: '',
+        strokeWidth: 0,
+      })
     case 'triangle':
-      return new fabric.Triangle({ left: centerX, top: centerY - 30, width: 70, height: 60, fill: '#f59e0b', stroke: '', strokeWidth: 0 })
+      return new fabric.Triangle({
+        left: centerX,
+        top: centerY - 30,
+        width: 70,
+        height: 60,
+        fill: '#f59e0b',
+        stroke: '',
+        strokeWidth: 0,
+      })
     case 'ellipse':
-      return new fabric.Ellipse({ left: centerX, top: centerY, rx: 45, ry: 30, fill: '#8b5cf6', stroke: '', strokeWidth: 0 })
+      return new fabric.Ellipse({
+        left: centerX,
+        top: centerY,
+        rx: 45,
+        ry: 30,
+        fill: '#8b5cf6',
+        stroke: '',
+        strokeWidth: 0,
+      })
     case 'line': {
-      const points: [number, number, number, number] = [centerX - 40, centerY, centerX + 40, centerY]
+      const points: [number, number, number, number] = [
+        centerX - 40,
+        centerY,
+        centerX + 40,
+        centerY,
+      ]
       return new fabric.Line(points, { stroke: '#ef4444', strokeWidth: 2 })
     }
     case 'text':
-      return new fabric.Text('文本', { left: centerX - 20, top: centerY - 10, fontSize: 24, fill: '#000', fontFamily: 'sans-serif' })
+      return new fabric.Text('文本', {
+        left: centerX - 20,
+        top: centerY - 10,
+        fontSize: 24,
+        fill: '#000',
+        fontFamily: 'sans-serif',
+      })
     case 'textbox':
-      return new fabric.Textbox('文本框', { left: centerX - 40, top: centerY - 15, width: 120, fontSize: 16, fill: '#000', fontFamily: 'sans-serif' })
+      return new fabric.Textbox('文本框', {
+        left: centerX - 40,
+        top: centerY - 15,
+        width: 120,
+        fontSize: 16,
+        fill: '#000',
+        fontFamily: 'sans-serif',
+      })
     default:
       return null
   }
@@ -52,15 +103,27 @@ export function convertTextToTextbox(obj: any): any {
   if (obj.type === FABRIC_TYPE.TEXT) {
     try {
       return new fabric.Textbox(obj.text || '', {
-        left: obj.left || 0, top: obj.top || 0,
+        left: obj.left || 0,
+        top: obj.top || 0,
         width: Math.max((obj.width || 80) + 20, 40),
-        fontSize: obj.fontSize || 12, fontFamily: obj.fontFamily || 'sans-serif',
-        fontWeight: obj.fontWeight || 'normal', fontStyle: obj.fontStyle || 'normal',
-        fill: obj.fill || '#000', stroke: obj.stroke || '', strokeWidth: obj.strokeWidth || 0,
-        textAlign: obj.textAlign || 'left', lineHeight: obj.lineHeight || 1.16,
-        charSpacing: obj.charSpacing || 0, opacity: obj.opacity ?? 1,
-        angle: obj.angle || 0, originX: obj.originX || 'left', originY: obj.originY || 'top',
-        selectable: true, evented: true, editable: true, splitByGrapheme: true,
+        fontSize: obj.fontSize || 12,
+        fontFamily: obj.fontFamily || 'sans-serif',
+        fontWeight: obj.fontWeight || 'normal',
+        fontStyle: obj.fontStyle || 'normal',
+        fill: obj.fill || '#000',
+        stroke: obj.stroke || '',
+        strokeWidth: obj.strokeWidth || 0,
+        textAlign: obj.textAlign || 'left',
+        lineHeight: obj.lineHeight || 1.16,
+        charSpacing: obj.charSpacing || 0,
+        opacity: obj.opacity ?? 1,
+        angle: obj.angle || 0,
+        originX: obj.originX || 'left',
+        originY: obj.originY || 'top',
+        selectable: true,
+        evented: true,
+        editable: true,
+        splitByGrapheme: true,
       })
     } catch (e) {
       return obj

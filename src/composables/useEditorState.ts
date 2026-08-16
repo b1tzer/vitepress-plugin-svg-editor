@@ -41,17 +41,25 @@ export interface EditorState {
 export function useEditorState(
   canvasMgr: CanvasManager,
   historyMgr: HistoryManager,
-  options: UseEditorStateOptions = {},
+  options: UseEditorStateOptions = {}
 ): EditorState {
   const zoomLevel = ref(100)
   const viewportVersion = ref(0)
   const canUndo = ref(false)
   const canRedo = ref(false)
 
-  const onZoom = (z: number) => { zoomLevel.value = z }
-  const onViewport = () => { viewportVersion.value++ }
-  const onSelection = () => { options.onSelectionChange?.() }
-  const onModify = (command?: ICommand) => { options.onModified?.(command) }
+  const onZoom = (z: number) => {
+    zoomLevel.value = z
+  }
+  const onViewport = () => {
+    viewportVersion.value++
+  }
+  const onSelection = () => {
+    options.onSelectionChange?.()
+  }
+  const onModify = (command?: ICommand) => {
+    options.onModified?.(command)
+  }
   const onHistory = () => {
     canUndo.value = historyMgr.canUndo()
     canRedo.value = historyMgr.canRedo()

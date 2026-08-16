@@ -29,7 +29,11 @@ export function useMutation(deps: UseMutationDeps): {
     const fc = canvasMgr.canvas
     if (!fc) return
     fn(fc)
-    historyMgr.save(fc, () => {}, () => {})
+    historyMgr.save(
+      fc,
+      () => {},
+      () => {}
+    )
     refreshLayerList()
   }
 
