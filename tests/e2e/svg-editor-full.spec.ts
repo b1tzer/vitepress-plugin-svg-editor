@@ -49,11 +49,6 @@ async function getActiveState(page: any) {
   })
 }
 
-async function screenshot(page: any, name: string) {
-  const canvasEl = page.locator('.editor-overlay canvas').first()
-  await canvasEl.screenshot({ path: `tests/e2e/screenshots/${name}.png` })
-}
-
 // ── 测试套件 ──
 
 test.describe('SvgEditor 全量功能测试', () => {
