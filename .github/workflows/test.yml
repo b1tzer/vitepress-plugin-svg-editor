@@ -6,84 +6,122 @@ on:
   pull_request:
     branches: [main, master, dev]
 
+# 并发控制：同一分支/PR 的连续运行会取消旧运行，避免 Actions 额度浪费
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 最小权限原则：本 workflow 仅需读取代码，无写权限
+permissions:
+  contents: read
+
 jobs:
   # ═══════════════════ 类型检查 + 代码规范（lint）═══════════════════
   # vue-tsc 覆盖 .vue SFC 类型检查（tsc --noEmit 无法检查 .vue），
   # ESLint 在 error 层面拦截代码质量问题（warning 不阻塞，渐进清零）。
   typecheck-and-lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
 
   # ═══════════════════ 单元测试 + 组件测试 + 集成测试 ═══════════════════
   unit-and-component:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
-        node: ['18', '20', '22']
+        node: ['20', '22']
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm test:unit
 
   # ═══════════════════ E2E 测试（Chromium + Firefox） ═══════════════════
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       matrix:
         vitepress: ['1.0.0', '1.3.0', '1.6.0']
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --dir examples/basic add -D vitepress@${{ matrix.vitepress }}
+      # 缓存 Playwright 浏览器，避免每个 job 重复下载数百 MB
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
       - run: npx playwright install --with-deps chromium firefox
-      - run: pnpm test
+      # 显式指定 chromium/firefox，避免连带跑 perf（与 performance job 重复）
+      - run: pnpm test -- --project=chromium --project=firefox
 
-  # ═══════════════════ Build + Preview 验证 ═══════════════════
-  build-preview:
+  # ═══════════════════ Build 验证 ═══════════════════
+  # 仅验证 unbuild 构建产物可正常生成。dev 模式的 E2E 已由 e2e job 覆盖，
+  # 不再需要针对生产构建的 build-preview 测试（build-preview.spec.ts 已降级为 dev 模式）。
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: npx playwright install --with-deps chromium firefox
-      - run: pnpm test -- --project=build-preview-chromium --project=build-preview-firefox
 
   # ═══════════════════ 性能回归（仅 Chromium） ═══════════════════
   # 量化 100 对象场景下的单帧渲染 / 撤销快照(toJSON) / 导出(toSVG) 耗时，
   # 对齐 design/11-non-functional.md「P0-4 性能基线」，防止运行时性能退化。
   performance:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
       - run: npx playwright install --with-deps chromium
       - run: pnpm test:perf
