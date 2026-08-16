@@ -71,6 +71,10 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      # 先构建根包：examples 的 VitePress dev server 通过 workspace:* 引用根包，
+      # 而根包 exports["."].import 指向 dist/node/index.mjs。dist 被 .gitignore
+      # 忽略，CI 干净 checkout 后不存在，不 build 会导致 Vite 无法解析入口。
+      - run: pnpm build
       - run: pnpm --dir examples/basic add -D vitepress@${{ matrix.vitepress }}
       # 缓存 Playwright 浏览器，避免每个 job 重复下载数百 MB
       - uses: actions/cache@v4
@@ -155,6 +159,9 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+      # 先构建根包：性能回归的 webServer 同样通过 workspace:* 引用根包，
+      # 根包 exports["."].import 指向 dist/node，必须先产出构建产物。
+      - run: pnpm build
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
