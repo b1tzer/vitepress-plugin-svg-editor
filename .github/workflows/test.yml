@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [main, master, dev]
+    branches: [main, dev]
   pull_request:
-    branches: [main, master, dev]
+    branches: [main, dev]
 
 # 并发控制：同一分支/PR 的连续运行会取消旧运行，避免 Actions 额度浪费
 concurrency:
