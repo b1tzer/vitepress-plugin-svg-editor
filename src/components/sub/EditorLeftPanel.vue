@@ -130,7 +130,7 @@ function layerIconKey(type: string): string {
                 :data-tip="el.name"
                 :aria-label="'添加' + el.name"
               >
-                <span class="element-preview" v-html="(ICONS as any)[el.icon]"></span>
+                <span class="element-preview" v-html="ICONS[el.icon]"></span>
                 <span class="element-name">{{ el.name }}</span>
               </button>
             </div>
@@ -152,7 +152,7 @@ function layerIconKey(type: string): string {
               class="layer-item"
               @click="emit('selectLayer', obj.id)"
             >
-              <span class="layer-type-icon" v-html="(ICONS as any)[layerIconKey(obj.type)]"></span>
+              <span class="layer-type-icon" v-html="ICONS[layerIconKey(obj.type)]"></span>
               <span class="layer-name">{{ obj.name }}</span>
               <button
                 class="layer-visibility-btn"

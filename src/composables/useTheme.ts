@@ -5,6 +5,7 @@
  */
 
 import { ref, type Ref } from 'vue'
+import type { FabricObject } from 'fabric'
 import { LIGHT_TO_DARK, DARK_TO_LIGHT } from '../core/shared/colors'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 
@@ -23,22 +24,24 @@ export function useTheme(canvasMgr: CanvasManager): {
     if (!fc) return
     const from = themeMode.value
     const to = from === 'light' ? 'dark' : 'light'
-    const mapping: any = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
+    const mapping: Record<string, string> = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
     if (!mapping || !Object.keys(mapping).length) return
     themeMode.value = to
 
-    function swapColor(hex: any): string {
-      if (!hex || typeof hex !== 'string') return hex
+    function swapColor(hex: string): string {
+      if (!hex) return hex
       return mapping[hex.toUpperCase()] || hex
     }
 
-    fc.getObjects().forEach((obj: any) => {
+    fc.getObjects().forEach((obj: FabricObject) => {
       if (obj.excludeFromExport) return
-      ;(function processObject(o: any) {
+      const processObject = (o: FabricObject): void => {
         if (o.fill && typeof o.fill === 'string') o.set('fill', swapColor(o.fill))
         if (o.stroke && typeof o.stroke === 'string') o.set('stroke', swapColor(o.stroke))
-        if (o._objects) o._objects.forEach(processObject)
-      })(obj)
+        const children = (o as FabricObject & { _objects?: FabricObject[] })._objects
+        if (children) children.forEach(processObject)
+      }
+      processObject(obj)
     })
     canvasMgr.updateWorkspaceTheme(to === 'light')
     fc.requestRenderAll()

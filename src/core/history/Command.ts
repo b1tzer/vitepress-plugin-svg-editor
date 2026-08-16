@@ -13,6 +13,7 @@
  */
 
 import type { FabricObject } from 'fabric'
+import type { FabricObjectProps } from '../shared/FabricTypes'
 
 /**
  * 命令接口 — 所有编辑器操作都必须实现此接口
@@ -174,15 +175,15 @@ export class ResizeCommand implements ICommand {
 
 export class PropertyChangeCommand implements ICommand {
   private _obj: FabricObject
-  private _oldProps: Record<string, any>
-  private _newProps: Record<string, any>
+  private _oldProps: FabricObjectProps
+  private _newProps: FabricObjectProps
 
   /**
    * @param obj      目标 Fabric 对象
    * @param oldProps 修改前的属性集合
    * @param newProps 修改后的属性集合
    */
-  constructor(obj: FabricObject, oldProps: Record<string, any>, newProps: Record<string, any>) {
+  constructor(obj: FabricObject, oldProps: FabricObjectProps, newProps: FabricObjectProps) {
     this._obj = obj
     this._oldProps = { ...oldProps }
     this._newProps = { ...newProps }

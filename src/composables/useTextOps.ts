@@ -21,36 +21,36 @@ export function useTextOps(deps: UseTextOpsDeps) {
   const { selection, withSave } = deps
 
   function applyFontSize(size: number) {
-    withSave((fc: any) => TextFormatPlugin.applyFontSize(fc, size))
+    withSave((fc) => TextFormatPlugin.applyFontSize(fc, size))
     selection.currentFontSize.value = size
   }
 
   function toggleBold() {
-    withSave((fc: any) => {
+    withSave((fc) => {
       selection.currentFontWeight.value = TextFormatPlugin.toggleBold(fc) || 'normal'
     })
   }
 
   function toggleItalic() {
-    withSave((fc: any) => {
+    withSave((fc) => {
       selection.currentFontStyle.value = TextFormatPlugin.toggleItalic(fc) || 'normal'
     })
   }
 
   function toggleUnderline() {
-    withSave((fc: any) => {
+    withSave((fc) => {
       selection.currentUnderline.value = TextFormatPlugin.toggleUnderline(fc) ?? false
     })
   }
 
   function applyTextAlign(align: string) {
-    withSave((fc: any) => {
+    withSave((fc) => {
       selection.currentTextAlign.value = TextFormatPlugin.applyTextAlign(fc, align)
     })
   }
 
   function applyTextFill(hex: string) {
-    withSave((fc: any) => {
+    withSave((fc) => {
       TextFormatPlugin.applyTextFill(fc, hex)
       selection.currentTextFill.value = hex
     })

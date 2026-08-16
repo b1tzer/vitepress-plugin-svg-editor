@@ -13,13 +13,13 @@
  */
 
 import * as fabric from 'fabric'
-import type { Canvas } from 'fabric'
+import type { Canvas, FabricObject } from 'fabric'
 import { convertTextToTextbox } from './ObjectFactory'
 import { ensureObjectInteractive } from '../shared/Interactive'
 
 export interface SvgObjectMounterOptions {
   /** 装载前对对象数组做转换（如箭头合并），默认透传 */
-  transform?: (objects: any[]) => any[]
+  transform?: (objects: FabricObject[]) => FabricObject[]
 }
 
 /**
@@ -36,18 +36,20 @@ export function mountSvgObjects(
 ): Promise<void> {
   const transform = options.transform
 
-  return fabric.loadSVGFromString(svg).then(({ objects }: any) => {
+  return fabric.loadSVGFromString(svg).then(({ objects }) => {
+    // Fabric 类型上允许返回 null 对象，装载前过滤掉，避免 canvas.add(null)
+    const validObjects = objects.filter((o): o is FabricObject => o !== null)
     // 1. 对象级转换（默认透传；由调用方注入 mergeArrows 等）
-    const processed = transform ? transform(objects) : objects
+    const processed = transform ? transform(validObjects) : validObjects
     // 2. Text → Textbox（文本支持自动换行）
     const converted = processed.map(convertTextToTextbox)
     // 3. 添加到画布并确保可交互
-    converted.forEach((obj: any) => {
+    converted.forEach((obj) => {
       ensureObjectInteractive(obj)
       canvas.add(obj)
     })
     // 4. 对画布上所有用户对象兜底确保可交互（跳过 workspace 等内部对象）
-    canvas.getObjects().forEach((o: any) => {
+    canvas.getObjects().forEach((o) => {
       if (o.excludeFromExport) return
       ensureObjectInteractive(o)
     })

@@ -9,6 +9,7 @@
  */
 
 import * as fabric from 'fabric'
+import type { FabricObject, FabricText } from 'fabric'
 import { FABRIC_TYPE } from '../shared/FabricTypes'
 
 /**
@@ -18,7 +19,7 @@ import { FABRIC_TYPE } from '../shared/FabricTypes'
  * @param centerY 画布逻辑中心 Y
  * @returns Fabric 对象，未知类型返回 null
  */
-export function createShape(type: string, centerX: number, centerY: number): any {
+export function createShape(type: string, centerX: number, centerY: number): FabricObject | null {
   switch (type) {
     case 'rect':
       return new fabric.Rect({
@@ -98,28 +99,29 @@ export function createShape(type: string, centerX: number, centerY: number): any
  * @param obj Fabric 对象
  * @returns 转换后的对象（非 Text 类型原样返回）
  */
-export function convertTextToTextbox(obj: any): any {
+export function convertTextToTextbox(obj: FabricObject): FabricObject {
   if (!obj) return obj
   if (obj.type === FABRIC_TYPE.TEXT) {
     try {
-      return new fabric.Textbox(obj.text || '', {
-        left: obj.left || 0,
-        top: obj.top || 0,
-        width: Math.max((obj.width || 80) + 20, 40),
-        fontSize: obj.fontSize || 12,
-        fontFamily: obj.fontFamily || 'sans-serif',
-        fontWeight: obj.fontWeight || 'normal',
-        fontStyle: obj.fontStyle || 'normal',
-        fill: obj.fill || '#000',
-        stroke: obj.stroke || '',
-        strokeWidth: obj.strokeWidth || 0,
-        textAlign: obj.textAlign || 'left',
-        lineHeight: obj.lineHeight || 1.16,
-        charSpacing: obj.charSpacing || 0,
-        opacity: obj.opacity ?? 1,
-        angle: obj.angle || 0,
-        originX: obj.originX || 'left',
-        originY: obj.originY || 'top',
+      const text = obj as FabricText
+      return new fabric.Textbox(text.text || '', {
+        left: text.left || 0,
+        top: text.top || 0,
+        width: Math.max((text.width || 80) + 20, 40),
+        fontSize: text.fontSize || 12,
+        fontFamily: text.fontFamily || 'sans-serif',
+        fontWeight: text.fontWeight || 'normal',
+        fontStyle: text.fontStyle || 'normal',
+        fill: text.fill || '#000',
+        stroke: text.stroke || '',
+        strokeWidth: text.strokeWidth || 0,
+        textAlign: text.textAlign || 'left',
+        lineHeight: text.lineHeight || 1.16,
+        charSpacing: text.charSpacing || 0,
+        opacity: text.opacity ?? 1,
+        angle: text.angle || 0,
+        originX: text.originX || 'left',
+        originY: text.originY || 'top',
         selectable: true,
         evented: true,
         editable: true,
@@ -129,6 +131,9 @@ export function convertTextToTextbox(obj: any): any {
       return obj
     }
   }
-  if (obj._objects) obj._objects = obj._objects.map(convertTextToTextbox)
+  const group = obj as FabricObject & { _objects?: FabricObject[] }
+  if (group._objects) {
+    group._objects = group._objects.map(convertTextToTextbox)
+  }
   return obj
 }

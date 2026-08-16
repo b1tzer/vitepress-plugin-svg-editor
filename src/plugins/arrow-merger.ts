@@ -4,23 +4,25 @@
  */
 
 import * as fabric from 'fabric'
+import type { FabricObject, Line } from 'fabric'
 import { FABRIC_TYPE } from '../core/shared/FabricTypes'
 
-export function mergeArrows(objects: any[]) {
-  const result: any[] = []
+export function mergeArrows(objects: FabricObject[]): FabricObject[] {
+  const result: FabricObject[] = []
   const used = new Set<number>()
   for (let i = 0; i < objects.length; i++) {
     if (used.has(i)) continue
     const obj = objects[i]
     if (obj.type === FABRIC_TYPE.LINE && i + 1 < objects.length) {
+      const line = obj as Line
       const next = objects[i + 1]
       if (next.type === FABRIC_TYPE.POLYGON && !used.has(i + 1)) {
-        const lineCenterX = (obj.left || 0) + (obj.width || 0) / 2
-        const lineCenterY = (obj.top || 0) + (obj.height || 0) / 2
-        const useAbsX2 = Math.abs(obj.x2 || 0) > Math.max((obj.width || 0) / 2 + 5, 15)
-        const useAbsY2 = Math.abs(obj.y2 || 0) > Math.max((obj.height || 0) / 2 + 5, 15)
-        const absX2 = useAbsX2 ? obj.x2 || 0 : lineCenterX + (obj.x2 || 0)
-        const absY2 = useAbsY2 ? obj.y2 || 0 : lineCenterY + (obj.y2 || 0)
+        const lineCenterX = (line.left || 0) + (line.width || 0) / 2
+        const lineCenterY = (line.top || 0) + (line.height || 0) / 2
+        const useAbsX2 = Math.abs(line.x2 || 0) > Math.max((line.width || 0) / 2 + 5, 15)
+        const useAbsY2 = Math.abs(line.y2 || 0) > Math.max((line.height || 0) / 2 + 5, 15)
+        const absX2 = useAbsX2 ? line.x2 || 0 : lineCenterX + (line.x2 || 0)
+        const absY2 = useAbsY2 ? line.y2 || 0 : lineCenterY + (line.y2 || 0)
         const polyW = (next.width || 0) * (next.scaleX || 1)
         const polyH = (next.height || 0) * (next.scaleY || 1)
         const polyCenterX = (next.left || 0) + polyW / 2

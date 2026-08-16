@@ -42,7 +42,7 @@ export class CanvasManager {
     const vpW = parent?.clientWidth || window.innerWidth - 320 || 800
     const vpH = parent?.clientHeight || window.innerHeight - 100 || 600
 
-    const fc = new fabric.Canvas(canvasEl as any, {
+    const fc = new fabric.Canvas(canvasEl, {
       width: vpW,
       height: vpH,
       backgroundColor: 'transparent',
@@ -166,7 +166,7 @@ export class CanvasManager {
       // 避免每次移动都重新光栅化复杂 Path/SVG 节点，显著消除拖拽抖动。
       // 缩放过程中的短暂模糊会在 mouseup 时由 noScaleCache 机制自动重新生成高清缓存。
       objectCaching: true,
-    } as any)
+    })
   }
 
   _setupCanvasEvents(fc: Canvas): void {
@@ -266,8 +266,9 @@ export class CanvasManager {
     clientY: number,
     type: 'mousedown' | 'mousemove' | 'mouseup'
   ): void {
-    if (!this.canvas) return
-    const el = (this.canvas as any).upperCanvasEl || (this.canvas as any).lowerCanvasEl
+    const canvas = this.canvas
+    if (!canvas) return
+    const el = canvas.upperCanvasEl || canvas.lowerCanvasEl
     if (!el) return
     const ev = new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true })
     el.dispatchEvent(ev)

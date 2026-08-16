@@ -53,8 +53,8 @@ export function useSave(deps: UseSaveDeps): {
       } else {
         showError('保存失败: ' + result.error)
       }
-    } catch (e: any) {
-      showError('保存失败: ' + e.message)
+    } catch (e: unknown) {
+      showError('保存失败: ' + (e instanceof Error ? e.message : String(e)))
     } finally {
       saving.value = false
     }

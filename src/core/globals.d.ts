@@ -1,13 +1,13 @@
 /**
  * 全局类型声明 — 扩展 Window 接口
  *
- * 供 TypeScript 编译器识别 window.__fabricCanvas / window._clipboard 等全局变量。
- * 这些全局变量主要用于 E2E 测试（__fabricCanvas / __canvasMgr / __historyMgr）、
- * 剪贴板（_clipboard）与性能监测（__perfFps）。
+ * 供 TypeScript 编译器识别 window.__fabricCanvas / window.__canvasMgr / window.__historyMgr 等全局变量。
+ * 这些全局变量主要用于 E2E 测试钩子与性能监测（__perfFps）。
+ * 剪贴板已收敛为模块级变量（见 useClipboard），不再挂载到 window。
  *
  * 注意：
  *   - fabric 已改为纯 ESM import，不再挂载到 window（仅测试钩子暴露实例引用）。
- *   - 测试钩子建议后续收敛到独立模块（见 issue #15），当前先补齐精确类型。
+ *   - 测试钩子已收敛到独立模块（见 testHooks.ts），此处仅保留精确类型声明。
  */
 
 import type { Canvas } from 'fabric'

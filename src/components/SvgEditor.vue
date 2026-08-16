@@ -66,7 +66,7 @@ const DEFAULT_SVG_WIDTH = 800
 const DEFAULT_SVG_HEIGHT = 500
 
 // ── 编排层保留的 Vue 响应式状态 ──
-const canvasRef = ref<any>(null)
+const canvasRef = ref<InstanceType<typeof EditorCanvas> | null>(null)
 const fabricCanvasRef = shallowRef<Canvas | null>(null)
 const overlayRef = ref<HTMLDivElement | null>(null)
 const loading = ref(true)

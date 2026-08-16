@@ -20,7 +20,9 @@ import { timed } from '../../utils/perf'
 const MAX_STACK = 50
 
 /** 历史条目：全量快照或增量命令（渐进替换 Command 模式） */
-type HistoryEntry = { type: 'snapshot'; json: object } | { type: 'command'; cmd: ICommand }
+type HistoryEntry =
+  | { type: 'snapshot'; json: Record<string, unknown> }
+  | { type: 'command'; cmd: ICommand }
 
 export class HistoryManager implements IHistoryManager {
   private _undoStack: HistoryEntry[] = []
@@ -47,7 +49,7 @@ export class HistoryManager implements IHistoryManager {
     }
     const snapshot: HistoryEntry = {
       type: 'snapshot',
-      json: timed('history:save', () => canvas.toJSON() as unknown as object),
+      json: timed('history:save', () => canvas.toJSON() as Record<string, unknown>),
     }
     this._undoStack.push(snapshot)
     if (this._undoStack.length > MAX_STACK) this._undoStack.shift()
@@ -145,7 +147,7 @@ export class HistoryManager implements IHistoryManager {
    */
   private _enqueueRestore(
     canvas: Canvas,
-    json: object,
+    json: Record<string, unknown>,
     afterLoad: (() => void) | undefined,
     entry: HistoryEntry,
     isRedo: boolean
@@ -161,20 +163,20 @@ export class HistoryManager implements IHistoryManager {
    */
   private _restoreSnapshot(
     canvas: Canvas,
-    json: object,
+    json: Record<string, unknown>,
     afterLoad: (() => void) | undefined,
     entry: HistoryEntry,
     isRedo: boolean
   ): Promise<void> {
     canvas.clear()
-    return (canvas as any)
+    return canvas
       .loadFromJSON(json)
       .then(() => {
         this._restoreInteractivity(canvas)
         if (afterLoad) afterLoad()
         this._notify()
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         console.error(`[HistoryManager] ${isRedo ? 'redo' : 'undo'} 加载状态失败，恢复`, err)
         if (isRedo) {
           this._undoStack.pop()
@@ -197,7 +199,7 @@ export class HistoryManager implements IHistoryManager {
    * undo/redo 后 loadFromJSON 会重置对象属性，需要重新设置
    */
   private _restoreInteractivity(canvas: Canvas): void {
-    canvas.getObjects().forEach((o: any) => {
+    canvas.getObjects().forEach((o) => {
       if (o.excludeFromExport) return
       ensureObjectInteractive(o)
       o.setCoords()

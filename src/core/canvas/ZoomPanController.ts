@@ -69,7 +69,7 @@ export class ZoomPanController {
     const fc = this._canvas
     if (!fc) return
     const z = this._zoomLevel / 100
-    const vt = (fc as any).viewportTransform
+    const vt = fc.viewportTransform
     const oldZ = vt && vt.length >= 6 && vt[0] ? vt[0] : 1
     const tx = vt && vt.length >= 6 ? vt[4] : 0
     const ty = vt && vt.length >= 6 ? vt[5] : 0
@@ -79,9 +79,9 @@ export class ZoomPanController {
     const logicY = (ay - ty) / oldZ
     const newTx = ax - logicX * z
     const newTy = ay - logicY * z
-    ;(fc as any).viewportTransform = [z, 0, 0, z, newTx, newTy]
+    fc.viewportTransform = [z, 0, 0, z, newTx, newTy]
     const active = fc.getActiveObject()
-    if (active) (active as any).setCoords()
+    if (active) active.setCoords()
     fc.requestRenderAll()
   }
 
@@ -121,7 +121,7 @@ export class ZoomPanController {
   zoomFit(): void {
     const fc = this._canvas
     if (!fc) return
-    const objects = fc.getObjects().filter((o: any) => !o.excludeFromExport)
+    const objects = fc.getObjects().filter((o) => !o.excludeFromExport)
     if (!objects.length) {
       this._zoomLevel = 100
       this._applyZoom()
@@ -132,7 +132,7 @@ export class ZoomPanController {
       minY = Infinity,
       maxX = -Infinity,
       maxY = -Infinity
-    objects.forEach((o: any) => {
+    objects.forEach((o) => {
       const b = o.getBoundingRect()
       minX = Math.min(minX, b.left)
       minY = Math.min(minY, b.top)
@@ -152,9 +152,9 @@ export class ZoomPanController {
     const cy = (minY + maxY) / 2
     const tx = fc.getWidth() / 2 - cx * z
     const ty = fc.getHeight() / 2 - cy * z
-    ;(fc as any).viewportTransform = [z, 0, 0, z, tx, ty]
+    fc.viewportTransform = [z, 0, 0, z, tx, ty]
     const active = fc.getActiveObject()
-    if (active) (active as any).setCoords()
+    if (active) active.setCoords()
     fc.requestRenderAll()
     this._eventBus.emit('zoomChange', this._zoomLevel)
   }

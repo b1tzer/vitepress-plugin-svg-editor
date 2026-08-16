@@ -6,6 +6,7 @@
  */
 
 import { ref, type Ref } from 'vue'
+import type { FabricObject, FabricText } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import { getObjectId, findObjectById } from '../core/editor/ObjectId'
 import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/FabricTypes'
@@ -25,9 +26,9 @@ export function useLayer(canvasMgr: CanvasManager): {
 } {
   const canvasObjects = ref<LayerItem[]>([])
 
-  function getObjectName(obj: any): string {
+  function getObjectName(obj: FabricObject): string {
     if ((TEXT_TYPES as readonly string[]).includes(obj.type)) {
-      return (obj.text || '').substring(0, 15) || '文本'
+      return ((obj as FabricText).text || '').substring(0, 15) || '文本'
     }
     const typeMap: Record<string, string> = {
       [FABRIC_TYPE.RECT]: '矩形',
@@ -48,7 +49,7 @@ export function useLayer(canvasMgr: CanvasManager): {
       canvasObjects.value = []
       return
     }
-    canvasObjects.value = fc.getObjects().map((obj: any) => ({
+    canvasObjects.value = fc.getObjects().map((obj: FabricObject) => ({
       id: getObjectId(obj),
       type: obj.type || 'unknown',
       name: getObjectName(obj),

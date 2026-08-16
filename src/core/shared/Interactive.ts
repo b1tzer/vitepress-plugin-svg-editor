@@ -10,19 +10,21 @@
  * 纯函数，零 Vue 依赖，可单测。
  */
 
+import type { FabricObject } from 'fabric'
 import { HOLLOW_SHAPE_TYPES } from './FabricTypes'
 
 /**
  * 确保单个 Fabric 对象（及其子对象）可交互
  * @param obj Fabric 对象实例（含 Group 等可递归结构）
  */
-export function ensureObjectInteractive(obj: any): void {
+export function ensureObjectInteractive(obj: FabricObject | null | undefined): void {
   if (!obj) return
   obj.set({ selectable: true, evented: true })
   if (!obj.fill || obj.fill === 'none' || obj.fill === 'transparent') {
-    if (HOLLOW_SHAPE_TYPES.includes(obj.type)) {
+    if ((HOLLOW_SHAPE_TYPES as readonly string[]).includes(obj.type)) {
       obj.set({ fill: 'rgba(0,0,0,0.001)' })
     }
   }
-  if (obj._objects) obj._objects.forEach(ensureObjectInteractive)
+  const children = (obj as FabricObject & { _objects?: FabricObject[] })._objects
+  if (children) children.forEach(ensureObjectInteractive)
 }

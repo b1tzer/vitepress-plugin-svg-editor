@@ -12,6 +12,8 @@
  *   3. TEXT_TYPES / HOLLOW_SHAPE_TYPES 用于批量判断，替代 || 链
  */
 
+import type { FabricObject } from 'fabric'
+
 // ── 单类型常量 ──
 export const FABRIC_TYPE = {
   // 文本
@@ -48,3 +50,18 @@ export const HOLLOW_SHAPE_TYPES = [
   FABRIC_TYPE.CIRCLE,
   FABRIC_TYPE.ELLIPSE,
 ] as const
+
+// ═══════════════════════════════════════════════════════════════
+// 统一 Fabric 类型别名（issue #13 第 5 条「any 泛滥」处理方案）
+// ═══════════════════════════════════════════════════════════════
+
+/** Fabric 对象基类类型（统一替代散落的 any） */
+export type { FabricObject }
+
+/**
+ * Fabric 对象可设置属性集合。
+ * 用于 Command（PropertyChangeCommand）记录/回放样式变更，
+ * 值类型因属性而异（string / number / boolean / null 等），故用 unknown。
+ * 兼容 FabricObject.set(key: string | Record<string, any>, ...)。
+ */
+export type FabricObjectProps = Record<string, unknown>

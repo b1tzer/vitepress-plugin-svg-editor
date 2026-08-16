@@ -5,7 +5,7 @@
  * 与样式/文本/结构操作解耦，保持依赖单向流动。
  */
 
-import type { Canvas } from 'fabric'
+import type { ActiveSelection, Canvas } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import type { HistoryManager } from '../core/history/HistoryManager'
 import { FABRIC_TYPE } from '../core/shared/FabricTypes'
@@ -45,7 +45,7 @@ export function useHistoryOps(deps: UseHistoryOpsDeps) {
     const a = fc?.getActiveObject()
     if (!a) return
     if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) {
-      ;(a as any).forEachObject((o: any) => fc!.remove(o))
+      ;(a as ActiveSelection).forEachObject((o) => fc!.remove(o))
       fc!.discardActiveObject()
     } else {
       fc!.remove(a)

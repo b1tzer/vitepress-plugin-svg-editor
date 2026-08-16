@@ -24,21 +24,21 @@ export function useStyleOps(deps: UseStyleOpsDeps) {
   const { canvasMgr, selection, withSave } = deps
 
   function applyFill(hex: string) {
-    withSave((fc: any) => {
+    withSave((fc) => {
       const a = fc.getActiveObject()
       if (a) a.set('fill', hex)
     })
   }
 
   function applyStroke(hex: string) {
-    withSave((fc: any) => {
+    withSave((fc) => {
       const a = fc.getActiveObject()
       if (a) a.set('stroke', hex)
     })
   }
 
   function applyStrokeWidth(w: number) {
-    withSave((fc: any) => {
+    withSave((fc) => {
       const a = fc.getActiveObject()
       if (a) a.set('strokeWidth', w)
       selection.currentStrokeWidth.value = w
@@ -50,7 +50,7 @@ export function useStyleOps(deps: UseStyleOpsDeps) {
     const a = fc?.getActiveObject()
     if (!a) return
     const next = !selection.currentStrokeDash.value
-    ;(a as any).set('strokeDashArray', next ? [6, 3] : null)
+    a.set('strokeDashArray', next ? [6, 3] : null)
     selection.currentStrokeDash.value = next
     fc!.renderAll()
     withSave(() => {})
@@ -78,7 +78,7 @@ export function useStyleOps(deps: UseStyleOpsDeps) {
     const fc = canvasMgr.canvas
     if (!fc) return
     applyGradient(fc, {
-      type: selection.gradientType.value as any,
+      type: selection.gradientType.value as 'none' | 'linear' | 'radial',
       angle: selection.gradientAngle.value,
       color1: selection.gradientColor1.value,
       color2: selection.gradientColor2.value,
