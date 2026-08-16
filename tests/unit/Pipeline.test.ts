@@ -2,7 +2,7 @@
  * Pipeline 基类单元测试
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Pipeline } from '../../src/core/pipeline/Pipeline'
+import { Pipeline } from '../../src/core/serialization/pipeline/Pipeline'
 
 describe('Pipeline', () => {
   let pipeline: Pipeline<string>

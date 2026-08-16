@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { InteractionManager } from '../../src/core/canvas/InteractionManager'
-import { EventBus } from '../../src/core/EventBus'
+import { EventBus } from '../../src/core/shared/EventBus'
 
 describe('InteractionManager', () => {
   let eventBus: EventBus

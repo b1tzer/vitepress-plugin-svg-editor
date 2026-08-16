@@ -8,7 +8,7 @@ import {
   MoveCommand,
   ResizeCommand,
   PropertyChangeCommand,
-} from '../../src/core/Command'
+} from '../../src/core/history/Command'
 
 // mock fabric 对象
 function makeMockObj(overrides: Record<string, any> = {}) {

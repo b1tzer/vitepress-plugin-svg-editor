@@ -2,7 +2,7 @@
  * preprocessor 单元测试 — 覆盖各步骤函数
  */
 import { describe, it, expect } from 'vitest'
-import { preprocessSvg } from '../../src/core/preprocessor'
+import { preprocessSvg } from '../../src/core/serialization/preprocessor'
 
 const baseSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#FF0000"/></svg>'
 

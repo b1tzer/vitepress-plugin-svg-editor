@@ -9,7 +9,7 @@
  */
 
 import * as fabric from 'fabric'
-import { FABRIC_TYPE } from '../FabricTypes'
+import { FABRIC_TYPE } from '../shared/FabricTypes'
 
 /**
  * 创建内置图形对象（以画布逻辑中心为基准）

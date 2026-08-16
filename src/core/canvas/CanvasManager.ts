@@ -10,11 +10,11 @@
  */
 
 import * as fabric from 'fabric'
-import type { Canvas } from 'fabric'
-import { EventBus } from './EventBus'
-import { ZoomPanController } from './canvas/ZoomPanController'
-import { InteractionManager } from './canvas/InteractionManager'
-import type { ICommand } from './Command'
+import type { Canvas, TPointerEventInfo } from 'fabric'
+import { EventBus } from '../shared/EventBus'
+import { ZoomPanController } from './ZoomPanController'
+import { InteractionManager } from './InteractionManager'
+import type { ICommand } from '../history/Command'
 
 export class CanvasManager {
   canvas: Canvas | null = null
@@ -55,9 +55,6 @@ export class CanvasManager {
     this._createWorkspace(fc, logicalW, logicalH)
 
     this.canvas = fc
-    ;(window as any).__fabricCanvas = fc
-    ;(window as any).__canvasMgr = this
-    ;(window as any).fabric = fabric
     return fc
   }
 
@@ -152,8 +149,8 @@ export class CanvasManager {
     } as any)
   }
 
-  _setupCanvasEvents(fc: any): void {
-    fc.on('mouse:wheel', (opt: any) => {
+  _setupCanvasEvents(fc: Canvas): void {
+    fc.on('mouse:wheel', (opt: TPointerEventInfo<WheelEvent>) => {
       opt.e.preventDefault(); opt.e.stopPropagation()
       // 以鼠标指针位置为缩放锚点（对齐浏览器/地图/Figma 的滚轮缩放直觉）
       // 注意：不能用 fc.getPointer（返回逻辑坐标），需手动换算为相对 canvas 左上角的物理坐标
@@ -164,8 +161,8 @@ export class CanvasManager {
         y: opt.e.clientY - rect.top,
       })
     })
-    fc.on('mouse:down', (opt: any) => { this._zoomPan.handlePanMouseDown(opt.e, fc) })
-    fc.on('mouse:move', (opt: any) => { this._zoomPan.handlePanMouseMove(opt.e, fc) })
+    fc.on('mouse:down', (opt: TPointerEventInfo<MouseEvent>) => { this._zoomPan.handlePanMouseDown(opt.e, fc) })
+    fc.on('mouse:move', (opt: TPointerEventInfo<MouseEvent>) => { this._zoomPan.handlePanMouseMove(opt.e, fc) })
     fc.on('mouse:up', () => { this._zoomPan.handlePanMouseUp(fc) })
   }
 
@@ -180,6 +177,10 @@ export class CanvasManager {
   onViewportChange(fn: () => void): void { this._eventBus.on('viewportChange', fn) }
   onSelectionChange(fn: () => void): void { this._eventBus.on('selectionChange', fn) }
   onModified(fn: (command?: ICommand) => void): void { this._eventBus.on('modified', fn) }
+  offZoomChange(fn: (z: number) => void): void { this._eventBus.off('zoomChange', fn) }
+  offViewportChange(fn: () => void): void { this._eventBus.off('viewportChange', fn) }
+  offSelectionChange(fn: () => void): void { this._eventBus.off('selectionChange', fn) }
+  offModified(fn: (command?: ICommand) => void): void { this._eventBus.off('modified', fn) }
   getEventBus(): EventBus { return this._eventBus }
   getZoomPanController(): ZoomPanController { return this._zoomPan }
   getInteractionManager(): InteractionManager { return this._interaction }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { HistoryManager } from '../../src/core/HistoryManager'
+import { HistoryManager } from '../../src/core/history/HistoryManager'
 
 vi.mock('fabric', () => ({}))
 

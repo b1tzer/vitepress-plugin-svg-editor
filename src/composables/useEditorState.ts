@@ -11,10 +11,10 @@
  * composable 演变为 god composable。
  */
 
-import { ref, type Ref } from 'vue'
-import type { CanvasManager } from '../core/CanvasManager'
-import type { HistoryManager } from '../core/HistoryManager'
-import type { ICommand } from '../core/Command'
+import { ref, onScopeDispose, type Ref } from 'vue'
+import type { CanvasManager } from '../core/canvas/CanvasManager'
+import type { HistoryManager } from '../core/history/HistoryManager'
+import type { ICommand } from '../core/history/Command'
 
 export interface UseEditorStateOptions {
   /** 选中状态变化回调（由调用方同步选中对象属性） */
@@ -28,6 +28,8 @@ export interface EditorState {
   viewportVersion: Ref<number>
   canUndo: Ref<boolean>
   canRedo: Ref<boolean>
+  /** 手动解绑所有事件监听（组件卸载时已由 effect scope 自动调用） */
+  dispose: () => void
 }
 
 /**
@@ -46,14 +48,32 @@ export function useEditorState(
   const canUndo = ref(false)
   const canRedo = ref(false)
 
-  canvasMgr.onZoomChange((z: number) => { zoomLevel.value = z })
-  canvasMgr.onViewportChange(() => { viewportVersion.value++ })
-  canvasMgr.onSelectionChange(() => { options.onSelectionChange?.() })
-  canvasMgr.onModified((command) => { options.onModified?.(command) })
-  historyMgr.onStateChange(() => {
+  const onZoom = (z: number) => { zoomLevel.value = z }
+  const onViewport = () => { viewportVersion.value++ }
+  const onSelection = () => { options.onSelectionChange?.() }
+  const onModify = (command?: ICommand) => { options.onModified?.(command) }
+  const onHistory = () => {
     canUndo.value = historyMgr.canUndo()
     canRedo.value = historyMgr.canRedo()
-  })
+  }
 
-  return { zoomLevel, viewportVersion, canUndo, canRedo }
+  canvasMgr.onZoomChange(onZoom)
+  canvasMgr.onViewportChange(onViewport)
+  canvasMgr.onSelectionChange(onSelection)
+  canvasMgr.onModified(onModify)
+  historyMgr.onStateChange(onHistory)
+
+  /** 解绑全部监听，避免 HMR / 组件复用场景下回调叠加 */
+  const dispose = () => {
+    canvasMgr.offZoomChange(onZoom)
+    canvasMgr.offViewportChange(onViewport)
+    canvasMgr.offSelectionChange(onSelection)
+    canvasMgr.offModified(onModify)
+    historyMgr.offStateChange(onHistory)
+  }
+
+  // 组件卸载时自动清理，无需调用方手动处理
+  onScopeDispose(dispose)
+
+  return { zoomLevel, viewportVersion, canUndo, canRedo, dispose }
 }

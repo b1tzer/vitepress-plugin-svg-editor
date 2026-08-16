@@ -4,7 +4,7 @@
  */
 
 import * as fabric from 'fabric'
-import { FABRIC_TYPE } from '../core/FabricTypes'
+import { FABRIC_TYPE } from '../core/shared/FabricTypes'
 
 export function mergeArrows(objects: any[]) {
   const result: any[] = []

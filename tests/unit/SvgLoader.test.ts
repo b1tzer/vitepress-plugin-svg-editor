@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { SvgLoader } from '../../src/core/SvgLoader'
+import { SvgLoader } from '../../src/core/serialization/SvgLoader'
 
 // DOMPurify 依赖浏览器原生 DOM 解析器做 SVG 命名空间解析；happy-dom 的
 // DOM 解析器对 SVG 支持不完整，DOMPurify 官方明确不建议与 happy-dom 组合。

@@ -3,8 +3,8 @@
  * 覆盖：构造函数 DI、子模块 getter、回调委托、dispose
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { CanvasManager } from '../../src/core/CanvasManager'
-import { EventBus } from '../../src/core/EventBus'
+import { CanvasManager } from '../../src/core/canvas/CanvasManager'
+import { EventBus } from '../../src/core/shared/EventBus'
 
 vi.mock('fabric', () => ({
   Canvas: vi.fn(() => ({

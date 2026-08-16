@@ -9,7 +9,7 @@
 
 import type { Canvas } from 'fabric'
 import { Point } from 'fabric'
-import type { IEventBus } from '../types'
+import type { IEventBus } from '../shared/types'
 
 export class ZoomPanController {
   private _eventBus: IEventBus

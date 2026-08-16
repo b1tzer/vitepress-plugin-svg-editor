@@ -8,8 +8,8 @@
  *   4. 提取 viewBox / 宽高
  */
 
-import { THEME_VAR_TO_HEX } from './colors'
-import type { ThemeMode, SvgLoadResult, MarkerInfo } from './types'
+import { THEME_VAR_TO_HEX } from '../shared/colors'
+import type { ThemeMode, SvgLoadResult, MarkerInfo } from '../shared/types'
 
 /**
  * 用 DOMParser 将 SVG 解析为 DOM 文档（仅用于只读结构化信息提取）

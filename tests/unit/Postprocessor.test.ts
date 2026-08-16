@@ -8,7 +8,7 @@ import {
   hexToCssVars,
   restoreViewBox,
   removeCanvasBg,
-} from '../../src/core/postprocessor'
+} from '../../src/core/serialization/postprocessor'
 
 describe('postprocessor', () => {
   // ── rgbToHex ──

@@ -10,7 +10,7 @@
  */
 
 // @ts-nocheck — String.replace 回调参数因正则动态性无法严格类型化
-import { CSS_COLORS } from './colors'
+import { CSS_COLORS } from '../shared/colors'
 /**
  * 主入口：清理 Fabric.js 输出的 SVG
  */

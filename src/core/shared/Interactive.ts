@@ -10,7 +10,7 @@
  * 纯函数，零 Vue 依赖，可单测。
  */
 
-import { HOLLOW_SHAPE_TYPES } from '../FabricTypes'
+import { HOLLOW_SHAPE_TYPES } from './FabricTypes'
 
 /**
  * 确保单个 Fabric 对象（及其子对象）可交互

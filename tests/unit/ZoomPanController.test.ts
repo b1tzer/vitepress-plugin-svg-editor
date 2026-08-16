@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ZoomPanController } from '../../src/core/canvas/ZoomPanController'
-import { EventBus } from '../../src/core/EventBus'
+import { EventBus } from '../../src/core/shared/EventBus'
 
 /** 创建最小 mock fabric Canvas */
 function createMockCanvas(overrides: Record<string, any> = {}) {

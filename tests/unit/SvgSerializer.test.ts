@@ -6,7 +6,7 @@ const createMockCanvas = () => ({ toSVG: mockToSVG } as any)
 
 vi.mock('fabric', () => ({}))
 
-import { SvgSerializer } from '../../src/core/SvgSerializer'
+import { SvgSerializer } from '../../src/core/serialization/SvgSerializer'
 
 describe('SvgSerializer', () => {
   let serializer: SvgSerializer

@@ -17,7 +17,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import * as fabric from 'fabric'
-import { HistoryManager } from '../../src/core/HistoryManager'
+import { HistoryManager } from '../../src/core/history/HistoryManager'
 
 // ── happy-dom 环境适配：mock getContext('2d') 返回最小可用的 2D 上下文 ──
 // Fabric.js 初始化 require getContext('2d')，happy-dom 的 Canvas 2D 不完整

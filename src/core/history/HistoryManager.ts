@@ -12,10 +12,10 @@
  */
 
 import type { Canvas } from 'fabric'
-import type { IHistoryManager } from './types'
+import type { IHistoryManager } from '../shared/types'
 import type { ICommand } from './Command'
-import { ensureObjectInteractive } from './editor/Interactive'
-import { timed } from '../utils/perf'
+import { ensureObjectInteractive } from '../shared/Interactive'
+import { timed } from '../../utils/perf'
 
 const MAX_STACK = 50
 
@@ -27,7 +27,9 @@ type HistoryEntry =
 export class HistoryManager implements IHistoryManager {
   private _undoStack: HistoryEntry[] = []
   private _redoStack: HistoryEntry[] = []
-  private _onStateChange: (() => void) | null = null
+  private _stateChangeListeners = new Set<() => void>()
+  /** 异步快照恢复队列：串行化 loadFromJSON，避免并发恢复读写栈导致状态错乱 */
+  private _restoreQueue: Promise<void> = Promise.resolve()
 
   /**
    * 保存当前画布状态
@@ -85,7 +87,7 @@ export class HistoryManager implements IHistoryManager {
     // 快照：恢复到前一个快照（栈底连续，prevEntry 必为 snapshot）
     const prevEntry = this._undoStack[this._undoStack.length - 1]
     if (prevEntry && prevEntry.type === 'snapshot') {
-      this._restoreSnapshot(canvas, prevEntry.json, afterLoad, entry, false)
+      this._enqueueRestore(canvas, prevEntry.json, afterLoad, entry, false)
     } else {
       // 理论不可达（栈底始终保留初始快照锚点）；兜底放回
       this._redoStack.pop()
@@ -113,13 +115,14 @@ export class HistoryManager implements IHistoryManager {
     }
 
     // 快照：loadFromJSON 恢复
-    this._restoreSnapshot(canvas, entry.json, afterLoad, entry, true)
+    this._enqueueRestore(canvas, entry.json, afterLoad, entry, true)
   }
 
   canUndo(): boolean { return this._undoStack.length >= 2 }
   canRedo(): boolean { return this._redoStack.length > 0 }
 
-  onStateChange(fn: () => void): void { this._onStateChange = fn }
+  onStateChange(fn: () => void): void { this._stateChangeListeners.add(fn) }
+  offStateChange(fn: () => void): void { this._stateChangeListeners.delete(fn) }
 
   reset(): void {
     this._undoStack = []
@@ -127,12 +130,22 @@ export class HistoryManager implements IHistoryManager {
   }
 
   /**
+   * 将快照恢复操作加入串行队列。
+   * 快速连续 undo/redo 时，多个 loadFromJSON 会并发读写栈；
+   * 通过 Promise 链保证每次恢复在前一次完成后再执行，消除竞态。
+   */
+  private _enqueueRestore(canvas: Canvas, json: object, afterLoad: (() => void) | undefined, entry: HistoryEntry, isRedo: boolean): void {
+    this._restoreQueue = this._restoreQueue
+      .then(() => this._restoreSnapshot(canvas, json, afterLoad, entry, isRedo))
+  }
+
+  /**
    * 异步恢复快照（Fabric loadFromJSON 返回 Promise）。
    * 失败时把已弹出的条目放回原栈，保证历史栈一致性。
    */
-  private _restoreSnapshot(canvas: Canvas, json: object, afterLoad: (() => void) | undefined, entry: HistoryEntry, isRedo: boolean): void {
+  private _restoreSnapshot(canvas: Canvas, json: object, afterLoad: (() => void) | undefined, entry: HistoryEntry, isRedo: boolean): Promise<void> {
     canvas.clear()
-    ;(canvas as any)
+    return (canvas as any)
       .loadFromJSON(json)
       .then(() => {
         this._restoreInteractivity(canvas)
@@ -153,7 +166,7 @@ export class HistoryManager implements IHistoryManager {
       })
   }
 
-  private _notify(): void { if (this._onStateChange) this._onStateChange() }
+  private _notify(): void { this._stateChangeListeners.forEach((fn) => fn()) }
 
   /**
    * 恢复所有 canvas 对象的可交互性

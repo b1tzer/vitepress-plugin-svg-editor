@@ -13,7 +13,7 @@
  */
 
 import { preprocessSvg } from './preprocessor'
-import type { SvgLoadResult, ThemeMode } from './types'
+import type { SvgLoadResult, ThemeMode } from '../shared/types'
 import DOMPurify from 'dompurify'
 
 /** 安全配置 */
@@ -60,5 +60,18 @@ export class SvgLoader {
     // 🔒 安全清洗：移除 XSS / CSS 注入向量
     const cleaned = sanitizeSvg(rawSvg)
     return preprocessSvg(cleaned, theme)
+  }
+
+  /**
+   * 从 URL 拉取并加载 SVG（封装 fetch + 清洗 + 预处理，issue #19 P1）
+   * @param url   目标 SVG 地址（相对或绝对）
+   * @param theme 目标主题模式
+   * @returns 标准化结果；HTTP 非 2xx 时抛出错误
+   */
+  async loadFromUrl(url: string, theme: ThemeMode = 'light'): Promise<SvgLoadResult> {
+    const resp = await fetch(url)
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const rawSvg = await resp.text()
+    return this.load(rawSvg, theme)
   }
 }

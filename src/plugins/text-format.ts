@@ -4,7 +4,7 @@
  * 支持单选 Textbox 和多选文字批量操作
  */
 
-import { FABRIC_TYPE, TEXT_TYPES } from '../core/FabricTypes'
+import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/FabricTypes'
 
 export function getTextObjects(canvas) {
   const a = canvas.getActiveObject()

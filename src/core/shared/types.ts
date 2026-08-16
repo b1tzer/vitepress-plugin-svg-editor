@@ -9,7 +9,7 @@
  */
 
 import type { Canvas } from 'fabric'
-import type { ICommand } from './Command'
+import type { ICommand } from '../history/Command'
 
 /** 解析后的 marker 参数 */
 export interface MarkerInfo {
@@ -67,6 +67,7 @@ export interface IHistoryManager {
   canUndo(): boolean
   canRedo(): boolean
   onStateChange(fn: () => void): void
+  offStateChange(fn: () => void): void
   reset(): void
 }
 
