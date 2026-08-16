@@ -1,0 +1,49 @@
+name: Publish to npm
+
+# 触发时机：
+#   1. GitHub Release 发布时（published）——与「更新 changelog → 打 tag → 推送」的发布流程衔接
+#   2. 手动触发（workflow_dispatch）——便于本地验证 OIDC 配置是否正确
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# OIDC Trusted Publishing 最小权限：
+#   - contents: read  —— 仅读取代码
+#   - id-token: write —— 让 GitHub 向 npmjs 签发 OIDC token（方案 A 核心，无需 NPM_TOKEN secret）
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          # OIDC Trusted Publishing 要求 npm CLI >= 11.5.1；Node 24.x 自带 npm 11.x 满足要求
+          node-version: '24'
+          cache: 'pnpm'
+          # 必须显式指向官方源：OIDC Trusted Publishing 目前仅支持 registry.npmjs.org
+          registry-url: 'https://registry.npmjs.org'
+
+      # 依赖安装（根目录为 pnpm workspace，故用 pnpm）
+      - run: pnpm install --frozen-lockfile
+
+      # 发布前构建：package.json 的 files 白名单包含 dist，必须先产出构建产物
+      - run: pnpm build
+
+      # 双保险：确保 npm CLI >= 11.5.1（OIDC 认证硬性要求，否则会报误导性的 404）
+      - run: npm install -g npm@latest
+
+      # 使用 npm publish（而非 pnpm publish）：
+      #   - OIDC 认证依赖 npm CLI 的能力（需 >= 11.5.1）
+      #   - --provenance 生成 SLSA 来源证明，是 OIDC 方案的标准形态
+      - run: npm publish --provenance --access public
