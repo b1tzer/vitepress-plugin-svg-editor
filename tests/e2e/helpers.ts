@@ -56,7 +56,12 @@ export async function waitForSvgContainer(
 export async function openEditor(page: Page, svgIndex = 0): Promise<void> {
   const container = page.locator('.svg-container').nth(svgIndex)
   await container.hover()
-  await container.locator('.svg-edit-btn').click({ force: true })
+  // 等待「编辑 SVG」按钮真正渲染并可见后再点击。
+  // 此前用 click({ force: true }) 会在按钮 v-if="isDev && hovered" 渲染完成前就
+  // 触发点击，导致「无效点击」、showEditor 不置 true（M3 快速连续切换时暴露）。
+  const editBtn = container.locator('.svg-edit-btn')
+  await editBtn.waitFor({ state: 'visible', timeout: 10000 })
+  await editBtn.click()
   await page.waitForSelector('.editor-overlay')
   // 等待 loading 消失 + canvas 渲染
   await page.waitForFunction(
@@ -82,6 +87,16 @@ export async function navigateAndOpenEditor(page: Page, url: string, svgIndex = 
 /** 等待编辑器完全关闭 */
 export async function waitForEditorClose(page: Page): Promise<void> {
   await page.waitForSelector('.editor-overlay', { state: 'hidden', timeout: 5000 })
+}
+
+/**
+ * 关闭编辑器：点击右上角关闭按钮（真实 DOM 类名为 .btn-close）并等待 overlay 从 DOM 移除。
+ * 注意：关闭按钮的类名是 .btn-close（aria-label="关闭 Esc"），不是 .close-btn，
+ * 此前 multiple-svg.spec.ts 误用 .close-btn 导致按钮永远匹配不到、overlay 残留。
+ */
+export async function closeEditor(page: Page): Promise<void> {
+  await page.locator('.editor-overlay .btn-close').first().click({ force: true })
+  await page.waitForSelector('.editor-overlay', { state: 'detached', timeout: 5000 })
 }
 
 // ═══════════════════════════════════════════════════════════
