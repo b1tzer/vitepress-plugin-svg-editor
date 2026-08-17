@@ -1,8 +1,24 @@
 node_modules/
 dist/
+coverage/
 test-results/
 playwright-report/
 tests/e2e/screenshots/
 **/.vitepress/cache/
+**/.vitepress/dist/
+*.tsbuildinfo
+.eslintcache
 *.log
 .DS_Store
+
+# AI 辅助开发 / 提示语文件（与项目功能无关，仅用于本地 Agent 协作）
+CODEBUDDY.md
+AGENTS.md
+CLAUDE.md
+.cursorrules
+.github/copilot-instructions.md
+.codebuddy/
+.cursor/
+.windsurf/
+.continue/
+.claude/
