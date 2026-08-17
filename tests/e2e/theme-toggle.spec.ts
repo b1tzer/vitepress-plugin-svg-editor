@@ -55,8 +55,11 @@ function getCanvasSummary(page: any) {
   return page.evaluate(() => {
     const c = (window as any).__fabricCanvas
     if (!c) return null
+    // 背景色由 workspace Rect（id='workspace'）的 fill 提供（方案 C），
+    // canvas.backgroundColor 恒为 transparent
+    const ws = c.getObjects().find((o: any) => o.id === 'workspace')
     return {
-      bg: c.backgroundColor,
+      bg: ws ? ws.fill : c.backgroundColor,
       zoom: c.getZoom(),
       totalObjects: c.getObjects().length,
     }
@@ -80,15 +83,20 @@ function getObjectColors(page: any) {
   })
 }
 
-/** 获取背景信息（纯 canvas.backgroundColor，无 fabric.Rect 背景板） */
+/** 获取背景信息（workspace Rect 的 fill 提供背景，canvas.backgroundColor 恒为 transparent） */
 function getBackgroundInfo(page: any) {
   return page.evaluate(() => {
     const c = (window as any).__fabricCanvas
     if (!c) return null
+    const ws = c.getObjects().find((o: any) => o.id === 'workspace')
+    // workspace Rect 是方案 C 的设计核心（excludeFromExport 不导出），应存在；
+    // 除此之外不应有其它 excludeFromExport 背景板
+    const nonWorkspaceBgRects = c
+      .getObjects()
+      .filter((o: any) => o.excludeFromExport && o.id !== 'workspace').length
     return {
-      bg: c.backgroundColor,
-      // 不应存在 excludeFromExport 的 fabric.Rect 背景对象
-      noBgRects: c.getObjects().filter((o: any) => o.excludeFromExport).length === 0,
+      bg: ws ? ws.fill : c.backgroundColor,
+      noBgRects: nonWorkspaceBgRects === 0,
       totalObjects: c.getObjects().length,
     }
   })
@@ -97,7 +105,7 @@ function getBackgroundInfo(page: any) {
 /** 点击主题切换按钮 */
 function clickThemeToggle(page: any) {
   return page.evaluate(() => {
-    const btn = document.querySelector('.theme-toggle-btn') as HTMLButtonElement
+    const btn = document.querySelector('.theme-btn') as HTMLButtonElement
     if (btn) {
       btn.click()
       return true
@@ -109,7 +117,7 @@ function clickThemeToggle(page: any) {
 /** 获取主题按钮状态 */
 function getThemeToggleState(page: any) {
   return page.evaluate(() => {
-    const btn = document.querySelector('.theme-toggle-btn')
+    const btn = document.querySelector('.theme-btn')
     if (!btn) return { exists: false }
     return {
       exists: true,
@@ -407,7 +415,7 @@ test.describe('层级2 — UI 交互正确性', () => {
     expect(state.visible).toBe(true)
   })
 
-  test('2.2 亮色模式下按钮 tooltip 为"切换到暗色模式"', async ({ page }) => {
+  test('2.2 亮色模式下按钮 tooltip 为"暗色模式"', async ({ page }) => {
     // 确保页面是亮色模式
     const isDark = await page.evaluate(() => document.documentElement.classList.contains('dark'))
     if (isDark) {
@@ -416,11 +424,11 @@ test.describe('层级2 — UI 交互正确性', () => {
       await page.waitForTimeout(300)
     }
     const state = await getThemeToggleState(page)
-    expect(state.tip).toBe('切换到暗色模式')
+    expect(state.tip).toBe('暗色模式')
     await screenshot(page, 'btn-light-tooltip')
   })
 
-  test('2.3 暗色模式下按钮 tooltip 为"切换到亮色模式"', async ({ page }) => {
+  test('2.3 暗色模式下按钮 tooltip 为"亮色模式"', async ({ page }) => {
     // 先确保处于暗色
     const isDark = await page.evaluate(() => document.documentElement.classList.contains('dark'))
     if (!isDark) {
@@ -428,7 +436,7 @@ test.describe('层级2 — UI 交互正确性', () => {
       await page.waitForTimeout(300)
     }
     const state = await getThemeToggleState(page)
-    expect(state.tip).toBe('切换到亮色模式')
+    expect(state.tip).toBe('亮色模式')
     await screenshot(page, 'btn-dark-tooltip')
   })
 
@@ -438,24 +446,25 @@ test.describe('层级2 — UI 交互正确性', () => {
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
     const afterDark = await getThemeToggleState(page)
-    expect(afterDark.tip).toBe('切换到亮色模式')
+    expect(afterDark.tip).toBe('亮色模式')
     // 暗 → 亮
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
     const afterLight = await getThemeToggleState(page)
-    expect(afterLight.tip).toBe('切换到暗色模式')
+    expect(afterLight.tip).toBe('暗色模式')
   })
 
-  test('2.5 初始化时 canvas backgroundColor 为白色', async ({ page }) => {
+  test('2.5 初始化时 workspace 背景 Rect 为白色', async ({ page }) => {
     const result = await page.evaluate(() => {
       const vpDark = document.documentElement.classList.contains('dark')
       const c = (window as any).__fabricCanvas
       if (!c) return { vpDark, bg: null, ok: false }
-      const bg = c.backgroundColor
+      const ws = c.getObjects().find((o: any) => o.id === 'workspace')
+      const bg = ws ? ws.fill : c.backgroundColor
       return {
         vpDark,
         bg,
-        ok: bg === '#ffffff' || bg === '#1a1a1a', // 亮/暗初始都可能
+        ok: bg === '#ffffff' || bg === '#1e1e1e', // 亮/暗初始都可能
       }
     })
     expect(result.ok).toBe(true)
@@ -472,8 +481,12 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     await openEditor(page)
     // 确保从亮色开始
     const isDark = await page.evaluate(() => document.documentElement.classList.contains('dark'))
-    const bg = await page.evaluate(() => (window as any).__fabricCanvas?.backgroundColor)
-    if (bg === '#1a1a1a') {
+    const bg = await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const ws = c?.getObjects().find((o: any) => o.id === 'workspace')
+      return ws ? ws.fill : c?.backgroundColor
+    })
+    if (bg === '#1e1e1e') {
       await clickThemeToggle(page)
       await page.waitForTimeout(300)
     }
@@ -485,7 +498,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
     const after = await getCanvasSummary(page)
-    expect(after!.bg).toBe('#1a1a1a')
+    expect(after!.bg).toBe('#1e1e1e')
     await screenshot(page, 'canvas-bg-dark')
   })
 
@@ -493,7 +506,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
     const dark = await getCanvasSummary(page)
-    expect(dark!.bg).toBe('#1a1a1a')
+    expect(dark!.bg).toBe('#1e1e1e')
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
     const light = await getCanvasSummary(page)
@@ -555,7 +568,7 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     await page.waitForTimeout(300)
     const bgAfter = await getBackgroundInfo(page)
     expect(bgAfter.noBgRects).toBe(true)
-    expect(bgAfter.bg).toBe('#1a1a1a')
+    expect(bgAfter.bg).toBe('#1e1e1e')
     await screenshot(page, 'bg-dark-no-rects')
   })
 
@@ -679,7 +692,7 @@ test.describe('层级4 — 边界情况', () => {
     await page.waitForTimeout(300)
 
     const summary = await getCanvasSummary(page)
-    expect(summary!.bg).toBe('#1a1a1a')
+    expect(summary!.bg).toBe('#1e1e1e')
     await screenshot(page, 'empty-toggle')
   })
 
@@ -748,11 +761,12 @@ test.describe('层级4 — 边界情况', () => {
 
   test('4.5 切换不影响对象选择状态', async ({ page }) => {
     await addTestShapes(page)
-    // 选中第一个对象
+    // 选中 diagram 色系对象（fill 在映射表中，切换后颜色会改变）
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       const objs = c.getObjects().filter((o: any) => !o.excludeFromExport)
-      if (objs.length) c.setActiveObject(objs[0])
+      const target = objs.find((o: any) => o.fill === '#E3F2FD') || objs[0]
+      if (target) c.setActiveObject(target)
       c.renderAll()
     })
 
@@ -839,13 +853,18 @@ test.describe('层级4 — 边界情况', () => {
     expect(stateDefault.visible).toBe(true)
   })
 
-  test('4.9 无 excludeFromExport 背景对象（纯 canvas.backgroundColor）', async ({ page }) => {
+  test('4.9 workspace Rect 为唯一 excludeFromExport 背景对象', async ({ page }) => {
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      return c.getObjects().filter((o: any) => o.excludeFromExport).length
+      const bgRects = c.getObjects().filter((o: any) => o.excludeFromExport)
+      return {
+        workspaceCount: bgRects.filter((o: any) => o.id === 'workspace').length,
+        otherCount: bgRects.filter((o: any) => o.id !== 'workspace').length,
+      }
     })
-    expect(result).toBe(0)
+    expect(result.workspaceCount).toBe(1)
+    expect(result.otherCount).toBe(0)
   })
 })

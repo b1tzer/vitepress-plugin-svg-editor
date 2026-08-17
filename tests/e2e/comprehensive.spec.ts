@@ -34,15 +34,15 @@ test('Group 1: 缩放—放大/缩小/适应画布', async ({ page }) => {
   await resetCanvas(page)
   const z1 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0)
   console.log(`缩放初始: ${z1}`)
-  await clickByTip(page, '放大 (+)')
+  await clickByTip(page, '放大 Ctrl+=')
   const z2 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0)
   console.log(`放大后: ${z2}`)
   expect(z2).toBeGreaterThan(z1)
-  await clickByTip(page, '缩小 (-)')
+  await clickByTip(page, '缩小 Ctrl+-')
   const z3 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0)
   console.log(`缩小后: ${z3}`)
   expect(z3).toBeLessThan(z2)
-  await clickByTip(page, '适应画布')
+  await clickByTip(page, '适应画布 Ctrl+0')
   const z4 = await page.evaluate(() => (window as any).__fabricCanvas?.getZoom?.() || 0)
   console.log(`适应后: ${z4}`)
   expect(z4).toBeGreaterThan(0)
@@ -63,12 +63,8 @@ test('Group 2: 6种对齐—逐个验证坐标变化', async ({ page }) => {
     }
     await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      const s = c.getActiveObject()
-      if (s && s._objects) {
-        s.destroy()
-        c.discardActiveObject()
-        c.renderAll()
-      }
+      c.discardActiveObject()
+      c.renderAll()
     })
     const after = await readRects(page, 'align')
     const changed = before[0]?.left !== after[0]?.left || before[0]?.top !== after[0]?.top
@@ -85,14 +81,14 @@ test('Group 3: 撤销/重做/删除/复制', async ({ page }) => {
   await createRects(page, 1, 'edit')
   await multiSelect(page, ['edit-0'])
   const before = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects()?.length)
-  await clickByTip(page, '删除')
+  await clickByTip(page, '删除 Delete')
   const afterDel = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects()?.length)
   console.log(`删除: ${before}→${afterDel} ${afterDel < before ? '✅' : '❌'}`)
   expect(afterDel).toBeLessThan(before)
-  await clickByTip(page, '撤销')
+  await clickByTip(page, '撤销 Ctrl+Z')
   const afterUndo = await page.evaluate(() => (window as any).__fabricCanvas?.getObjects()?.length)
   console.log(`撤销: ${afterUndo} ${afterUndo >= before ? '✅' : '⚠️'}`)
-  await clickByTip(page, '重做')
+  await clickByTip(page, '重做 Ctrl+Y')
   console.log('重做: ✅')
   await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
@@ -108,7 +104,7 @@ test('Group 3: 撤销/重做/删除/复制', async ({ page }) => {
     c.setActiveObject(r)
     c.renderAll()
   })
-  await clickByTip(page, '复制')
+  await clickByTip(page, '复制 Ctrl+C')
   console.log('复制: ✅')
   console.log('✅ 编辑按钮全通过')
 })
@@ -140,17 +136,32 @@ test('Group 5: 组合/取消组合', async ({ page }) => {
 
 test('Group 6: 分布与样式按钮存在性', async ({ page }) => {
   await resetCanvas(page)
-  for (const tip of [
-    '水平等间距分布',
-    '垂直等间距分布',
-    '阴影',
-    '虚线',
-    '加粗',
-    '斜体',
-    '下划线',
-  ]) {
+
+  // 属性面板按钮仅在选中对象后渲染：先选中非文本对象，验证分布/虚线/阴影按钮
+  await createRects(page, 2, 'style')
+  await multiSelect(page, ['style-0', 'style-1'])
+  for (const tip of ['水平等间距分布', '垂直等间距分布', '虚线', '阴影']) {
     const idx = await clickByTip(page, tip)
-    console.log(`${tip}: ${idx >= 0 ? '✅' : '❌'}`)
+    console.log(`形状按钮 ${tip}: ${idx >= 0 ? '✅' : '❌'}`)
+  }
+
+  // 再选中文本对象，验证加粗/斜体/下划线按钮
+  await page.evaluate(() => {
+    const c = (window as any).__fabricCanvas
+    const t = new (window as any).fabric.Text('测试', {
+      left: 100,
+      top: 100,
+      fontSize: 16,
+      fill: '#333',
+      id: 'style-text',
+    })
+    c.add(t)
+    c.setActiveObject(t)
+    c.renderAll()
+  })
+  for (const tip of ['加粗', '斜体', '下划线']) {
+    const idx = await clickByTip(page, tip)
+    console.log(`文本按钮 ${tip}: ${idx >= 0 ? '✅' : '❌'}`)
   }
   console.log('✅ 分布/样式按钮存在')
 })

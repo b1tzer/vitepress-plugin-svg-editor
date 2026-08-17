@@ -23,18 +23,8 @@ test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛�
   await navigateAndOpenEditor(page, PAGE, 1)
   await page.waitForTimeout(2000)
 
-  // ═══════════════════ 2. 准备：找按钮 + 创建矩形 + 多选 ═══════════════════
-  console.log('[2/3] 找居中按钮 → 重置坐标系 → 创建两个矩形 → 多选...')
-
-  const btnIdx = await page.evaluate(() => {
-    const btns = document.querySelectorAll('.editor-overlay button')
-    for (let i = 0; i < btns.length; i++) {
-      if (btns[i].getAttribute('data-tip') === '水平居中') return i
-    }
-    return -1
-  })
-  expect(btnIdx, '应能找到 data-tip="水平居中" 的按钮').toBeGreaterThanOrEqual(0)
-  console.log(`  水平居中按钮 index: ${btnIdx}`)
+  // ═══════════════════ 2. 准备：重置坐标系 + 创建矩形 + 多选 ═══════════════════
+  console.log('[2/3] 重置坐标系 → 创建两个矩形 → 多选...')
 
   await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
@@ -84,6 +74,17 @@ test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛�
   })
   await page.waitForTimeout(200)
 
+  // 选中对象后属性面板（context-content）才渲染对齐按钮，因此此处再查找
+  const btnIdx = await page.evaluate(() => {
+    const btns = document.querySelectorAll('.editor-overlay button')
+    for (let i = 0; i < btns.length; i++) {
+      if (btns[i].getAttribute('data-tip') === '水平居中') return i
+    }
+    return -1
+  })
+  expect(btnIdx, '应能找到 data-tip="水平居中" 的按钮').toBeGreaterThanOrEqual(0)
+  console.log(`  水平居中按钮 index: ${btnIdx}`)
+
   // ═══════════════════ 3. 点击居中按钮 + 验证效果 ═══════════════════
   console.log('[3/3] 点击水平居中按钮 → 验证中心X收敛...')
   await page.locator('.editor-overlay button').nth(btnIdx!).click()
@@ -91,8 +92,6 @@ test('按钮效果验证：创建对象 → 选中 → 居中 → 坐标收敛�
 
   const after = await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
-    const sel = c.getActiveObject()
-    if (sel && sel.type === 'activeselection') sel.destroy()
     c.discardActiveObject()
     c.renderAll()
     return c

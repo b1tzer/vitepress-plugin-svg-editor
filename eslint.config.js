@@ -33,6 +33,7 @@ export default tseslint.config(
         // Vite define 注入的构建时常量（类型声明见 src/env.d.ts）
         __SVG_EDITOR_STORAGE__: 'readonly',
         __SVG_EDITOR_SAVE_ENDPOINT__: 'readonly',
+        __SVG_EDITOR_E2E__: 'readonly',
       },
     },
   },

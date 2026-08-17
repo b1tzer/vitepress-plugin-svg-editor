@@ -278,7 +278,7 @@ function injectLineArrows(
   markers: Record<string, MarkerInfo>,
   classMarkers: Record<string, string>
 ): string {
-  return svg.replace(/<line\s+([^>]*?)\s*\/>/g, (full, attrs) => {
+  return svg.replace(/<line\s+([^>]*?)\s*(?:\/>|><\/line>)/g, (full, attrs) => {
     let markerId = ''
     const inlineMe = attrs.match(/marker-end="url\(#([^)]+)\)"/)
     if (inlineMe) {
@@ -314,7 +314,7 @@ function injectLineArrows(
  */
 function injectPathArrows(svg: string, markers: Record<string, MarkerInfo>): string {
   return svg.replace(
-    /<path\s+([^>]*?)marker-end="url\(#([^)]+)\)"\s*([^>]*?)\s*\/>/g,
+    /<path\s+([^>]*?)marker-end="url\(#([^)]+)\)"\s*([^>]*?)\s*(?:\/>|><\/path>)/g,
     (full, before, markerId, after) => {
       if (!markers[markerId]) return full.replace(/\s*marker-end="[^"]*"/, '')
       const dMatch = (before + ' ' + after).match(/d="([^"]+)"/)

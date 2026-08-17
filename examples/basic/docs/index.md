@@ -6,6 +6,8 @@
 
 <SvgDiagram src="/diagrams/test-complex.svg" />
 
+<SvgDiagram src="/diagrams/decision-tree.svg" />
+
 ---
 
 ## 集成说明

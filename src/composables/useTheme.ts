@@ -38,6 +38,9 @@ export function useTheme(canvasMgr: CanvasManager): {
       const processObject = (o: FabricObject): void => {
         if (o.fill && typeof o.fill === 'string') o.set('fill', swapColor(o.fill))
         if (o.stroke && typeof o.stroke === 'string') o.set('stroke', swapColor(o.stroke))
+        // 阴影颜色同样跟随主题映射（如 --diagram-ghost 亮 #999999 ↔ 暗 #666666）
+        const shadow = (o as FabricObject & { shadow?: { color?: string } }).shadow
+        if (shadow?.color) shadow.color = swapColor(shadow.color)
         const children = (o as FabricObject & { _objects?: FabricObject[] })._objects
         if (children) children.forEach(processObject)
       }
