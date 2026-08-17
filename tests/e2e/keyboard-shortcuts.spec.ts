@@ -121,23 +121,14 @@ test.describe('快捷键', () => {
     expect(after.objectCount).toBeGreaterThan(before.objectCount)
   })
 
-  test('K6: Escape 取消选择', async ({ page }) => {
+  test('K6: Escape 关闭编辑器', async ({ page }) => {
     await addRect(page, { left: 50, top: 50, width: 80, height: 60 })
-    // 先确认已选中
-    const hasActiveBefore = await page.evaluate(() => {
-      const c = (window as any).__fabricCanvas
-      return !!c.getActiveObject()
-    })
-    expect(hasActiveBefore).toBe(true)
 
-    // Escape
+    // Escape 在 SvgEditor.vue 中绑定 @keydown.escape="emit('close')"，语义为关闭编辑器
     await page.keyboard.press('Escape')
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(300)
 
-    const hasActiveAfter = await page.evaluate(() => {
-      const c = (window as any).__fabricCanvas
-      return !!c.getActiveObject()
-    })
-    // 取消选择后应有 activeObject 为 null/false
+    const editorClosed = await page.evaluate(() => !document.querySelector('.editor-overlay'))
+    expect(editorClosed).toBe(true)
   })
 })

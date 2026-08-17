@@ -22,13 +22,16 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
   // 一、背景（纯 canvas.backgroundColor，无 fabric.Rect 背景板）
   // ════════════════════════════════════════════════════════════════
 
-  test('1.1 canvas.backgroundColor 为白色 + 无 excludeFromExport 对象', async ({ page }) => {
+  test('1.1 workspace Rect 提供背景 + 无多余 excludeFromExport 对象', async ({ page }) => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
+      const ws = c.getObjects().find((o: any) => o.id === 'workspace')
       return {
-        bg: c.backgroundColor,
-        noBgRects: c.getObjects().filter((o: any) => o.excludeFromExport).length === 0,
+        bg: ws ? ws.fill : c.backgroundColor,
+        noBgRects:
+          c.getObjects().filter((o: any) => o.excludeFromExport && o.id !== 'workspace')
+            .length === 0,
         totalObjects: c.getObjects().length,
       }
     })
@@ -38,37 +41,47 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
     await screenshot(page, 'bg-canvas-only')
   })
 
-  test('1.2 undo 后 backgroundColor 仍是白色', async ({ page }) => {
+  test('1.2 undo 后 workspace 背景仍是白色', async ({ page }) => {
     await addRect(page)
     await page.keyboard.press('Control+z')
     await page.waitForTimeout(500)
-    const bg = await page.evaluate(() => (window as any).__fabricCanvas?.backgroundColor)
+    const bg = await page.evaluate(() => {
+      const c = (window as any).__fabricCanvas
+      const ws = c?.getObjects().find((o: any) => o.id === 'workspace')
+      return ws ? ws.fill : c?.backgroundColor
+    })
     expect(bg).toBe('#ffffff')
     await screenshot(page, 'bg-after-undo')
   })
 
-  test('1.3 undo 后无 excludeFromExport 对象', async ({ page }) => {
+  test('1.3 undo 后 workspace Rect 为唯一 excludeFromExport 对象', async ({ page }) => {
     await addRect(page)
     await page.keyboard.press('Control+z')
     await page.waitForTimeout(500)
-    const count = await page.evaluate(() => {
+    const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
-      return c.getObjects().filter((o: any) => o.excludeFromExport).length
+      const excluded = c.getObjects().filter((o: any) => o.excludeFromExport)
+      return {
+        workspaceCount: excluded.filter((o: any) => o.id === 'workspace').length,
+        otherCount: excluded.filter((o: any) => o.id !== 'workspace').length,
+      }
     })
-    expect(count).toBe(0)
+    expect(result.workspaceCount).toBe(1)
+    expect(result.otherCount).toBe(0)
     await screenshot(page, 'no-excluded-after-undo')
   })
 
-  test('1.4 导出 SVG 无 excludeFromExport 对象（全部可导出）', async ({ page }) => {
+  test('1.4 导出 SVG 仅 workspace Rect 被排除（其余全部可导出）', async ({ page }) => {
     const result = await page.evaluate(() => {
       const c = (window as any).__fabricCanvas
       if (!c) return null
       const all = c.getObjects().length
-      const excluded = c.getObjects().filter((o: any) => o.excludeFromExport).length
-      return { all, excluded }
+      const excluded = c.getObjects().filter((o: any) => o.excludeFromExport)
+      const nonWorkspaceExcluded = excluded.filter((o: any) => o.id !== 'workspace').length
+      return { all, excluded: excluded.length, nonWorkspaceExcluded }
     })
     console.log(`[导出] 总对象: ${result!.all}, excluded: ${result!.excluded}`)
-    expect(result!.excluded).toBe(0)
+    expect(result!.nonWorkspaceExcluded).toBe(0)
   })
 
   // ════════════════════════════════════════════════════════════════
@@ -327,6 +340,14 @@ test.describe('SvgEditor 边界与功能区外测试', () => {
   })
 
   test('6.2 保存后编辑器关闭', async ({ page }) => {
+    // 拦截保存端点，避免测试真实写回样例 SVG 文件（污染源码）
+    await page.route('**/__svg-save__', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, file: '/__mock__/test.svg' }),
+      })
+    })
     await page.locator('.btn-save').click()
     await page
       .waitForFunction(() => !document.querySelector('.editor-overlay'), { timeout: 10000 })

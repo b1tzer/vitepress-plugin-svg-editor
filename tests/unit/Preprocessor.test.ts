@@ -36,6 +36,16 @@ describe('preprocessSvg', () => {
     expect(result.svg).toContain('#1a1a1a')
   })
 
+  it('应解析带 fallback 的外部 CSS 变量为 fallback 值', () => {
+    // 例如 VitePress 的 var(--vp-c-brand-1, #2563eb)，不在 --diagram-* 映射表中，
+    // 应取 fallback #2563eb，避免 var() 字符串被 Fabric 当作非法颜色渲染为透明
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="var(--vp-c-brand-1, #2563eb)"/></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).not.toContain('var(')
+    expect(result.svg).toContain('#2563eb')
+  })
+
   it('应处理 <stop style="stop-color:...">', () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="g"><stop offset="0%" style="stop-color:#ff0000;stop-opacity:1"/></linearGradient></defs><rect fill="url(#g)" width="100" height="100"/></svg>'

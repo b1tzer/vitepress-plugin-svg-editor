@@ -52,9 +52,14 @@ test.describe('文字编辑', () => {
   })
 
   test('T1: 创建文字对象', async ({ page }) => {
-    await addText(page, 'Hello World', { left: 150, top: 100, fontSize: 28, fill: '#333' })
+    const textIdx = await addText(page, 'Hello World', {
+      left: 150,
+      top: 100,
+      fontSize: 28,
+      fill: '#333',
+    })
 
-    const state = await getObjectState(page, 0)
+    const state = await getObjectState(page, textIdx)
     expect(state).not.toBeNull()
     expect(state!.type).toBe('text')
     // Fabric.Text 的 fontSize 默认可能不是固定属性
