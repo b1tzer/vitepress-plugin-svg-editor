@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.1 (2026-08-17)
+
+### Fixed
+
+- **CSS 变量 fallback 未处理**：`var(--vp-c-brand-1, #2563eb)` 这类带 fallback 的外部变量此前会被 Fabric 当作非法颜色渲染为透明，现正确取 fallback 兜底色。
+- **箭头合并坐标误判**：修复 Fabric v6 下从右到左的斜线箭头无法合并的问题；终点绝对坐标直接取 `line.x2`/`line.y2`，不再按数值大小猜测坐标约定。
+- **阴影颜色不跟随主题**：主题切换时阴影颜色（如 `--diagram-ghost` 亮 `#999999` ↔ 暗 `#666666`）此前未参与映射，现同步跟随明暗主题。
+- **非自闭合箭头元素注入**：`<line>…</line>`、`<path>…</path>` 非自闭合形式的 SVG 元素此前无法注入箭头标记，现已支持。
+
+### Internal
+
+- **E2E 测试模式开关**：新增 `__SVG_EDITOR_E2E__` 注入（由 `SVG_EDITOR_E2E=1` 环境变量控制），使 `vitepress preview` 静态产物也能运行 E2E 测试；默认关闭，生产产物零污染。
+- **发布工作流**：改为 `push v* tag` 触发（OIDC + `--provenance`），并新增 tag 版本号与 `package.json` version 一致性校验。
+- **CI**：测试步骤新增 `pnpm build`；清理 `test.yml` 中已删除的 `master` 分支触发项。
+
 ## v0.2.0 (2026-08-16)
 
 ### Breaking Changes
