@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" font-family="'Noto Sans SC',sans-serif">
+  <defs>
+    <!-- 箭头 marker：preprocessor 会将其转换为 <line> + <polygon>，再由 mergeArrows 合并为 Group -->
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- 根节点 -->
+  <rect x="410" y="24" width="140" height="48" rx="8" fill="#2563eb"/>
+  <text x="480" y="54" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="bold">开始</text>
+
+  <!-- 第二层：3 个条件节点 -->
+  <rect x="90" y="180" width="140" height="48" rx="8" fill="#2563eb"/>
+  <text x="160" y="210" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="bold">条件 A</text>
+  <rect x="410" y="180" width="140" height="48" rx="8" fill="#2563eb"/>
+  <text x="480" y="210" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="bold">条件 B</text>
+  <rect x="730" y="180" width="140" height="48" rx="8" fill="#2563eb"/>
+  <text x="800" y="210" text-anchor="middle" font-size="13" fill="#ffffff" font-weight="bold">条件 C</text>
+
+  <!-- 第三层：6 个叶子结果节点 -->
+  <rect x="30" y="350" width="120" height="44" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="90" y="376" text-anchor="middle" font-size="12" fill="#1e293b">结果 1</text>
+  <rect x="170" y="350" width="120" height="44" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="230" y="376" text-anchor="middle" font-size="12" fill="#1e293b">结果 2</text>
+  <rect x="340" y="350" width="120" height="44" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="400" y="376" text-anchor="middle" font-size="12" fill="#1e293b">结果 3</text>
+  <rect x="500" y="350" width="120" height="44" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="560" y="376" text-anchor="middle" font-size="12" fill="#1e293b">结果 4</text>
+  <rect x="660" y="350" width="120" height="44" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="720" y="376" text-anchor="middle" font-size="12" fill="#1e293b">结果 5</text>
+  <rect x="810" y="350" width="120" height="44" rx="8" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="870" y="376" text-anchor="middle" font-size="12" fill="#1e293b">结果 6</text>
+
+  <!-- 9 条边：根 → 第二层（3 条）-->
+  <line x1="480" y1="72" x2="160" y2="180" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="480" y1="72" x2="480" y2="180" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="480" y1="72" x2="800" y2="180" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 9 条边：第二层 → 叶子（6 条）-->
+  <line x1="160" y1="228" x2="90" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="160" y1="228" x2="230" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="480" y1="228" x2="400" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="480" y1="228" x2="560" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="800" y1="228" x2="720" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="800" y1="228" x2="870" y2="350" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+</svg>

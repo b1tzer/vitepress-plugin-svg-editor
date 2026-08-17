@@ -1,260 +1,151 @@
 /**
- * arrow-merger.ts 单元测试
+ * 箭头合并插件单元测试 — mergeArrows
  *
- * 覆盖：
- *   1. 相邻 line + polygon 距离 < 30 → 合并为 Group
- *   2. 相邻 line + polygon 距离 ≥ 30 → 不合并
- *   3. 非相邻 line + polygon → 不合并
- *   4. 边界条件：空数组、单对象、没有 line、没有 polygon
- *   5. Group 属性验证（selectable/evented 等）
+ * 覆盖 line + polygon 合并为 group 的核心逻辑，尤其是「从右到左斜线」
+ * （终点在 left/top 边）的坐标换算——该场景曾因按 |x2| 与 width/2 比较的
+ * 猜测逻辑被误判为「相对坐标」，导致箭头无法合并。
  */
-
-import { describe, it, expect, vi } from 'vitest'
-
-// ── 模拟 Fabric Group：记录构造函数参数，不调用真实 Group ──
-const mockGroupCtor = vi.fn((objects: any[], options: any) => ({
-  type: 'group',
-  _objects: objects,
-  ...options,
-}))
-
-vi.mock('fabric', () => ({
-  Group: vi.fn((objects: any[], options: any) => mockGroupCtor(objects, options)),
-}))
-
+import { describe, it, expect } from 'vitest'
 import { mergeArrows } from '../../src/plugins/arrow-merger'
+import * as fabric from 'fabric'
 
-// ── 模拟 Fabric 对象工厂 ──
-
-function makeLine(overrides: Record<string, any> = {}) {
-  return {
-    type: 'line',
-    left: 0,
-    top: 0,
-    width: 100,
-    height: 0,
-    x2: 100,
-    y2: 0,
-    scaleX: 1,
-    scaleY: 1,
-    ...overrides,
-  } as any
+/** 构造一条 fabric Line（x1/y1/x2/y2 为绝对 SVG 坐标） */
+function makeLine(x1: number, y1: number, x2: number, y2: number) {
+  return new fabric.Line([x1, y1, x2, y2], { stroke: '#000', strokeWidth: 2 })
 }
 
-function makePolygon(overrides: Record<string, any> = {}) {
-  return {
-    type: 'polygon',
-    left: 120,
-    top: -5,
-    width: 10,
-    height: 10,
-    scaleX: 1,
-    scaleY: 1,
-    fill: '#333',
-    ...overrides,
-  } as any
+/** 构造一个中心位于 (cx, cy) 的箭头三角形 polygon */
+function makeArrowPolygon(cx: number, cy: number) {
+  return new fabric.Polygon(
+    [
+      { x: 0, y: 0 },
+      { x: 8, y: 4 },
+      { x: 0, y: 8 },
+    ],
+    { left: cx - 4, top: cy - 4, fill: '#000' }
+  )
 }
 
-function makeRect(overrides: Record<string, any> = {}) {
-  return {
-    type: 'rect',
-    left: 0,
-    top: 0,
-    width: 50,
-    height: 50,
-    scaleX: 1,
-    scaleY: 1,
-    fill: '#f00',
-    ...overrides,
-  } as any
+/** 构造一个普通 rect 对象（非 line/polygon，用于验证不合并场景） */
+function makeRect(left: number, top: number) {
+  return new fabric.Rect({ left, top, width: 50, height: 50, fill: '#f00' })
 }
 
 describe('mergeArrows', () => {
-  beforeEach(() => {
-    mockGroupCtor.mockClear()
+  it('从左到右的水平箭头应合并为 group', () => {
+    const line = makeLine(100, 100, 200, 100)
+    const polygon = makeArrowPolygon(200, 100)
+    const result = mergeArrows([line as any, polygon as any])
+    expect(result.length).toBe(1)
+    expect((result[0] as any).type).toBe('group')
   })
 
-  // ═══════════ 正常合并场景 ═══════════
-
-  it('相邻 line + polygon 且距离 < 30 时应合并为 Group', () => {
-    const line = makeLine({ x2: 100, y2: 0 })
-    const poly = makePolygon({ left: 105, top: -5 }) // polyCenterX ≈ 110
-    const result = mergeArrows([line, poly])
-
-    expect(result).toHaveLength(1)
-    expect(result[0].type).toBe('group')
-    expect(result[0].selectable).toBe(true)
-    expect(result[0].evented).toBe(true)
-    expect(mockGroupCtor).toHaveBeenCalledTimes(1)
+  it('从右到左的斜线箭头（终点在 left 边）应合并为 group', () => {
+    // 根→条件A：480,72 → 160,180，终点 x=160 小于起点 x=480。
+    // 曾因 |x2|=160 不大于 width/2+5=165 而被误判为「相对坐标」，
+    // 导致 absX2 被错误计算为 centerX + x2，箭头无法合并。
+    const line = makeLine(480, 72, 160, 180)
+    const polygon = makeArrowPolygon(160, 180)
+    const result = mergeArrows([line as any, polygon as any])
+    expect(result.length).toBe(1)
+    expect((result[0] as any).type).toBe('group')
   })
 
-  it('水平线 + 右端箭头应合并', () => {
-    const line = makeLine({
-      left: 0,
-      top: 0,
-      width: 200,
-      height: 0,
-      x2: 200,
-      y2: 0,
-    })
-    const poly = makePolygon({
-      left: 205,
-      top: -6,
-      width: 10,
-      height: 12,
-    }) // 中心 (210, 0), 距离 ≈ 10 < 30
-    const result = mergeArrows([line, poly])
-    expect(result).toHaveLength(1)
-    expect(result[0].type).toBe('group')
+  it('从上到下的竖线箭头应合并为 group', () => {
+    const line = makeLine(480, 72, 480, 180)
+    const polygon = makeArrowPolygon(480, 180)
+    const result = mergeArrows([line as any, polygon as any])
+    expect(result.length).toBe(1)
+    expect((result[0] as any).type).toBe('group')
   })
 
-  it('垂直线 + 下端箭头应合并', () => {
-    const line = makeLine({
-      left: 0,
-      top: 0,
-      width: 0,
-      height: 200,
-      x2: 0,
-      y2: 200,
-    })
-    const poly = makePolygon({
-      left: -5,
-      top: 205,
-      width: 10,
-      height: 10,
-      x2: undefined,
-    })
-    const result = mergeArrows([line, poly])
-    expect(result).toHaveLength(1)
-    expect(result[0].type).toBe('group')
+  it('line 与 polygon 相距过远（>30px）不应合并', () => {
+    const line = makeLine(100, 100, 200, 100)
+    const polygon = makeArrowPolygon(400, 100)
+    const result = mergeArrows([line as any, polygon as any])
+    expect(result.length).toBe(2)
   })
 
-  // ═══════════ 不应合并的场景 ═══════════
-
-  it('相邻 line + polygon 但距离 ≥ 30 时应不合并', () => {
-    const line = makeLine({ x2: 100, y2: 0 })
-    const poly = makePolygon({ left: 300, top: -5 }) // 距离 >> 30
-    const result = mergeArrows([line, poly])
-
-    expect(result).toHaveLength(2)
-    expect(result[0].type).toBe('line')
-    expect(result[1].type).toBe('polygon')
-    expect(mockGroupCtor).not.toHaveBeenCalled()
+  it('line 后不是 polygon 时不应合并', () => {
+    const line = makeLine(100, 100, 200, 100)
+    const rect = makeRect(200, 100)
+    const result = mergeArrows([line as any, rect as any])
+    expect(result.length).toBe(2)
+    expect((result[0] as any).type).toBe('line')
+    expect((result[1] as any).type).toBe('rect')
   })
 
-  it('line 后不是 polygon 时应不合并', () => {
-    const line = makeLine()
-    const rect = makeRect({ left: 120 })
-    const result = mergeArrows([line, rect])
-
-    expect(result).toHaveLength(2)
-    expect(result[0].type).toBe('line')
-    expect(result[1].type).toBe('rect')
+  it('polygon 前不是 line 时不应合并', () => {
+    const rect = makeRect(100, 100)
+    const polygon = makeArrowPolygon(200, 100)
+    const result = mergeArrows([rect as any, polygon as any])
+    expect(result.length).toBe(2)
   })
 
-  it('polygon 前不是 line 时应不合并', () => {
-    const rect = makeRect()
-    const poly = makePolygon({ left: 120 })
-    const result = mergeArrows([rect, poly])
-
-    expect(result).toHaveLength(2)
-    expect(result[0].type).toBe('rect')
-    expect(result[1].type).toBe('polygon')
+  it('line 和 polygon 不相邻（中间有其他对象）时不应合并', () => {
+    const line = makeLine(100, 100, 200, 100)
+    const mid = makeRect(200, 100)
+    const polygon = makeArrowPolygon(200, 100)
+    const result = mergeArrows([line as any, mid as any, polygon as any])
+    // line 与 mid(rect) 不合并，mid 与 polygon 也不合并（mid 非 line）
+    expect(result.length).toBe(3)
   })
-
-  it('line 和 polygon 不相邻（中间有其他对象）时应不合并', () => {
-    const line = makeLine({ x2: 100, y2: 0 })
-    const rect = makeRect()
-    const poly = makePolygon({ left: 105 }) // 距离近但不相邻
-    const result = mergeArrows([line, rect, poly])
-
-    expect(result).toHaveLength(3)
-  })
-
-  // ═══════════ 边界条件 ═══════════
 
   it('空数组应返回空数组', () => {
-    expect(mergeArrows([])).toEqual([])
+    const result = mergeArrows([])
+    expect(result.length).toBe(0)
   })
 
   it('单个 line 对象应原样返回', () => {
-    const line = makeLine()
-    const result = mergeArrows([line])
-    expect(result).toHaveLength(1)
-    expect(result[0].type).toBe('line')
+    const line = makeLine(100, 100, 200, 100)
+    const result = mergeArrows([line as any])
+    expect(result.length).toBe(1)
+    expect((result[0] as any).type).toBe('line')
   })
 
   it('单个 polygon 对象应原样返回', () => {
-    const poly = makePolygon()
-    const result = mergeArrows([poly])
-    expect(result).toHaveLength(1)
-    expect(result[0].type).toBe('polygon')
+    const polygon = makeArrowPolygon(200, 100)
+    const result = mergeArrows([polygon as any])
+    expect(result.length).toBe(1)
+    expect((result[0] as any).type).toBe('polygon')
   })
 
-  it('多个对象中包含多对可合并的 line+polygon', () => {
-    // line1: left=0, width=100 → centerX=50; x2=100 → useAbsX2=true → absX2=100
-    // poly1 中心应在 (100, 0) 附近 → left=95, top=-5, w=10,h=10 → center (100, 0)
-    const line1 = makeLine({ x2: 100, y2: 0 })
-    const poly1 = makePolygon({ left: 95, top: -5 })
-    // line2: left=200, top=200, width=100 → centerX=250,centerY=200; x2=100 → absX2=100; y2=0 → absY2=200
-    // poly2 中心应在 (100, 200) 附近 → left=95, top=195, w=10,h=10 → center (100, 200)
-    const line2 = makeLine({ left: 200, top: 200, width: 100, height: 0, x2: 100, y2: 0 })
-    const poly2 = makePolygon({ left: 95, top: 195 })
-    const result = mergeArrows([line1, poly1, line2, poly2])
-
-    expect(result).toHaveLength(2)
-    expect(result[0].type).toBe('group')
-    expect(result[1].type).toBe('group')
-    expect(mockGroupCtor).toHaveBeenCalledTimes(2)
+  it('3 对相邻的 line+polygon 应合并为 3 个 group', () => {
+    const l1 = makeLine(100, 100, 200, 100)
+    const p1 = makeArrowPolygon(200, 100)
+    const l2 = makeLine(100, 200, 200, 200)
+    const p2 = makeArrowPolygon(200, 200)
+    const l3 = makeLine(100, 300, 200, 300)
+    const p3 = makeArrowPolygon(200, 300)
+    const result = mergeArrows([
+      l1 as any,
+      p1 as any,
+      l2 as any,
+      p2 as any,
+      l3 as any,
+      p3 as any,
+    ])
+    expect(result.length).toBe(3)
+    expect(result.every((o: any) => o.type === 'group')).toBe(true)
   })
 
-  it('原始数组中包含非 line/polygon 对象时应保持不动', () => {
-    const text = { type: 'text', left: 400, top: 400, text: 'hello' } as any
-    const circle = { type: 'circle', left: 500, top: 500, radius: 30 } as any
-    const line = makeLine({ x2: 100, y2: 0 })
-    const poly = makePolygon({ left: 105, top: -5 })
-    const result = mergeArrows([text, circle, line, poly])
-
-    expect(result).toHaveLength(3) // text + circle + group(line+poly)
-    expect(result[0].type).toBe('text')
-    expect(result[1].type).toBe('circle')
-    expect(result[2].type).toBe('group')
+  it('合并后的 group 应设置 selectable/evented/subTargetCheck/perPixelTargetFind', () => {
+    const line = makeLine(100, 100, 200, 100)
+    const polygon = makeArrowPolygon(200, 100)
+    const result = mergeArrows([line as any, polygon as any])
+    const group = result[0] as any
+    expect(group.type).toBe('group')
+    expect(group.selectable).toBe(true)
+    expect(group.evented).toBe(true)
+    expect(group.perPixelTargetFind).toBe(false)
+    expect(group.subTargetCheck).toBe(true)
   })
 
-  // ═══════════ Group 属性验证 ═══════════
-
-  it('合并后的 Group 应包含正确的 subTargetCheck 和 perPixelTargetFind', () => {
-    const line = makeLine({ x2: 100, y2: 0 })
-    const poly = makePolygon({ left: 105, top: -5 })
-    const result = mergeArrows([line, poly])
-    expect(result[0].subTargetCheck).toBe(true)
-    expect(result[0].perPixelTargetFind).toBe(false)
-  })
-
-  it('Group 构造函数应被传入正确的两个子对象', () => {
-    const line = makeLine({ x2: 100, y2: 0 })
-    const poly = makePolygon({ left: 105, top: -5 })
-    mergeArrows([line, poly])
-
-    expect(mockGroupCtor).toHaveBeenCalledWith(
-      [line, poly],
-      expect.objectContaining({ selectable: true, evented: true })
-    )
-  })
-
-  it('3对相邻的 (line, polygon) 应合并为 3 个 group', () => {
-    // pair 1: absX2=100, poly center ~ (100, 0)
-    const line1 = makeLine({ x2: 100, y2: 0 })
-    const poly1 = makePolygon({ left: 95, top: -5 })
-    // pair 2: absX2=200, absY2=0, poly center ~ (200, 0)
-    const line2 = makeLine({ left: 200, x2: 200, y2: 0 })
-    const poly2 = makePolygon({ left: 195, top: -5 })
-    // pair 3: absX2=300, absY2=0, poly center ~ (300, 0)
-    const line3 = makeLine({ left: 400, x2: 300, y2: 0 })
-    const poly3 = makePolygon({ left: 295, top: -5 })
-    const result = mergeArrows([line1, poly1, line2, poly2, line3, poly3])
-
-    expect(result).toHaveLength(3)
-    expect(mockGroupCtor).toHaveBeenCalledTimes(3)
+  it('非 line 开头的对象序列保持原样', () => {
+    const rect = makeRect(0, 0)
+    const polygon = makeArrowPolygon(200, 100)
+    const result = mergeArrows([rect as any, polygon as any])
+    expect(result.length).toBe(2)
+    expect(result[0]).toBe(rect)
   })
 })

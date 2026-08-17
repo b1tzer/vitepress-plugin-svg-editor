@@ -38,13 +38,13 @@ async function getArrowGroups(page: any) {
   })
 }
 
-test('A1: vt决策树 — 9箭头全为三角形', async ({ page }) => {
+test('A1: 决策树 — 9箭头全为三角形', async ({ page }) => {
   const errors: string[] = []
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(msg.text())
   })
 
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
 
   if (errors.length > 0) console.log(`[Console错误] ${errors.join(' | ')}`)
 
@@ -72,26 +72,8 @@ test('A1: vt决策树 — 9箭头全为三角形', async ({ page }) => {
   console.log('✅ 全部三角形')
 })
 
-test('A2: security-auth-flow — 9箭头全为三角形', async ({ page }) => {
-  await page.goto(PAGE_SEC, { waitUntil: 'networkidle', timeout: 30000 })
-  await page.waitForSelector('.svg-container', { timeout: 15000 })
-  await page.evaluate(async () => {
-    const c = document.querySelector('.svg-container')
-    if (!c) return
-    c.scrollIntoView({ block: 'center' })
-    await new Promise((r) => setTimeout(r, 500))
-    c.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
-    await new Promise((r) => setTimeout(r, 500))
-    const btn = c.querySelector('.svg-edit-btn')
-    if (!btn) return
-    btn.click()
-  })
-  await page.waitForSelector('.editor-overlay', { timeout: 15000 })
-  await page.waitForTimeout(2000)
-  await page.evaluate(() => {
-    const c = (window as any).__fabricCanvas
-    if (c) c.setViewportTransform([1, 0, 0, 1, 0, 0])
-  })
+test('A2: 决策树（features 页）— 9箭头全为三角形', async ({ page }) => {
+  await navigateAndOpenEditor(page, PAGE_SEC, 2)
 
   const arrows = await getArrowGroups(page)
   expect(arrows.length).toBeGreaterThanOrEqual(9)
@@ -104,7 +86,7 @@ test('A2: security-auth-flow — 9箭头全为三角形', async ({ page }) => {
 })
 
 test('B1: 箭头方向 — 尖端指向线终点', async ({ page }) => {
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const arrows = await getArrowGroups(page)
   for (const a of arrows) {
     const [tx, ty] = a.points[0].split(',').map(Number)
@@ -116,7 +98,7 @@ test('B1: 箭头方向 — 尖端指向线终点', async ({ page }) => {
 })
 
 test('C1: 合组率 — 无孤立箭头元件', async ({ page }) => {
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const r = await page.evaluate(() => {
     const c = (window as any).__fabricCanvas
     const objs = c.getObjects()
@@ -138,7 +120,7 @@ test('C1: 合组率 — 无孤立箭头元件', async ({ page }) => {
 })
 
 test('D1: 颜色 — polygon fill 有效不透明', async ({ page }) => {
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const arrows = await getArrowGroups(page)
   for (const a of arrows) {
     expect(a.polyFill).toBeTruthy()
@@ -150,14 +132,14 @@ test('D1: 颜色 — polygon fill 有效不透明', async ({ page }) => {
 })
 
 test('E1: 可选中', async ({ page }) => {
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const arrows = await getArrowGroups(page)
   for (const a of arrows) expect(a.selectable).toBe(true)
   console.log('✅ 全部可选中')
 })
 
 test('F1: 拖拽不解体', async ({ page }) => {
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const box = await page
     .locator('.editor-canvas .lower-canvas')
     .boundingBox()
@@ -192,7 +174,7 @@ test('F1: 拖拽不解体', async ({ page }) => {
 })
 
 test('G1: 保存后重开 — 箭头组不消失', async ({ page }) => {
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const before = await getArrowGroups(page)
   expect(before.length).toBeGreaterThanOrEqual(9, '初始应有至少9个箭头组')
 
@@ -202,7 +184,7 @@ test('G1: 保存后重开 — 箭头组不消失', async ({ page }) => {
   await page.waitForSelector('.editor-overlay', { state: 'hidden', timeout: 10000 }).catch(() => {})
   await page.waitForTimeout(1000)
 
-  await navigateAndOpenEditor(page, PAGE_VT, 1)
+  await navigateAndOpenEditor(page, PAGE_VT, 2)
   const after = await getArrowGroups(page)
   expect(after.length).toBeGreaterThanOrEqual(before.length, '保存后箭头组不应消失')
   for (const a of after) {

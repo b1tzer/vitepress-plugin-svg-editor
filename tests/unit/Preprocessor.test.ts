@@ -67,6 +67,24 @@ describe('preprocessSvg', () => {
     expect(result.svg).not.toContain('marker-end')
   })
 
+  it('应处理 DOMPurify 清洗后的成对 <line></line> 标签（注入箭头三角形）', () => {
+    // DOMPurify 会把自闭合 <line/> 序列化为成对 <line></line>，
+    // injectLineArrows 必须兼容这种形式，否则 marker 箭头会在真实浏览器中丢失。
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="4" refY="4"><polygon points="0,0 10,4 0,8" fill="#000"/></marker></defs><line x1="0" y1="0" x2="100" y2="100" stroke="#000" marker-end="url(#arrow)"></line></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).toContain('<polygon')
+    expect(result.svg).not.toContain('marker-end')
+  })
+
+  it('应处理 DOMPurify 清洗后的成对 <path></path> 标签（注入箭头三角形）', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><marker id="arrow" markerWidth="10" markerHeight="8" refX="4" refY="4"><polygon points="0,0 10,4 0,8" fill="#000"/></marker></defs><path d="M0 0 L100 100" stroke="#000" marker-end="url(#arrow)"></path></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).toContain('<polygon')
+    expect(result.svg).not.toContain('marker-end')
+  })
+
   it('应移除全画布透明背景占位 rect（width/height=100%）', () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 442 408"><g><rect x="0" y="0" width="100%" height="100%" fill="transparent"></rect><rect x="10" y="10" width="100" height="50" fill="#FF0000"/></g></svg>'
