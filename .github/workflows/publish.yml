@@ -9,11 +9,11 @@ on:
       - 'v*'
   workflow_dispatch:
 
-# OIDC Trusted Publishing 最小权限：
-#   - contents: read  —— 仅读取代码
+# 发布所需权限：
+#   - contents: write —— 创建 GitHub Release 需要写权限（比 npm 发布的 read 更宽）
 #   - id-token: write —— 让 GitHub 向 npmjs 签发 OIDC token（方案 A 核心，无需 NPM_TOKEN secret）
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -61,3 +61,32 @@ jobs:
       #   - OIDC 认证依赖 npm CLI 的能力（需 >= 11.5.1）
       #   - --provenance 生成 SLSA 来源证明，是 OIDC 方案的标准形态
       - run: npm publish --provenance --access public
+
+      # 从 CHANGELOG.md 提取当前版本章节，作为 GitHub Release 的 release notes。
+      # 仅 push tag 时执行（workflow_dispatch 手动触发时无 tag，跳过）。
+      - name: Extract changelog notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # 提取「## vX.Y.Z 」到下一个「## v」之间的内容（不含标题行本身）
+          awk -v ver="## v${VERSION} " '
+            index($0, ver) == 1 { found=1; next }
+            found && /^## v/ { exit }
+            found { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          # 兜底：若未提取到内容，写入默认说明，避免 gh release 因空 notes 报错
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "请参考 [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/CHANGELOG.md)" > /tmp/release-notes.md
+          fi
+          echo "release notes 字节数：$(wc -c < /tmp/release-notes.md)"
+
+      # 创建 GitHub Release（与 npm 发包解耦：npm 发布成功后才宣告发布）。
+      # 使用内置 gh CLI（GITHUB_TOKEN 自动认证），notes 来自上一步从 CHANGELOG 提取的内容。
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "${{ github.ref_name }}" \
+            --notes-file /tmp/release-notes.md
