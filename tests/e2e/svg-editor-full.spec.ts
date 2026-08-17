@@ -64,8 +64,11 @@ test.describe('SvgEditor 全量功能测试', () => {
     const before = await page.evaluate(
       () => (window as any).__fabricCanvas?.getObjects().length ?? 0
     )
-    const result = await addRect(page)
-    expect(result!.total).toBe(before + 1)
+    await addRect(page)
+    const after = await page.evaluate(
+      () => (window as any).__fabricCanvas?.getObjects().length ?? 0
+    )
+    expect(after).toBe(before + 1)
     await screenshot(page, '01-add-rect')
   })
 
@@ -73,8 +76,11 @@ test.describe('SvgEditor 全量功能测试', () => {
     const before = await page.evaluate(
       () => (window as any).__fabricCanvas?.getObjects().length ?? 0
     )
-    const result = await addCircle(page)
-    expect(result!.total).toBe(before + 1)
+    await addCircle(page)
+    const after = await page.evaluate(
+      () => (window as any).__fabricCanvas?.getObjects().length ?? 0
+    )
+    expect(after).toBe(before + 1)
     await screenshot(page, '02-add-circle')
   })
 
@@ -82,8 +88,11 @@ test.describe('SvgEditor 全量功能测试', () => {
     const before = await page.evaluate(
       () => (window as any).__fabricCanvas?.getObjects().length ?? 0
     )
-    const result = await addText(page, 'Hello World')
-    expect(result!.total).toBe(before + 1)
+    await addText(page, 'Hello World')
+    const after = await page.evaluate(
+      () => (window as any).__fabricCanvas?.getObjects().length ?? 0
+    )
+    expect(after).toBe(before + 1)
     await screenshot(page, '03-add-text')
   })
 
@@ -396,7 +405,7 @@ test.describe('SvgEditor 全量功能测试', () => {
       c.renderAll()
       const beforeIdx = c.getObjects().indexOf(r1)
       // 上移一层
-      c.bringForward(r1)
+      c.bringObjectForward(r1)
       c.renderAll()
       const afterIdx = c.getObjects().indexOf(r1)
       return { before: beforeIdx, after: afterIdx }
@@ -412,7 +421,7 @@ test.describe('SvgEditor 全量功能测试', () => {
       const c = (window as any).__fabricCanvas
       const obj = c.getActiveObject()
       const beforeIdx = c.getObjects().indexOf(obj)
-      c.sendBackwards(obj)
+      c.sendObjectBackwards(obj)
       c.renderAll()
       const afterIdx = c.getObjects().indexOf(obj)
       return { before: beforeIdx, after: afterIdx }
@@ -446,8 +455,13 @@ test.describe('SvgEditor 全量功能测试', () => {
       c.add(r1, r2)
       const sel = new (window as any).fabric.ActiveSelection([r1, r2], { canvas: c })
       c.setActiveObject(sel)
-      // 组合
-      const group = sel.toGroup()
+      // Fabric v6 已移除 ActiveSelection#toGroup()，需手动：取子对象 → 移除 → 建 Group → 添加
+      const objects = sel.getObjects()
+      c.discardActiveObject()
+      c.remove(...objects)
+      const group = new (window as any).fabric.Group(objects)
+      c.add(group)
+      c.setActiveObject(group)
       c.renderAll()
       return {
         type: c.getActiveObject()?.type,
@@ -479,14 +493,20 @@ test.describe('SvgEditor 全量功能测试', () => {
       c.add(r1, r2)
       const sel = new (window as any).fabric.ActiveSelection([r1, r2], { canvas: c })
       c.setActiveObject(sel)
-      const group = sel.toGroup()
+      const objects = sel.getObjects()
+      c.discardActiveObject()
+      c.remove(...objects)
+      const group = new (window as any).fabric.Group(objects)
+      c.add(group)
+      c.setActiveObject(group)
       c.renderAll()
-      // 取消组合
+      // 取消组合：Fabric v6 已移除 Group#toActiveSelection()，需手动 removeAll 取子对象
       const active = c.getActiveObject()
-      if (active && active.type === 'group') {
-        const items = active.toActiveSelection()
-        c.renderAll()
-      }
+      const items = active.removeAll()
+      c.remove(active)
+      const newSel = new (window as any).fabric.ActiveSelection(items, { canvas: c })
+      c.setActiveObject(newSel)
+      c.renderAll()
       return {
         type: c.getActiveObject()?.type,
         selectedCount: c.getActiveObjects().length,
@@ -504,35 +524,17 @@ test.describe('SvgEditor 全量功能测试', () => {
   test('8.1 复制粘贴', async ({ page }) => {
     await addRect(page, { left: 100, top: 100, fill: '#FF9800' })
     const before = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().length)
-    // 复制
-    await page.evaluate(() => {
+    // 复制 + 粘贴：Fabric v6 的 clone() 返回 Promise（非 v5 回调式），需 async/await
+    await page.evaluate(async () => {
       const c = (window as any).__fabricCanvas
       const a = c.getActiveObject()
-      if (a)
-        a.clone((cloned: any) => {
-          ;(window as any)._clipboard = cloned
-        })
-    })
-    // 粘贴
-    await page.evaluate(() => {
-      const c = (window as any).__fabricCanvas
-      const clip = (window as any)._clipboard
-      if (!clip) return
-      clip.clone((cloned: any) => {
-        c.discardActiveObject()
-        cloned.set({ left: cloned.left + 20, top: cloned.top + 20, evented: true })
-        if (cloned.type === 'activeselection') {
-          cloned.canvas = c
-          cloned.forEachObject((obj: any) => c.add(obj))
-          cloned.setCoords()
-        } else {
-          c.add(cloned)
-        }
-        ;(window as any)._clipboard.top += 20
-        ;(window as any)._clipboard.left += 20
-        c.setActiveObject(cloned)
-        c.renderAll()
-      })
+      if (!a) return
+      const cloned = await a.clone()
+      c.discardActiveObject()
+      cloned.set({ left: (cloned.left || 0) + 20, top: (cloned.top || 0) + 20, evented: true })
+      c.add(cloned)
+      c.setActiveObject(cloned)
+      c.renderAll()
     })
     const after = await page.evaluate(() => (window as any).__fabricCanvas.getObjects().length)
     expect(after).toBe(before + 1)

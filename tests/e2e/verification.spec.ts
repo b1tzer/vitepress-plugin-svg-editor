@@ -5,6 +5,17 @@ const PAGE_URL = '/'
 const SVG_IDX = 1
 
 test.describe('SVG 编辑器验证（SVG 1 - type-hierarchy）', () => {
+  test.beforeEach(async ({ page }) => {
+    // 拦截保存端点，避免测试真实写回样例 SVG 文件（污染源码）
+    await page.route('**/__svg-save__', (route) => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, file: '/__mock__/test.svg' }),
+      })
+    })
+  })
+
   test('1. 保存前后结构对比', async ({ page }) => {
     await page.goto(PAGE_URL)
     await page.waitForSelector('.svg-container svg', { timeout: 15000 })

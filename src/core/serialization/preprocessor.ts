@@ -30,13 +30,27 @@ function parseSvgDom(svg: string): Document | null {
 
 /**
  * 将 CSS 变量替换为 hex 色值
+ *
+ * 处理两类变量：
+ *   1. 主题映射表内的变量（--diagram-* 系列）→ 按主题替换为对应 hex
+ *   2. 带 fallback 的外部变量（如 VitePress 的 var(--vp-c-brand-1, #2563eb)）→ 取 fallback 值
+ *
+ * 第 2 类变量不在主题映射表中（其实际值取决于 VitePress 运行时主题），
+ * 但 SVG 作者已显式提供 fallback 兜底色，直接取 fallback 即可。
+ * 若不处理，var() 字符串会被 Fabric 当作非法颜色，渲染为透明。
  */
 function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
   const mapping = THEME_VAR_TO_HEX[theme] || THEME_VAR_TO_HEX.light
   let result = svg
+  // 1. 替换已知主题变量（--diagram-* 系列）
   for (const [varName, hex] of Object.entries(mapping)) {
     result = result.replaceAll(`var(${varName})`, hex)
   }
+  // 2. 处理带 fallback 的 var(--xxx, fallback)，例如 var(--vp-c-brand-1, #2563eb) → #2563eb
+  //    注意必须在步骤 1 之后执行，避免误匹配已替换的 --diagram-* 变量
+  result = result.replace(/var\(--[^,)]+,\s*([^)]+)\)/g, (_full, fallback: string) =>
+    fallback.trim()
+  )
   return result
 }
 
