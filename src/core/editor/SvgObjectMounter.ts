@@ -15,7 +15,7 @@
 import * as fabric from 'fabric'
 import type { Canvas, FabricObject } from 'fabric'
 import { convertTextToTextbox } from './ObjectFactory'
-import { ensureObjectInteractive } from '../shared/Interactive'
+import { ensureObjectInteractive } from '../shared/interactive'
 
 export interface SvgObjectMounterOptions {
   /** 装载前对对象数组做转换（如箭头合并），默认透传 */

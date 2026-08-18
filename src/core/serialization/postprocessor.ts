@@ -114,10 +114,13 @@ export function rgbToHex(svg: string): string {
 
 /**
  * hex → CSS 变量还原
+ * @param svg  待还原的 SVG 文本
+ * @param map  hex→变量名 映射（默认回退到合并映射 CSS_COLORS；
+ *             建议调用方传入 THEME_HEX_TO_VAR 的单向映射以避免撞色）
  */
-export function hexToCssVars(svg: string): string {
+export function hexToCssVars(svg: string, map: Record<string, string> = CSS_COLORS): string {
   let result = svg
-  for (const [hex, info] of Object.entries(CSS_COLORS)) {
+  for (const [hex, info] of Object.entries(map)) {
     result = result.replace(new RegExp(hex, 'gi'), `var(${info})`)
   }
   return result

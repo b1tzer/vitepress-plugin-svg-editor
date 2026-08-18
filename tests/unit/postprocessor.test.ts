@@ -9,6 +9,7 @@ import {
   restoreViewBox,
   removeCanvasBg,
 } from '../../src/core/serialization/postprocessor'
+import { THEME_HEX_TO_VAR } from '../../src/core/shared/colors'
 
 describe('postprocessor', () => {
   // ── rgbToHex ──
@@ -64,6 +65,32 @@ describe('postprocessor', () => {
     const result = hexToCssVars('fill="#FFFFFF"')
     expect(result).toContain('var(--diagram-surface-1)')
     expect(result).not.toContain('#FFFFFF')
+  })
+
+  it('hexToCssVars 亮色单向映射应将 #E1BEE7 还原为 accent-bg-3b 而非 accent-text-3', () => {
+    // 回归：合并映射 ALL_HEX_TO_VAR 中 #E1BEE7 被暗色 accent-text-3 覆盖，导致串色
+    const result = hexToCssVars('fill="#E1BEE7"', THEME_HEX_TO_VAR.light)
+    expect(result).toContain('var(--diagram-accent-bg-3b)')
+    expect(result).not.toContain('var(--diagram-accent-text-3)')
+    expect(result).not.toContain('#E1BEE7')
+  })
+
+  it('hexToCssVars 暗色单向映射应将 #E1BEE7 还原为 accent-text-3', () => {
+    const result = hexToCssVars('fill="#E1BEE7"', THEME_HEX_TO_VAR.dark)
+    expect(result).toContain('var(--diagram-accent-text-3)')
+    expect(result).not.toContain('var(--diagram-accent-bg-3b)')
+  })
+
+  it('hexToCssVars 亮色单向映射应将 #FFCDD2 还原为 accent-bg-5', () => {
+    const result = hexToCssVars('fill="#FFCDD2"', THEME_HEX_TO_VAR.light)
+    expect(result).toContain('var(--diagram-accent-bg-5)')
+    expect(result).not.toContain('var(--diagram-accent-text-5)')
+  })
+
+  it('hexToCssVars 亮色单向映射应将 #666666 还原为 text-2 而非 ghost', () => {
+    const result = hexToCssVars('stroke="#666666"', THEME_HEX_TO_VAR.light)
+    expect(result).toContain('var(--diagram-text-2)')
+    expect(result).not.toContain('var(--diagram-ghost)')
   })
 
   // ── restoreViewBox ──

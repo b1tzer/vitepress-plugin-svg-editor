@@ -102,5 +102,31 @@ for (const v of Object.keys(LIGHT_HEX)) {
   ALL_HEX_TO_VAR[DARK_HEX[v]] = v
 }
 
-/** 兼容别名：CSS_COLORS = ALL_HEX_TO_VAR（用于 postprocessor 中的 hexToCssVars） */
+/** 兼容别名：CSS_COLORS = ALL_HEX_TO_VAR（用于 postprocessor 中的 hexToCssVars 默认回退） */
 export const CSS_COLORS: Record<string, string> = ALL_HEX_TO_VAR
+
+/**
+ * 将 var→hex 映射倒置为 hex→var 映射
+ * @param hexMap 变量名 → hex 值（如 LIGHT_HEX / DARK_HEX）
+ * @returns hex 值 → 变量名（key 保留原始大小写，配合 gi 标志匹配）
+ */
+function invertHexMap(hexMap: Record<string, string>): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const [varName, hex] of Object.entries(hexMap)) {
+    result[hex] = varName
+  }
+  return result
+}
+
+/**
+ * 按主题的 hex→CSS 变量「单向」映射（供 postprocessor 导出时还原）
+ *
+ * 与 ALL_HEX_TO_VAR 的本质区别：ALL_HEX_TO_VAR 把亮/暗两套 hex 合并进同一张表，
+ * 一旦某个 hex 同时出现在两套主题里（如 #E1BEE7 既是亮色 --diagram-accent-bg-3b、
+ * 又是暗色 --diagram-accent-text-3），后写入者会覆盖先写入者，导致还原串色。
+ * 单向映射保证「同一主题内 hex 唯一对应变量」，彻底消除跨主题撞色歧义。
+ */
+export const THEME_HEX_TO_VAR: Record<'light' | 'dark', Record<string, string>> = {
+  light: invertHexMap(LIGHT_HEX),
+  dark: invertHexMap(DARK_HEX),
+}

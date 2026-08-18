@@ -25,7 +25,7 @@ import { mergeArrows } from '../plugins/arrow-merger'
 import { VitePressSaveAdapter } from '../adapters/storage/VitePressSaveAdapter'
 import { LocalStorageAdapter } from '../adapters/storage/LocalStorageAdapter'
 import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
-import { ensureObjectInteractive } from '../core/shared/Interactive'
+import { ensureObjectInteractive } from '../core/shared/interactive'
 import { createShape } from '../core/editor/ObjectFactory'
 import { mountSvgObjects } from '../core/editor/SvgObjectMounter'
 import { useEditorState } from '../composables/useEditorState'
@@ -180,6 +180,7 @@ const { saving, errorMessage, save, showError } = useSave({
   storageAdapter,
   src: props.src,
   getOriginalViewBox: () => originalViewBox.value,
+  getThemeMode: () => themeMode.value,
   onSaved: () => emit('saved'),
   onClose: () => emit('close'),
 })

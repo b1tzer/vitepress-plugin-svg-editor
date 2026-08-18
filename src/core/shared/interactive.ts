@@ -11,7 +11,7 @@
  */
 
 import type { FabricObject } from 'fabric'
-import { HOLLOW_SHAPE_TYPES } from './FabricTypes'
+import { HOLLOW_SHAPE_TYPES } from './fabricTypes'
 
 /**
  * 确保单个 Fabric 对象（及其子对象）可交互

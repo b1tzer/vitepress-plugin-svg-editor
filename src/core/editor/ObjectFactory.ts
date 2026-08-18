@@ -10,7 +10,7 @@
 
 import * as fabric from 'fabric'
 import type { FabricObject, FabricText } from 'fabric'
-import { FABRIC_TYPE } from '../shared/FabricTypes'
+import { FABRIC_TYPE } from '../shared/fabricTypes'
 
 /**
  * 创建内置图形对象（以画布逻辑中心为基准）

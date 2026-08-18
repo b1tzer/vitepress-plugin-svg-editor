@@ -8,7 +8,7 @@
 import type { ActiveSelection, Canvas } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import type { HistoryManager } from '../core/history/HistoryManager'
-import { FABRIC_TYPE } from '../core/shared/FabricTypes'
+import { FABRIC_TYPE } from '../core/shared/fabricTypes'
 
 export interface UseHistoryOpsDeps {
   canvasMgr: CanvasManager

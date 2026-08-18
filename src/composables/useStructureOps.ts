@@ -10,7 +10,7 @@ import type { CanvasManager } from '../core/canvas/CanvasManager'
 import * as AlignPlugin from '../plugins/align'
 import * as LayerPlugin from '../plugins/layer'
 import * as DistributePlugin from '../plugins/distribute'
-import { FABRIC_TYPE } from '../core/shared/FabricTypes'
+import { FABRIC_TYPE } from '../core/shared/fabricTypes'
 import type { useSelection } from './useSelection'
 
 type SelectionState = ReturnType<typeof useSelection>

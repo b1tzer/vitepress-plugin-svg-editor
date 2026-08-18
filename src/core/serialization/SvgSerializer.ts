@@ -3,7 +3,7 @@
  *
  * 职责：
  *   - 调用 canvas.toSVG() 获取原始输出
- *   - 通过 PostprocessPipeline 执行后处理链
+ *   - 通过 postprocessPipeline 执行后处理链
  *   - 返回可保存的最终 SVG 文本
  *   - 框架无关（不依赖 Vue / VitePress / DOM）
  *
@@ -13,7 +13,8 @@
  */
 
 import type { Canvas } from 'fabric'
-import { createPostprocessPipeline } from './pipeline/PostprocessPipeline'
+import { createPostprocessPipeline } from './pipeline/postprocessPipeline'
+import type { ThemeMode } from '../shared/types'
 
 export interface SerializeOptions {
   /** 原始 SVG 的 viewBox（如 "0 0 800 600"），用于恢复 */
@@ -22,6 +23,8 @@ export interface SerializeOptions {
   restoreCssVars?: boolean
   /** 是否移除 Fabric.js 自动添加的画布背景 rect */
   removeCanvasBg?: boolean
+  /** 当前主题模式（决定 hex→CSS 变量还原使用哪套单向映射，默认 light） */
+  theme?: ThemeMode
 }
 
 export class SvgSerializer {
@@ -33,9 +36,10 @@ export class SvgSerializer {
    */
   serialize(canvas: Canvas, options: SerializeOptions = {}): string {
     const svg = canvas.toSVG()
+    const theme = options.theme ?? 'light'
 
     // 使用 Pipeline 处理链
-    const pipeline = createPostprocessPipeline(options.originalViewBox)
+    const pipeline = createPostprocessPipeline(options.originalViewBox, theme)
 
     // 如果不需要 CSS 变量还原，移除 hexToCssVars 步骤
     if (options.restoreCssVars === false) {

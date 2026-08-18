@@ -8,6 +8,7 @@ import { ref, type Ref } from 'vue'
 import type { Canvas } from 'fabric'
 import type { SvgSerializer } from '../core/serialization/SvgSerializer'
 import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
+import type { ThemeMode } from '../core/shared/types'
 import { timed } from '../utils/perf'
 
 export interface UseSaveDeps {
@@ -16,6 +17,7 @@ export interface UseSaveDeps {
   storageAdapter: IStorageAdapter
   src: string
   getOriginalViewBox: () => string
+  getThemeMode: () => ThemeMode
   onSaved: () => void
   onClose: () => void
 }
@@ -44,7 +46,10 @@ export function useSave(deps: UseSaveDeps): {
     saving.value = true
     try {
       const svgText = timed('export:toSVG', () =>
-        deps.serializer.serialize(fc, { originalViewBox: deps.getOriginalViewBox() })
+        deps.serializer.serialize(fc, {
+          originalViewBox: deps.getOriginalViewBox(),
+          theme: deps.getThemeMode(),
+        })
       )
       const result = await deps.storageAdapter.save(svgText, deps.src)
       if (result.success) {

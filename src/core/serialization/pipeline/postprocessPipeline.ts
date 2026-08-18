@@ -12,6 +12,8 @@ import {
   restoreViewBox,
   removeCanvasBg,
 } from '../postprocessor'
+import { THEME_HEX_TO_VAR } from '../../shared/colors'
+import type { ThemeMode } from '../../shared/types'
 
 // ═══════════════════════════════════════════════════════════════
 // 各处理步骤函数统一定义在 ../postprocessor.ts，此处仅负责按顺序组装 Pipeline
@@ -22,7 +24,13 @@ import {
 // ═══════════════════════════════════════════════════════════════
 
 /** 创建标准后处理管道 */
-export function createPostprocessPipeline(originalViewBox?: string): Pipeline<string> {
+export function createPostprocessPipeline(
+  originalViewBox?: string,
+  theme: ThemeMode = 'light'
+): Pipeline<string> {
+  // 使用「当前主题」的单向 hex→var 映射，避免亮/暗 hex 撞色导致的还原串色
+  const hexToVarMap = THEME_HEX_TO_VAR[theme] || THEME_HEX_TO_VAR.light
+
   const pipeline = new Pipeline<string>()
     .use({ name: 'rgbToHex', process: rgbToHex })
     .use({ name: 'cleanFabricSvg', process: cleanFabricSvg })
@@ -35,7 +43,10 @@ export function createPostprocessPipeline(originalViewBox?: string): Pipeline<st
   }
 
   pipeline
-    .use({ name: 'hexToCssVars', process: hexToCssVars })
+    .use({
+      name: 'hexToCssVars',
+      process: (svg: string) => hexToCssVars(svg, hexToVarMap),
+    })
     .use({ name: 'removeCanvasBg', process: removeCanvasBg })
 
   return pipeline

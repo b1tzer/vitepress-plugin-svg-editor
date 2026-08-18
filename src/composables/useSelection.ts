@@ -8,7 +8,7 @@
 import { ref, type Ref } from 'vue'
 import type { ActiveSelection, Shadow } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
-import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/FabricTypes'
+import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/fabricTypes'
 import * as TextFormatPlugin from '../plugins/text-format'
 
 /** 渐变填充对象的运行时结构（fill 为 Gradient 实例时） */

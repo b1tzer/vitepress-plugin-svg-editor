@@ -14,7 +14,7 @@
 import type { Canvas } from 'fabric'
 import type { IHistoryManager } from '../shared/types'
 import type { ICommand } from './Command'
-import { ensureObjectInteractive } from '../shared/Interactive'
+import { ensureObjectInteractive } from '../shared/interactive'
 import { timed } from '../../utils/perf'
 
 const MAX_STACK = 50
