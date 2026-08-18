@@ -4,15 +4,15 @@
 
 ## 基础编辑
 
-<SvgDiagram src="/diagrams/test.svg" />
+![测试 SVG](/diagrams/test.svg)
 
 ## 复杂场景
 
-<SvgDiagram src="/diagrams/test-complex.svg" />
+![复杂测试 SVG](/diagrams/test-complex.svg)
 
 ## 决策树（9 箭头）
 
-<SvgDiagram src="/diagrams/decision-tree.svg" />
+![决策树](/diagrams/decision-tree.svg)
 
 ---
 

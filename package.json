@@ -42,7 +42,8 @@
       "types": "./dist/plugins/index.d.ts",
       "import": "./dist/plugins/index.mjs",
       "require": "./dist/plugins/index.cjs"
-    }
+    },
+    "./styles/*": "./src/styles/*"
   },
   "files": [
     "dist",
