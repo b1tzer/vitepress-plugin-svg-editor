@@ -238,9 +238,9 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
   })
 
   // ══════════════════════════════════════════════
-  // 9. 折叠按钮为 20×64 直角竖条（非圆形）
+  // 9. 折叠按钮为 20×64 圆角胶囊把手（带阴影）
   // ══════════════════════════════════════════════
-  test('09. 折叠按钮为 20×64 直角竖条，无圆角无阴影', async ({ page }) => {
+  test('09. 折叠按钮为 20×64 圆角胶囊把手，带圆角与阴影', async ({ page }) => {
     const container = page.locator('.svg-container').first()
     await container.hover()
     await page.locator('.svg-edit-btn').click()
@@ -265,8 +265,8 @@ test.describe('Editor Rendering Regression（真实浏览器验证）', () => {
     expect(info!.w).toBeLessThanOrEqual(24)
     expect(info!.h).toBeGreaterThanOrEqual(60)
     expect(info!.h).toBeLessThanOrEqual(68)
-    expect(info!.borderRadius).toBe('0px')
-    expect(info!.boxShadow).toBe('none')
+    expect(info!.borderRadius).toBe('8px')
+    expect(info!.boxShadow).not.toBe('none')
   })
 
   // ══════════════════════════════════════════════

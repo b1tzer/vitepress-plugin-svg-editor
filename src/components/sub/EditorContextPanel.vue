@@ -84,29 +84,18 @@ const isLight = computed(() => props.themeMode === 'light')
     :class="[isLight ? 'context-light' : 'context-dark', { collapsed: collapsed }]"
     aria-label="属性面板"
   >
-    <!-- 折叠时只显示一条窄条 + 展开按钮 -->
-    <template v-if="collapsed">
-      <button
-        class="floating-toggle"
-        data-tip="展开属性面板"
-        @click="emit('toggleCollapse')"
-        aria-label="展开属性面板"
-      >
-        <span v-html="ICONS.chevronRight"></span>
-      </button>
-    </template>
+    <!-- 折叠/展开按钮：始终作为面板直接子元素，展开态凸出左边界、折叠态居中 -->
+    <button
+      class="floating-toggle"
+      :data-tip="collapsed ? '展开属性面板' : '折叠属性面板'"
+      @click="emit('toggleCollapse')"
+      :aria-label="collapsed ? '展开属性面板' : '折叠属性面板'"
+    >
+      <span v-html="collapsed ? ICONS.chevronLeft : ICONS.chevronRight"></span>
+    </button>
 
-    <!-- 展开时：正常内容 + 折叠按钮 -->
-    <template v-else>
-      <button
-        class="floating-toggle"
-        data-tip="折叠属性面板"
-        @click="emit('toggleCollapse')"
-        aria-label="折叠属性面板"
-      >
-        <span v-html="ICONS.chevronLeft"></span>
-      </button>
-
+    <!-- 展开时：内容区（用 context-scroll 独立滚动，避免裁切凸出的折叠按钮） -->
+    <div v-if="!collapsed" class="context-scroll">
       <div v-if="!hasActiveSelection" class="context-empty">
         <div class="empty-icon"><span v-html="ICONS.target"></span></div>
         <p class="empty-title">属性面板</p>
@@ -491,7 +480,7 @@ const isLight = computed(() => props.themeMode === 'light')
           </div>
         </template>
       </div>
-    </template>
+    </div>
   </aside>
 </template>
 
@@ -501,10 +490,17 @@ const isLight = computed(() => props.themeMode === 'light')
   position: relative;
   width: 220px;
   flex-shrink: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  /* 允许折叠按钮凸出到面板左边界外，滚动下沉到 .context-scroll */
+  overflow: visible;
   padding: 0;
   transition: width 0.2s ease;
+}
+
+/* 展开内容的滚动容器：独立滚动，避免裁切凸出的折叠按钮 */
+.context-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* ── 折叠状态：缩成窄条 ── */
@@ -523,24 +519,27 @@ const isLight = computed(() => props.themeMode === 'light')
   border-left: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* ── 折叠按钮（20×64 直角竖条，参考站 right-btn 1:1 复刻）── */
+/* ── 折叠按钮（圆角胶囊把手，凸出面板边界，z-index 高于标尺层）── */
 .floating-toggle {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   left: -20px;
-  z-index: 1;
+  z-index: 20;
   width: 20px;
   height: 64px;
-  border: none;
-  border-radius: 0;
+  border: 1px solid;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   padding: 0;
-  background: transparent;
 }
 /* 折叠态：按钮在面板内部居中 */
 .context-panel.collapsed .floating-toggle {
@@ -549,16 +548,28 @@ const isLight = computed(() => props.themeMode === 'light')
 }
 
 .context-light .floating-toggle {
-  color: #515a6e;
+  color: #5f6b7a;
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
 }
 .context-light .floating-toggle:hover {
-  color: #2d8cf0;
+  color: #2563eb;
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
 }
 .context-dark .floating-toggle {
-  color: #999;
+  color: #aab0b8;
+  background: rgba(45, 45, 45, 0.92);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 .context-dark .floating-toggle:hover {
-  color: #5cadff;
+  color: #60a5fa;
+  background: rgba(58, 58, 58, 0.95);
+  border-color: rgba(96, 165, 250, 0.42);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
 }
 .floating-toggle span {
   display: flex;
