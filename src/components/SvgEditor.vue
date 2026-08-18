@@ -520,11 +520,10 @@ onUnmounted(() => {
   background: #f0f1f3;
 }
 
-/* ── 主体：三栏弹性布局 ── */
+/* ── 主体：画布铺满，左右面板作为悬浮层覆盖其上 ── */
 .editor-body {
   flex: 1;
-  display: flex;
-  flex-direction: row;
+  position: relative;
   overflow: hidden;
   min-height: 0;
 }

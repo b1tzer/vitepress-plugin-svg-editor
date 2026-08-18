@@ -487,9 +487,12 @@ const isLight = computed(() => props.themeMode === 'light')
 <style scoped>
 /* ── 根容器：始终占位固定宽度 ── */
 .context-panel {
-  position: relative;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 30;
   width: 220px;
-  flex-shrink: 0;
   /* 允许折叠按钮凸出到面板左边界外，滚动下沉到 .context-scroll */
   overflow: visible;
   padding: 0;

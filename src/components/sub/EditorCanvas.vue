@@ -113,6 +113,24 @@ function getFabricCanvas(): Canvas | null {
   return props.fabricCanvas || null
 }
 
+/**
+ * 同步 Fabric canvas 物理尺寸（backing store + CSS）为 .canvas-area 容器尺寸。
+ *
+ * 画布采用「铺满主体 + 面板悬浮」布局：面板收起/展开不改变画布尺寸，
+ * 但当浏览器窗口 resize 时，.canvas-area 会随之变化，而 CanvasManager.init
+ * 只在初始化时设定一次 canvas 尺寸，需在此补齐同步，避免画布位图尺寸过期。
+ */
+function syncCanvasSize(): void {
+  const fc = getFabricCanvas()
+  const area = canvasAreaRef.value
+  if (!fc || !area) return
+  const w = area.clientWidth
+  const h = area.clientHeight
+  if (w > 0 && h > 0 && (w !== fc.getWidth() || h !== fc.getHeight())) {
+    fc.setDimensions({ width: w, height: h })
+  }
+}
+
 /** 根据 viewportTransform 投影 workspace 三个手柄的屏幕坐标（相对 fabric canvas 左上角） */
 function updateHandles() {
   const fc = getFabricCanvas()
@@ -390,9 +408,13 @@ function onCanvasOutsideMouseUp(e: MouseEvent) {
 onMounted(() => {
   _ro = new ResizeObserver(() => {
     if (_af) cancelAnimationFrame(_af)
-    _af = requestAnimationFrame(drawRuler)
+    _af = requestAnimationFrame(() => {
+      drawRuler()
+      syncCanvasSize()
+    })
   })
   if (containerRef.value) _ro.observe(containerRef.value)
+
   _zw = watch(
     () => props.zoomLevel,
     () => {
@@ -489,8 +511,9 @@ onUnmounted(() => {
 
 <style scoped>
 .editor-canvas {
-  flex: 1;
-  position: relative;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   overflow: hidden;
   /* 棋盘格方格大小（px），修改此变量即可整体调整方格尺寸（明暗主题共用） */
   --grid-size: 35px;

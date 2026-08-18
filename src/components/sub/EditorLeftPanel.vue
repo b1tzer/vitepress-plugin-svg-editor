@@ -163,10 +163,12 @@ function layerIconKey(type: string): string {
 <style scoped>
 /* ── 根容器 ── */
 .left-panel {
-  position: relative;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
   display: flex;
-  flex-shrink: 0;
-  height: 100%;
   transition: width 0.2s ease;
   /* 允许折叠按钮凸出到面板右边界外，内部内容的裁剪下沉到 .panel-inner */
   overflow: visible;
