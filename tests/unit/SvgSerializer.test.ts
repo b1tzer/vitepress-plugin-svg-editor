@@ -73,26 +73,15 @@ describe('SvgSerializer', () => {
     expect(result).toBeTruthy()
   })
 
-  it('serialize 亮色主题应将 #E1BEE7 还原为 accent-bg-3b 而非 accent-text-3', () => {
+  it('serialize 无语义对象时保留 hex 不还原（语义化 ID：不猜语义）', () => {
     mockToSVG.mockReturnValue(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
         '<rect fill="#E1BEE7"/>' +
         '</svg>'
     )
     const result = serializer.serialize(canvas, { theme: 'light' })
-    expect(result).toContain('var(--diagram-accent-bg-3b)')
-    expect(result).not.toContain('var(--diagram-accent-text-3)')
-  })
-
-  it('serialize 暗色主题应将 #E1BEE7 还原为 accent-text-3', () => {
-    mockToSVG.mockReturnValue(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
-        '<rect fill="#E1BEE7"/>' +
-        '</svg>'
-    )
-    const result = serializer.serialize(canvas, { theme: 'dark' })
-    expect(result).toContain('var(--diagram-accent-text-3)')
-    expect(result).not.toContain('var(--diagram-accent-bg-3b)')
+    expect(result).toContain('#E1BEE7')
+    expect(result).not.toContain('var(--diagram-')
   })
 
   it('serialize 应移除外层空白', () => {

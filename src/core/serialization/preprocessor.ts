@@ -8,8 +8,9 @@
  *   4. 提取 viewBox / 宽高
  */
 
-import { THEME_VAR_TO_HEX } from '../shared/colors'
-import type { ThemeMode, SvgLoadResult, MarkerInfo } from '../shared/types'
+import { THEME_VAR_TO_HEX, THEME_HEX_TO_VAR, COLLISION_HEXES } from '../shared/colors'
+import { SVG_FILL_VAR_ATTR, SVG_STROKE_VAR_ATTR } from '../shared/fabricTypes'
+import type { ThemeMode, SvgLoadResult, SvgPreprocessOptions, MarkerInfo } from '../shared/types'
 
 /**
  * 用 DOMParser 将 SVG 解析为 DOM 文档（仅用于只读结构化信息提取）
@@ -43,7 +44,20 @@ function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
   const mapping = THEME_VAR_TO_HEX[theme] || THEME_VAR_TO_HEX.light
   let result = svg
   // 1. 替换已知主题变量（--diagram-* 系列）
+  //    语义化颜色 ID：在 fill/stroke 属性上同时打上 data-fill-var / data-stroke-var 标记，
+  //    供 SvgObjectMounter 的 reviver 挂载到 Fabric 对象（身份 = 变量名，而非 hex）。
   for (const [varName, hex] of Object.entries(mapping)) {
+    // fill 属性：保留变量名标记
+    result = result.replaceAll(
+      `fill="var(${varName})"`,
+      `fill="${hex}" ${SVG_FILL_VAR_ATTR}="${varName}"`
+    )
+    // stroke 属性：保留变量名标记
+    result = result.replaceAll(
+      `stroke="var(${varName})"`,
+      `stroke="${hex}" ${SVG_STROKE_VAR_ATTR}="${varName}"`
+    )
+    // 兜底：其余形式（style 内联、stop-color 等）仅替换 hex，不带标记
     result = result.replaceAll(`var(${varName})`, hex)
   }
   // 2. 处理带 fallback 的 var(--xxx, fallback)，例如 var(--vp-c-brand-1, #2563eb) → #2563eb
@@ -51,6 +65,48 @@ function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
   result = result.replace(/var\(--[^,)]+,\s*([^)]+)\)/g, (_full, fallback: string) =>
     fallback.trim()
   )
+  return result
+}
+
+/**
+ * 第二步能力（可选）：hex 精确匹配 → 语义 token
+ *
+ * 对「色板中精确命中」的裸 hex 打上语义标记，使普通 hex SVG 也能获得明暗能力。
+ * 约束（严格遵循用户方案，绝不做近似匹配）：
+ *   - 只匹配 6 位 hex（#RRGGBB）
+ *   - 必须精确命中当前主题的 hex→var 单向映射
+ *   - 跨主题撞色 hex（COLLISION_HEXES）一律跳过，避免歧义
+ */
+function mapHexToVar(svg: string, theme: ThemeMode = 'light'): string {
+  const hexToVar = THEME_HEX_TO_VAR[theme] || THEME_HEX_TO_VAR.light
+  let result = svg
+
+  // fill 属性精确匹配（避免把已带 data-fill-var 标记的重复处理）
+  result = result.replace(
+    /fill="(#[0-9A-Fa-f]{6})"/g,
+    (full: string, hex: string) => {
+      const upper = hex.toUpperCase()
+      const varName = hexToVar[upper]
+      if (varName && !COLLISION_HEXES.has(upper)) {
+        return `fill="${hex}" ${SVG_FILL_VAR_ATTR}="${varName}"`
+      }
+      return full
+    }
+  )
+
+  // stroke 属性精确匹配
+  result = result.replace(
+    /stroke="(#[0-9A-Fa-f]{6})"/g,
+    (full: string, hex: string) => {
+      const upper = hex.toUpperCase()
+      const varName = hexToVar[upper]
+      if (varName && !COLLISION_HEXES.has(upper)) {
+        return `stroke="${hex}" ${SVG_STROKE_VAR_ATTR}="${varName}"`
+      }
+      return full
+    }
+  )
+
   return result
 }
 
@@ -356,12 +412,23 @@ function injectPathArrows(svg: string, markers: Record<string, MarkerInfo>): str
  * @param rawSvg — 原始 SVG 文本
  * @param theme  — 主题模式（默认 light）
  */
-export function preprocessSvg(rawSvg: string, theme: ThemeMode = 'light'): SvgLoadResult {
+export function preprocessSvg(
+  rawSvg: string,
+  theme: ThemeMode = 'light',
+  options: SvgPreprocessOptions = {}
+): SvgLoadResult {
   let svg = rawSvg.replace(/<\?xml[^?]*\?>\s*/g, '')
 
   const { viewBox, width, height } = extractViewBox(svg)
 
-  // 1. CSS 变量 → hex（按当前主题）
+  // 第二步（可选）：hex 精确匹配 → 语义 token。
+  // 必须在 var→hex 之前执行：此时 var 形式的 fill/stroke 尚未替换为 hex，
+  // 裸 hex 正则不会误匹配到它们，也避免对已带 data-*-var 标记的元素重复打标。
+  if (options.mapHexToVar) {
+    svg = mapHexToVar(svg, theme)
+  }
+
+  // 1. CSS 变量 → hex（按当前主题，并打上语义标记）
   svg = replaceCssVars(svg, theme)
 
   // 2. <stop style="stop-color:..."> → 直接属性

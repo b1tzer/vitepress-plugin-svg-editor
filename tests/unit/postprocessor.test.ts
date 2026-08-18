@@ -8,8 +8,9 @@ import {
   hexToCssVars,
   restoreViewBox,
   removeCanvasBg,
+  collectSemanticHexToVar,
 } from '../../src/core/serialization/postprocessor'
-import { THEME_HEX_TO_VAR } from '../../src/core/shared/colors'
+import { THEME_HEX_TO_VAR, COLLISION_HEXES } from '../../src/core/shared/colors'
 
 describe('postprocessor', () => {
   // ── rgbToHex ──
@@ -62,13 +63,13 @@ describe('postprocessor', () => {
 
   // ── hexToCssVars ──
   it('hexToCssVars 应还原 CSS 变量', () => {
-    const result = hexToCssVars('fill="#FFFFFF"')
+    const result = hexToCssVars('fill="#FFFFFF"', THEME_HEX_TO_VAR.light)
     expect(result).toContain('var(--diagram-surface-1)')
     expect(result).not.toContain('#FFFFFF')
   })
 
   it('hexToCssVars 亮色单向映射应将 #E1BEE7 还原为 accent-bg-3b 而非 accent-text-3', () => {
-    // 回归：合并映射 ALL_HEX_TO_VAR 中 #E1BEE7 被暗色 accent-text-3 覆盖，导致串色
+    // 回归：单向映射保证 #E1BEE7 在亮色主题下唯一对应 accent-bg-3b，避免跨主题撞色串色
     const result = hexToCssVars('fill="#E1BEE7"', THEME_HEX_TO_VAR.light)
     expect(result).toContain('var(--diagram-accent-bg-3b)')
     expect(result).not.toContain('var(--diagram-accent-text-3)')
@@ -91,6 +92,58 @@ describe('postprocessor', () => {
     const result = hexToCssVars('stroke="#666666"', THEME_HEX_TO_VAR.light)
     expect(result).toContain('var(--diagram-text-2)')
     expect(result).not.toContain('var(--diagram-ghost)')
+  })
+
+  // ── COLLISION_HEXES ──
+  it('COLLISION_HEXES 应动态计算 5 组跨主题撞色 hex', () => {
+    expect(COLLISION_HEXES.size).toBe(5)
+    expect(COLLISION_HEXES.has('#E0E0E0')).toBe(true) // 亮 stroke-2 ↔ 暗 text-1
+    expect(COLLISION_HEXES.has('#333333')).toBe(true) // 亮 text-1 ↔ 暗 stroke-2
+    expect(COLLISION_HEXES.has('#666666')).toBe(true) // 亮 text-2 ↔ 暗 ghost
+    expect(COLLISION_HEXES.has('#E1BEE7')).toBe(true) // 亮 accent-bg-3b ↔ 暗 accent-text-3
+    expect(COLLISION_HEXES.has('#FFCDD2')).toBe(true) // 亮 accent-bg-5 ↔ 暗 accent-text-5
+  })
+
+  // ── collectSemanticHexToVar ──
+  it('collectSemanticHexToVar 应收集带 fillVar 且色未变的对象', () => {
+    const canvas = {
+      getObjects: () => [{ fill: '#E1BEE7', fillVar: '--diagram-accent-bg-3b' }],
+    } as any
+    const map = collectSemanticHexToVar(canvas, 'light')
+    expect(map['#E1BEE7']).toBe('--diagram-accent-bg-3b')
+  })
+
+  it('collectSemanticHexToVar 撞色 hex 按 fillVar 精确区分', () => {
+    const lightCanvas = {
+      getObjects: () => [{ fill: '#E1BEE7', fillVar: '--diagram-accent-bg-3b' }],
+    } as any
+    const darkCanvas = {
+      getObjects: () => [{ fill: '#E1BEE7', fillVar: '--diagram-accent-text-3' }],
+    } as any
+    expect(collectSemanticHexToVar(lightCanvas, 'light')['#E1BEE7']).toBe('--diagram-accent-bg-3b')
+    expect(collectSemanticHexToVar(darkCanvas, 'dark')['#E1BEE7']).toBe('--diagram-accent-text-3')
+  })
+
+  it('collectSemanticHexToVar 用户改色后不收集（语义断开）', () => {
+    const canvas = {
+      getObjects: () => [{ fill: '#123456', fillVar: '--diagram-accent-bg-3b' }],
+    } as any
+    const map = collectSemanticHexToVar(canvas, 'light')
+    expect(map['#123456']).toBeUndefined()
+    expect(Object.keys(map).length).toBe(0)
+  })
+
+  it('collectSemanticHexToVar 无 getObjects 的 canvas 返回空映射', () => {
+    const map = collectSemanticHexToVar({} as any, 'light')
+    expect(Object.keys(map).length).toBe(0)
+  })
+
+  it('collectSemanticHexToVar 递归收集 Group 子对象', () => {
+    const canvas = {
+      getObjects: () => [{ _objects: [{ fill: '#1565C0', fillVar: '--diagram-accent-1' }] }],
+    } as any
+    const map = collectSemanticHexToVar(canvas, 'light')
+    expect(map['#1565C0']).toBe('--diagram-accent-1')
   })
 
   // ── restoreViewBox ──

@@ -4,7 +4,7 @@
  * 测试策略（四层金字塔）：
  *
  *   层级 1 — 常量正确性（unit）
- *     验证 LIGHT_TO_DARK / DARK_TO_LIGHT / ALL_HEX_TO_VAR 三个映射表
+ *     验证 LIGHT_TO_DARK / DARK_TO_LIGHT 双向映射表
  *     - 28 个 CSS 变量全部有双向映射
  *     - 键值统一大写
  *     - 亮→暗→亮往返等幂
@@ -379,24 +379,6 @@ test.describe('层级1 — 常量映射表正确性', () => {
     console.log(
       `[往返] light hexes=${result.totalLightHexes}, dark hexes=${result.totalDarkHexes}, expected collisions=${result.expectedRoundTripFailures.length}`
     )
-  })
-
-  test('1.3 ALL_HEX_TO_VAR 同时包含亮暗两个方向的 hex 键', async ({ page }) => {
-    const result = await page.evaluate(() => {
-      // 验证：同一个 CSS 变量的亮暗两个 hex 值都应映射回同名变量
-      const checks = [
-        { var: '--diagram-text-1', lightHex: '#333333', darkHex: '#e0e0e0' },
-        { var: '--diagram-accent-1', lightHex: '#1565C0', darkHex: '#5C9CE6' },
-        { var: '--diagram-surface-1', lightHex: '#FFFFFF', darkHex: '#1a1a1a' },
-        { var: '--diagram-arrow', lightHex: '#555555', darkHex: '#b0b0b0' },
-      ]
-      const results: { var: string; ok: boolean }[] = []
-      for (const c of checks) {
-        results.push({ var: c.var, ok: true })
-      }
-      return results
-    })
-    expect(result.every((r) => r.ok)).toBe(true)
   })
 })
 

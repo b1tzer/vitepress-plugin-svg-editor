@@ -35,6 +35,18 @@ export interface SvgLoadResult {
   svgHeight: number
 }
 
+/** SVG 预处理选项（preprocessSvg / SvgLoader 共用） */
+export interface SvgPreprocessOptions {
+  /**
+   * 是否开启「hex 精确匹配 → 语义 token」（第二步能力，默认 false）。
+   *
+   * 开启后，对色板中「精确命中」的裸 hex（fill/stroke）自动打上语义标记，
+   * 使普通 hex SVG 也能获得明暗自适应能力；跨主题撞色 hex 会被跳过。
+   * 只做精确匹配，绝不做近似匹配（避免猜错色）。
+   */
+  mapHexToVar?: boolean
+}
+
 // ═══════════════════════════════════════════════════════════════
 // CanvasManager 事件映射
 // ═══════════════════════════════════════════════════════════════

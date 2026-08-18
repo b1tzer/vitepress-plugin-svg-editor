@@ -88,11 +88,24 @@ describe('load → edit → save 完整闭环', () => {
     expect(loaded).toBe(svgText)
   })
 
-  it('CSS 变量应完成 hex 往返（preprocess var→hex，postprocess hex→var）', async () => {
+  it('CSS 变量应完成语义化 hex 往返（preprocess 打标记 → mount 挂载 → serialize 还原）', async () => {
     const loader = new SvgLoader()
     const loadResult = loader.load(cssVarSvg, 'light')
 
-    // 直接构造 Fabric 对象模拟画布内容（fill 为亮色主题 hex）
+    // 装载到真实 Fabric 画布：reviver 会读取 data-fill-var 并挂载语义 ID
+    await mountSvgObjects(canvas, loadResult.svg)
+    const rect = canvas.getObjects()[0] as any
+    expect(rect.fillVar).toBe('--diagram-accent-1')
+
+    const serializer = new SvgSerializer()
+    const svgText = serializer.serialize(canvas, { originalViewBox: loadResult.originalViewBox })
+
+    // 序列化时语义化 hex 应还原为 CSS 变量
+    expect(svgText).toContain('var(--diagram-accent-1)')
+  })
+
+  it('无语义对象（无 fillVar）的 hex 不应被还原为 CSS 变量', async () => {
+    // 直接构造无 fillVar 的 Fabric 对象，验证语义化 ID「不猜语义」
     const rect = new fabric.Rect({
       left: 10,
       top: 10,
@@ -104,9 +117,9 @@ describe('load → edit → save 完整闭环', () => {
     canvas.renderAll()
 
     const serializer = new SvgSerializer()
-    const svgText = serializer.serialize(canvas, { originalViewBox: loadResult.originalViewBox })
+    const svgText = serializer.serialize(canvas, { originalViewBox: '0 0 200 100' })
 
-    // 序列化时 hex 应还原为 CSS 变量
-    expect(svgText).toContain('var(--diagram-accent-1)')
+    expect(svgText).not.toContain('var(--diagram-')
+    expect(svgText).toContain('#1565C0')
   })
 })

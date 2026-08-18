@@ -45,7 +45,7 @@ describe('mountSvgObjects', () => {
 
     await mountSvgObjects(canvas as any, '<svg/>')
 
-    expect(fabric.loadSVGFromString).toHaveBeenCalledWith('<svg/>')
+    expect(fabric.loadSVGFromString).toHaveBeenCalledWith('<svg/>', expect.any(Function))
     expect(canvas.add).toHaveBeenCalledWith(obj)
     expect(canvas.requestRenderAll).toHaveBeenCalled()
   })

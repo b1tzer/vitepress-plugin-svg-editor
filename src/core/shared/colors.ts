@@ -2,9 +2,10 @@
  * SVG 编辑器 — 主题色彩常量
  *
  * 定义亮色/暗色主题的 CSS 变量与 hex 值映射，包含：
- *   - THEME_VAR_TO_HEX: 按主题导出 VAR→HEX，供 preprocessor 使用
- *   - LIGHT_TO_DARK / DARK_TO_LIGHT: 亮↔暗双向映射，供编辑器内主题切换
- *   - CSS_COLORS (alias ALL_HEX_TO_VAR): hex→CSS 变量还原，供 postprocessor 使用
+ *   - THEME_VAR_TO_HEX: 按主题导出 VAR→HEX，供 preprocessor 导入时替换 CSS 变量
+ *   - LIGHT_TO_DARK / DARK_TO_LIGHT: 亮↔暗双向 hex 映射，供编辑器内主题切换
+ *   - THEME_HEX_TO_VAR: 按主题的单向 hex→VAR，供 preprocessor 第二步与撞色计算
+ *   - COLLISION_HEXES: 跨主题撞色 hex 集合，供第二步精确匹配排除
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -94,17 +95,6 @@ for (const v of Object.keys(LIGHT_HEX)) {
   DARK_TO_LIGHT[DARK_HEX[v].toUpperCase()] = LIGHT_HEX[v].toUpperCase()
 }
 
-/** 合并映射 hex→CSS 变量（用于 postprocessor：保存时 hex→var(--xxx) 还原）
- *  同一个 CSS 变量在亮/暗下有不同的 hex 值，还原时都映射到同一个变量名 */
-export const ALL_HEX_TO_VAR: Record<string, string> = {}
-for (const v of Object.keys(LIGHT_HEX)) {
-  ALL_HEX_TO_VAR[LIGHT_HEX[v]] = v
-  ALL_HEX_TO_VAR[DARK_HEX[v]] = v
-}
-
-/** 兼容别名：CSS_COLORS = ALL_HEX_TO_VAR（用于 postprocessor 中的 hexToCssVars 默认回退） */
-export const CSS_COLORS: Record<string, string> = ALL_HEX_TO_VAR
-
 /**
  * 将 var→hex 映射倒置为 hex→var 映射
  * @param hexMap 变量名 → hex 值（如 LIGHT_HEX / DARK_HEX）
@@ -113,20 +103,51 @@ export const CSS_COLORS: Record<string, string> = ALL_HEX_TO_VAR
 function invertHexMap(hexMap: Record<string, string>): Record<string, string> {
   const result: Record<string, string> = {}
   for (const [varName, hex] of Object.entries(hexMap)) {
-    result[hex] = varName
+    result[hex.toUpperCase()] = varName
   }
   return result
 }
 
 /**
- * 按主题的 hex→CSS 变量「单向」映射（供 postprocessor 导出时还原）
+ * 按主题的 hex→CSS 变量「单向」映射
  *
- * 与 ALL_HEX_TO_VAR 的本质区别：ALL_HEX_TO_VAR 把亮/暗两套 hex 合并进同一张表，
- * 一旦某个 hex 同时出现在两套主题里（如 #E1BEE7 既是亮色 --diagram-accent-bg-3b、
- * 又是暗色 --diagram-accent-text-3），后写入者会覆盖先写入者，导致还原串色。
- * 单向映射保证「同一主题内 hex 唯一对应变量」，彻底消除跨主题撞色歧义。
+ * 用途：
+ *   1. 供 preprocessor 第二步「hex 精确匹配 → 语义 token」使用（mapHexToVar），
+ *      对当前主题下精确命中的裸 hex 打上语义标记，使其获得明暗能力；
+ *   2. 供 COLLISION_HEXES 动态计算跨主题撞色集合（比对 light / dark 两套映射）。
+ *
+ * 注意：导出时还原 var() 已不再依赖本表，而是改用 postprocessor 的
+ * collectSemanticHexToVar（基于对象级 fillVar/strokeVar 语义 ID 收集映射）。
+ *
+ * 单向映射保证「同一主题内 hex 唯一对应变量」，配合 COLLISION_HEXES
+ * 排除跨主题撞色 hex，彻底消除撞色歧义。
  */
 export const THEME_HEX_TO_VAR: Record<'light' | 'dark', Record<string, string>> = {
   light: invertHexMap(LIGHT_HEX),
   dark: invertHexMap(DARK_HEX),
 }
+
+/**
+ * 跨主题撞色 hex 集合（动态计算，避免硬编码遗漏）
+ *
+ * 「撞色」定义：同一个 hex 在亮色与暗色主题中同时存在，但映射到「不同」的 CSS 变量。
+ * 这类 hex 无法在导入时无歧义地反推语义 token（例如 #E1BEE7 既是亮色 accent-bg-3b、
+ * 又是暗色 accent-text-3），因此第二步的「hex 精确匹配 → 语义 token」必须排除它们。
+ *
+ * 供「hex 精确匹配」步骤使用；普通的 var→hex / hex→var 往返不受影响。
+ */
+function computeCollisionHexes(): Set<string> {
+  const result = new Set<string>()
+  // THEME_HEX_TO_VAR 的 key 已统一大写（见 invertHexMap），可直接跨主题比对
+  const lightHexToVar = THEME_HEX_TO_VAR.light
+  const darkHexToVar = THEME_HEX_TO_VAR.dark
+  for (const [hex, lightVar] of Object.entries(lightHexToVar)) {
+    const darkVar = darkHexToVar[hex]
+    if (darkVar && darkVar !== lightVar) {
+      result.add(hex)
+    }
+  }
+  return result
+}
+
+export const COLLISION_HEXES = computeCollisionHexes()

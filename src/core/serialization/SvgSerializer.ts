@@ -14,6 +14,7 @@
 
 import type { Canvas } from 'fabric'
 import { createPostprocessPipeline } from './pipeline/postprocessPipeline'
+import { collectSemanticHexToVar } from './postprocessor'
 import type { ThemeMode } from '../shared/types'
 
 export interface SerializeOptions {
@@ -35,11 +36,17 @@ export class SvgSerializer {
    * @returns 可保存的最终 SVG 文本
    */
   serialize(canvas: Canvas, options: SerializeOptions = {}): string {
-    const svg = canvas.toSVG()
     const theme = options.theme ?? 'light'
 
+    // 语义化颜色 ID：从画布对象收集「仍保持语义」的 hex→var 精确映射。
+    // 只有带 fillVar/strokeVar 且颜色未被用户改动的对象才会被还原成 var()，
+    // 其余（用户自定义色、无语义裸 hex）保留 hex，避免全局表撞色与猜语义。
+    const semanticHexToVar = collectSemanticHexToVar(canvas, theme)
+
+    const svg = canvas.toSVG()
+
     // 使用 Pipeline 处理链
-    const pipeline = createPostprocessPipeline(options.originalViewBox, theme)
+    const pipeline = createPostprocessPipeline(options.originalViewBox, semanticHexToVar)
 
     // 如果不需要 CSS 变量还原，移除 hexToCssVars 步骤
     if (options.restoreCssVars === false) {
