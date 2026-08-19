@@ -86,7 +86,7 @@ const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 
 // ── 主题切换 ──
-const { themeMode, toggleTheme } = useTheme(canvasMgr)
+const { themeMode, toggleTheme, getDarkToLightMap } = useTheme(canvasMgr)
 
 // ── 图层管理 ──
 const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = useLayer(canvasMgr)
@@ -181,6 +181,7 @@ const { saving, errorMessage, save, showError } = useSave({
   src: props.src,
   getOriginalViewBox: () => originalViewBox.value,
   getThemeMode: () => themeMode.value,
+  getDarkToLightMap,
   onSaved: () => emit('saved'),
   onClose: () => emit('close'),
 })

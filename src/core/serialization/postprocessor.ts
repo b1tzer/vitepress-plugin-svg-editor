@@ -129,6 +129,39 @@ export function hexToCssVars(svg: string, map: Record<string, string>): string {
 }
 
 /**
+ * 非语义色「暗 → 亮」归一化（保存时强制存亮色真值的核心步骤）
+ *
+ * 背景：编辑器内主题切换会把「无语义 ID 的自定义色」在 OKLCH 空间做亮度翻转
+ * 并记忆化（useTheme 的 darkToLightCache 记录 暗色hex → 亮色hex）。若用户在
+ * 暗色模式下保存，画布上的非语义色已是暗色 hex，直接落盘会把「暗色快照」当
+ * 真值，导致展示层切换明暗时无法恢复（这正是 issue #25 后续要打通的一环）。
+ *
+ * 本步骤必须在 hexToCssVars（语义色还原 var）之后执行：此时 SVG 里剩余的 hex
+ * 均为非语义色，按 darkToLightMap 把暗色 hex 还原为亮色真值，使文件永远保存
+ * 亮色语义，展示层即可在暗色下由运行时派生暗色，实现「所见即所得」闭环。
+ *
+ * @param svg            待归一化的 SVG 文本
+ * @param darkToLightMap 暗色 hex → 亮色 hex 映射（来自 useTheme 的记忆化缓存）
+ */
+export function normalizeNonSemanticToLight(
+  svg: string,
+  darkToLightMap: Map<string, string> | Record<string, string> | undefined
+): string {
+  if (!darkToLightMap) return svg
+  const entries =
+    darkToLightMap instanceof Map ? [...darkToLightMap.entries()] : Object.entries(darkToLightMap)
+  if (!entries.length) return svg
+
+  let result = svg
+  for (const [darkHex, lightHex] of entries) {
+    if (!darkHex || !lightHex) continue
+    // 大小写不敏感替换；lightHex 保持原始亮色 hex 的大小写（不强行统一）
+    result = result.replace(new RegExp(darkHex, 'gi'), lightHex)
+  }
+  return result
+}
+
+/**
  * 收集「对象级」语义 hex→var 精确映射（语义化颜色 ID 的导出依据）
  *
  * 遍历画布上所有对象（含 Group 子对象），仅收集「仍保持语义」的颜色：

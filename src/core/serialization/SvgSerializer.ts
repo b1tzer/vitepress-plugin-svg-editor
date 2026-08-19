@@ -26,6 +26,8 @@ export interface SerializeOptions {
   removeCanvasBg?: boolean
   /** @deprecated 语义还原已改用对象级语义 ID（不依赖主题），此字段保留仅为兼容旧调用 */
   theme?: ThemeMode
+  /** 暗色 hex → 亮色 hex 映射（保存时强制存亮色真值：非语义色暗→亮归一化） */
+  darkToLightMap?: Map<string, string>
 }
 
 export class SvgSerializer {
@@ -44,7 +46,11 @@ export class SvgSerializer {
     const svg = canvas.toSVG()
 
     // 使用 Pipeline 处理链
-    const pipeline = createPostprocessPipeline(options.originalViewBox, semanticHexToVar)
+    const pipeline = createPostprocessPipeline(
+      options.originalViewBox,
+      semanticHexToVar,
+      options.darkToLightMap
+    )
 
     // 如果不需要 CSS 变量还原，移除 hexToCssVars 步骤
     if (options.restoreCssVars === false) {

@@ -9,6 +9,7 @@ import {
   restoreViewBox,
   removeCanvasBg,
   collectSemanticHexToVar,
+  normalizeNonSemanticToLight,
 } from '../../src/core/serialization/postprocessor'
 import { THEME_HEX_TO_VAR, COLLISION_HEXES } from '../../src/core/shared/colors'
 
@@ -187,5 +188,39 @@ describe('postprocessor', () => {
   it('removeCanvasBg 无背景 rect 时保持原样', () => {
     const svg = '<svg><rect fill="#ff0000"/></svg>'
     expect(removeCanvasBg(svg)).toBe(svg)
+  })
+
+  // ── normalizeNonSemanticToLight ──
+  it('normalizeNonSemanticToLight 应将暗色 hex 还原为亮色真值', () => {
+    const svg = '<rect fill="#779CC4" stroke="#0D2137"/>'
+    const map = new Map<string, string>([
+      ['#779CC4', '#123456'],
+      ['#0D2137', '#E3F2FD'],
+    ])
+    const result = normalizeNonSemanticToLight(svg, map)
+    expect(result).toContain('#123456')
+    expect(result).toContain('#E3F2FD')
+    expect(result).not.toContain('#779CC4')
+    expect(result).not.toContain('#0D2137')
+  })
+
+  it('normalizeNonSemanticToLight 大小写不敏感匹配', () => {
+    const svg = '<rect fill="#779cc4"/>'
+    const map = new Map<string, string>([['#779CC4', '#123456']])
+    const result = normalizeNonSemanticToLight(svg, map)
+    expect(result).toContain('#123456')
+    expect(result).not.toContain('#779cc4')
+  })
+
+  it('normalizeNonSemanticToLight 空映射或 undefined 时原样返回', () => {
+    const svg = '<rect fill="#123456"/>'
+    expect(normalizeNonSemanticToLight(svg, undefined)).toBe(svg)
+    expect(normalizeNonSemanticToLight(svg, new Map())).toBe(svg)
+  })
+
+  it('normalizeNonSemanticToLight 兼容 Record 形式入参', () => {
+    const svg = '<rect fill="#779CC4"/>'
+    const result = normalizeNonSemanticToLight(svg, { '#779CC4': '#123456' })
+    expect(result).toContain('#123456')
   })
 })

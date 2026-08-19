@@ -11,6 +11,7 @@ import {
   hexToCssVars,
   restoreViewBox,
   removeCanvasBg,
+  normalizeNonSemanticToLight,
 } from '../postprocessor'
 
 // ═══════════════════════════════════════════════════════════════
@@ -24,7 +25,8 @@ import {
 /** 创建标准后处理管道 */
 export function createPostprocessPipeline(
   originalViewBox?: string,
-  semanticHexToVar: Record<string, string> = {}
+  semanticHexToVar: Record<string, string> = {},
+  darkToLightMap?: Map<string, string>
 ): Pipeline<string> {
   const pipeline = new Pipeline<string>()
     .use({ name: 'rgbToHex', process: rgbToHex })
@@ -43,7 +45,17 @@ export function createPostprocessPipeline(
       // 语义化颜色 ID：仅用「对象级精确映射」还原，未命中则保留 hex（不猜语义）
       process: (svg: string) => hexToCssVars(svg, semanticHexToVar),
     })
-    .use({ name: 'removeCanvasBg', process: removeCanvasBg })
+
+  // 非语义色暗→亮归一化（保存时强制存亮色真值）。
+  // 必须在 hexToCssVars 之后执行，避免与语义色 var() 还原产生撞色歧义。
+  if (darkToLightMap && darkToLightMap.size > 0) {
+    pipeline.use({
+      name: 'normalizeNonSemanticToLight',
+      process: (svg: string) => normalizeNonSemanticToLight(svg, darkToLightMap),
+    })
+  }
+
+  pipeline.use({ name: 'removeCanvasBg', process: removeCanvasBg })
 
   return pipeline
 }
