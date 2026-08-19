@@ -179,6 +179,14 @@ describe('preprocessSvg', () => {
     expect(result.svg).toContain('fill="#1565C0" data-fill-var="--diagram-accent-1"')
   })
 
+  it('第二步开关开启时跨主题升级：暗色 hex 在亮色主题下也能命中', () => {
+    // 边界 2 修复：写死色板色无论当前主题，只要无歧义命中明/暗任一色板即升级
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#5C9CE6"/></svg>'
+    const result = preprocessSvg(svg, 'light', { mapHexToVar: true })
+    expect(result.svg).toContain('fill="#5C9CE6" data-fill-var="--diagram-accent-1"')
+  })
+
   it('第二步开关开启时跳过撞色 hex（#E1BEE7）', () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#E1BEE7"/></svg>'

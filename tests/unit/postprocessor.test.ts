@@ -109,7 +109,7 @@ describe('postprocessor', () => {
     const canvas = {
       getObjects: () => [{ fill: '#E1BEE7', fillVar: '--diagram-accent-bg-3b' }],
     } as any
-    const map = collectSemanticHexToVar(canvas, 'light')
+    const map = collectSemanticHexToVar(canvas)
     expect(map['#E1BEE7']).toBe('--diagram-accent-bg-3b')
   })
 
@@ -120,21 +120,21 @@ describe('postprocessor', () => {
     const darkCanvas = {
       getObjects: () => [{ fill: '#E1BEE7', fillVar: '--diagram-accent-text-3' }],
     } as any
-    expect(collectSemanticHexToVar(lightCanvas, 'light')['#E1BEE7']).toBe('--diagram-accent-bg-3b')
-    expect(collectSemanticHexToVar(darkCanvas, 'dark')['#E1BEE7']).toBe('--diagram-accent-text-3')
+    expect(collectSemanticHexToVar(lightCanvas)['#E1BEE7']).toBe('--diagram-accent-bg-3b')
+    expect(collectSemanticHexToVar(darkCanvas)['#E1BEE7']).toBe('--diagram-accent-text-3')
   })
 
   it('collectSemanticHexToVar 用户改色后不收集（语义断开）', () => {
     const canvas = {
       getObjects: () => [{ fill: '#123456', fillVar: '--diagram-accent-bg-3b' }],
     } as any
-    const map = collectSemanticHexToVar(canvas, 'light')
+    const map = collectSemanticHexToVar(canvas)
     expect(map['#123456']).toBeUndefined()
     expect(Object.keys(map).length).toBe(0)
   })
 
   it('collectSemanticHexToVar 无 getObjects 的 canvas 返回空映射', () => {
-    const map = collectSemanticHexToVar({} as any, 'light')
+    const map = collectSemanticHexToVar({} as any)
     expect(Object.keys(map).length).toBe(0)
   })
 
@@ -142,8 +142,21 @@ describe('postprocessor', () => {
     const canvas = {
       getObjects: () => [{ _objects: [{ fill: '#1565C0', fillVar: '--diagram-accent-1' }] }],
     } as any
-    const map = collectSemanticHexToVar(canvas, 'light')
+    const map = collectSemanticHexToVar(canvas)
     expect(map['#1565C0']).toBe('--diagram-accent-1')
+  })
+
+  it('collectSemanticHexToVar 写死色板色对象无论明暗都能被收集（跨主题升级）', () => {
+    // 语义还原不再依赖当前主题：fill 等于该变量在亮色或暗色下的 hex 即可还原
+    const lightHexCanvas = {
+      getObjects: () => [{ fill: '#1565C0', fillVar: '--diagram-accent-1' }],
+    } as any
+    expect(collectSemanticHexToVar(lightHexCanvas)['#1565C0']).toBe('--diagram-accent-1')
+
+    const darkHexCanvas = {
+      getObjects: () => [{ fill: '#5C9CE6', fillVar: '--diagram-accent-1' }],
+    } as any
+    expect(collectSemanticHexToVar(darkHexCanvas)['#5C9CE6']).toBe('--diagram-accent-1')
   })
 
   // ── restoreViewBox ──

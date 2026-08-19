@@ -24,7 +24,7 @@ export interface SerializeOptions {
   restoreCssVars?: boolean
   /** 是否移除 Fabric.js 自动添加的画布背景 rect */
   removeCanvasBg?: boolean
-  /** 当前主题模式（决定 hex→CSS 变量还原使用哪套单向映射，默认 light） */
+  /** @deprecated 语义还原已改用对象级语义 ID（不依赖主题），此字段保留仅为兼容旧调用 */
   theme?: ThemeMode
 }
 
@@ -36,12 +36,10 @@ export class SvgSerializer {
    * @returns 可保存的最终 SVG 文本
    */
   serialize(canvas: Canvas, options: SerializeOptions = {}): string {
-    const theme = options.theme ?? 'light'
-
     // 语义化颜色 ID：从画布对象收集「仍保持语义」的 hex→var 精确映射。
     // 只有带 fillVar/strokeVar 且颜色未被用户改动的对象才会被还原成 var()，
     // 其余（用户自定义色、无语义裸 hex）保留 hex，避免全局表撞色与猜语义。
-    const semanticHexToVar = collectSemanticHexToVar(canvas, theme)
+    const semanticHexToVar = collectSemanticHexToVar(canvas)
 
     const svg = canvas.toSVG()
 

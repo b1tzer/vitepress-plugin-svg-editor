@@ -8,7 +8,7 @@
  *   4. 提取 viewBox / 宽高
  */
 
-import { THEME_VAR_TO_HEX, THEME_HEX_TO_VAR, COLLISION_HEXES } from '../shared/colors'
+import { THEME_VAR_TO_HEX, UNIQUE_HEX_TO_VAR } from '../shared/colors'
 import { SVG_FILL_VAR_ATTR, SVG_STROKE_VAR_ATTR } from '../shared/fabricTypes'
 import type { ThemeMode, SvgLoadResult, SvgPreprocessOptions, MarkerInfo } from '../shared/types'
 
@@ -74,20 +74,22 @@ function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
  * 对「色板中精确命中」的裸 hex 打上语义标记，使普通 hex SVG 也能获得明暗能力。
  * 约束（严格遵循用户方案，绝不做近似匹配）：
  *   - 只匹配 6 位 hex（#RRGGBB）
- *   - 必须精确命中当前主题的 hex→var 单向映射
- *   - 跨主题撞色 hex（COLLISION_HEXES）一律跳过，避免歧义
+ *   - 必须精确命中「明暗两套色板的无歧义并集」（UNIQUE_HEX_TO_VAR）
+ *   - 跨主题撞色 hex 已在 UNIQUE_HEX_TO_VAR 中剔除，避免歧义
+ *
+ * 不依赖当前主题：一个写死色板色的 hex 无论当前明暗主题，只要在明/暗任一
+ * 主题中无歧义地命中某变量，都会被识别并升级。
  */
-function mapHexToVar(svg: string, theme: ThemeMode = 'light'): string {
-  const hexToVar = THEME_HEX_TO_VAR[theme] || THEME_HEX_TO_VAR.light
+function mapHexToVar(svg: string): string {
+  const hexToVar = UNIQUE_HEX_TO_VAR
   let result = svg
 
   // fill 属性精确匹配（避免把已带 data-fill-var 标记的重复处理）
   result = result.replace(
     /fill="(#[0-9A-Fa-f]{6})"/g,
     (full: string, hex: string) => {
-      const upper = hex.toUpperCase()
-      const varName = hexToVar[upper]
-      if (varName && !COLLISION_HEXES.has(upper)) {
+      const varName = hexToVar[hex.toUpperCase()]
+      if (varName) {
         return `fill="${hex}" ${SVG_FILL_VAR_ATTR}="${varName}"`
       }
       return full
@@ -98,9 +100,8 @@ function mapHexToVar(svg: string, theme: ThemeMode = 'light'): string {
   result = result.replace(
     /stroke="(#[0-9A-Fa-f]{6})"/g,
     (full: string, hex: string) => {
-      const upper = hex.toUpperCase()
-      const varName = hexToVar[upper]
-      if (varName && !COLLISION_HEXES.has(upper)) {
+      const varName = hexToVar[hex.toUpperCase()]
+      if (varName) {
         return `stroke="${hex}" ${SVG_STROKE_VAR_ATTR}="${varName}"`
       }
       return full
@@ -425,7 +426,7 @@ export function preprocessSvg(
   // 必须在 var→hex 之前执行：此时 var 形式的 fill/stroke 尚未替换为 hex，
   // 裸 hex 正则不会误匹配到它们，也避免对已带 data-*-var 标记的元素重复打标。
   if (options.mapHexToVar) {
-    svg = mapHexToVar(svg, theme)
+    svg = mapHexToVar(svg)
   }
 
   // 1. CSS 变量 → hex（按当前主题，并打上语义标记）
