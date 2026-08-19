@@ -58,6 +58,16 @@ Use standard Markdown image syntax — `.svg` files get edit buttons automatical
 
 Click the **✏️ Edit SVG** button that appears on hover (dev mode only) to open the full-featured editor.
 
+## Dark Mode / Theme Adaptation
+
+The plugin provides automatic light/dark theme adaptation for SVG diagrams:
+
+- **Semantic tokens** (`--diagram-*` CSS variables): diagrams using `var(--diagram-accent-1)` etc. automatically follow the site theme via injected `diagram-vars.css`.
+- **Bare hex colors**: non-semantic hex colors are adapted at runtime in the OKLCH perceptual color space (brightness flip, hue/saturation preserved) when the site switches to dark mode.
+- **Editor + display consistency**: saving always normalizes colors to their light-mode canonical value, so what you see in the editor matches what renders on the page across theme switches.
+
+Enable exact hex → semantic token upgrading on import with `mapHexToVar: true` (collision colors are skipped).
+
 ## Plugin Options
 
 | Option           | Type                              | Default           | Description                                  |
@@ -65,6 +75,7 @@ Click the **✏️ Edit SVG** button that appears on hover (dev mode only) to op
 | `storage`        | `'vitepress'` \| `'localStorage'` | `'vitepress'`     | Save strategy                               |
 | `saveEndpoint`   | `string`                          | `'/__svg-save__'` | Save API endpoint (vitepress mode only)     |
 | `markdownSyntax` | `boolean`                         | `true`            | Enable Markdown image interception          |
+| `mapHexToVar`    | `boolean`                         | `false`           | Upgrade exact palette-matching hex colors to semantic tokens |
 
 ## Architecture
 
