@@ -234,7 +234,9 @@ async function loadAndInit() {
     // 让普通 hex SVG 在编辑器内对精确命中色板的颜色自动升级为语义变量
     // （跨主题撞色 hex 会被跳过，且绝不做近似匹配）。
     loaded = await timedAsync('svg:preprocess', () =>
-      svgLoader.loadFromUrl(url, themeMode.value, { mapHexToVar: true })
+      svgLoader.loadFromUrl(url, themeMode.value, {
+        mapHexToVar: __SVG_EDITOR_MAP_HEX_TO_VAR__ === true,
+      })
     )
   } catch (e) {
     console.error('[SvgEditor] 获取 SVG 失败:', url, e)

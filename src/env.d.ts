@@ -34,3 +34,8 @@ declare const __SVG_EDITOR_SAVE_ENDPOINT__: string | undefined
 //   1) 在 testHooks.ts 中暴露 window.__fabricCanvas 等测试钩子；
 //   2) 在 SvgDiagram.vue 中渲染「编辑 SVG」入口按钮（原本仅 dev 模式显示）。
 declare const __SVG_EDITOR_E2E__: boolean | undefined
+
+// Vite define 注入的「hex 精确匹配 → 语义 token」开关（由 svgEditorPlugin 的
+// mapHexToVar 选项注入）。默认 false：不开启第二步升级，普通 hex SVG 保持原样；
+// 显式 svgEditorPlugin({ mapHexToVar: true }) 时才为 true，使普通 hex SVG 升级为语义色。
+declare const __SVG_EDITOR_MAP_HEX_TO_VAR__: boolean | undefined
