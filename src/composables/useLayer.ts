@@ -9,7 +9,7 @@ import { ref, type Ref } from 'vue'
 import type { FabricObject, FabricText } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import { getObjectId, findObjectById } from '../core/editor/ObjectId'
-import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/FabricTypes'
+import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/fabricTypes'
 
 export interface LayerItem {
   id: string

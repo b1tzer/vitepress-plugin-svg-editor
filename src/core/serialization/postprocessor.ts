@@ -9,7 +9,9 @@
  *   5. 清理 Fabric.js 冗余头部信息
  */
 
-import { CSS_COLORS } from '../shared/colors'
+import type { Canvas } from 'fabric'
+import { THEME_VAR_TO_HEX } from '../shared/colors'
+import type { SvgSemanticColors } from '../shared/fabricTypes'
 /**
  * 主入口：清理 Fabric.js 输出的 SVG
  */
@@ -114,13 +116,111 @@ export function rgbToHex(svg: string): string {
 
 /**
  * hex → CSS 变量还原
+ * @param svg  待还原的 SVG 文本
+ * @param map  hex→变量名 映射（必传；语义化导出时应传入
+ *             collectSemanticHexToVar 的对象级精确映射，避免全局表撞色）
  */
-export function hexToCssVars(svg: string): string {
+export function hexToCssVars(svg: string, map: Record<string, string>): string {
   let result = svg
-  for (const [hex, info] of Object.entries(CSS_COLORS)) {
+  for (const [hex, info] of Object.entries(map)) {
     result = result.replace(new RegExp(hex, 'gi'), `var(${info})`)
   }
   return result
+}
+
+/**
+ * 非语义色「暗 → 亮」归一化（保存时强制存亮色真值的核心步骤）
+ *
+ * 背景：编辑器内主题切换会把「无语义 ID 的自定义色」在 OKLCH 空间做亮度翻转
+ * 并记忆化（useTheme 的 darkToLightCache 记录 暗色hex → 亮色hex）。若用户在
+ * 暗色模式下保存，画布上的非语义色已是暗色 hex，直接落盘会把「暗色快照」当
+ * 真值，导致展示层切换明暗时无法恢复（这正是 issue #25 后续要打通的一环）。
+ *
+ * 本步骤必须在 hexToCssVars（语义色还原 var）之后执行：此时 SVG 里剩余的 hex
+ * 均为非语义色，按 darkToLightMap 把暗色 hex 还原为亮色真值，使文件永远保存
+ * 亮色语义，展示层即可在暗色下由运行时派生暗色，实现「所见即所得」闭环。
+ *
+ * @param svg            待归一化的 SVG 文本
+ * @param darkToLightMap 暗色 hex → 亮色 hex 映射（来自 useTheme 的记忆化缓存）
+ */
+export function normalizeNonSemanticToLight(
+  svg: string,
+  darkToLightMap: Map<string, string> | Record<string, string> | undefined
+): string {
+  if (!darkToLightMap) return svg
+  const entries =
+    darkToLightMap instanceof Map ? [...darkToLightMap.entries()] : Object.entries(darkToLightMap)
+  if (!entries.length) return svg
+
+  let result = svg
+  for (const [darkHex, lightHex] of entries) {
+    if (!darkHex || !lightHex) continue
+    // 大小写不敏感替换；lightHex 保持原始亮色 hex 的大小写（不强行统一）
+    result = result.replace(new RegExp(darkHex, 'gi'), lightHex)
+  }
+  return result
+}
+
+/**
+ * 收集「对象级」语义 hex→var 精确映射（语义化颜色 ID 的导出依据）
+ *
+ * 遍历画布上所有对象（含 Group 子对象），仅收集「仍保持语义」的颜色：
+ *   - 对象带有 fillVar / strokeVar（导入时挂载的变量名）
+ *   - 且当前 fill / stroke 的 hex 精确等于该变量在「亮色或暗色」主题下的 hex
+ *     （即用户未改色；不依赖当前主题，兼容写死色板色对象命中亮/暗任意一套）
+ *
+ * 返回映射 key 统一大写 hex（与 rgbToHex 输出一致，配合 gi 匹配）。
+ * 只还原「有语义且未改色」的对象，其余（用户自定义色、无语义裸 hex）保留 hex，
+ * 从而彻底避免基于全局表的 hex 撞色串色与「猜语义」。
+ */
+export function collectSemanticHexToVar(canvas: Canvas): Record<string, string> {
+  const map: Record<string, string> = {}
+
+  type SemanticObject = SvgSemanticColors & {
+    fill?: unknown
+    stroke?: unknown
+    _objects?: SemanticObject[]
+  }
+
+  // 判据：当前 hex 是否等于该语义变量在亮色或暗色主题下的 hex。
+  // 用「明或暗」而非「当前主题」，使写死色板色的对象无论导入时命中哪套，
+  // 只要未被用户改色都能正确还原成语义变量。
+  const isSemanticColor = (varName: string, hex: string): boolean => {
+    const upper = hex.toUpperCase()
+    const lightHex = THEME_VAR_TO_HEX.light[varName]
+    const darkHex = THEME_VAR_TO_HEX.dark[varName]
+    return (
+      (lightHex != null && lightHex.toUpperCase() === upper) ||
+      (darkHex != null && darkHex.toUpperCase() === upper)
+    )
+  }
+
+  const visit = (obj: SemanticObject): void => {
+    if (!obj) return
+    // fill：有语义 ID 且当前值仍等于语义 hex 时才还原
+    if (typeof obj.fill === 'string' && obj.fillVar) {
+      if (isSemanticColor(obj.fillVar, obj.fill)) {
+        map[obj.fill.toUpperCase()] = obj.fillVar
+      }
+    }
+    // stroke：同理
+    if (typeof obj.stroke === 'string' && obj.strokeVar) {
+      if (isSemanticColor(obj.strokeVar, obj.stroke)) {
+        map[obj.stroke.toUpperCase()] = obj.strokeVar
+      }
+    }
+    // 递归 Group 子对象
+    if (obj._objects) {
+      obj._objects.forEach(visit)
+    }
+  }
+
+  // 兼容无 getObjects 的 mock canvas（单测场景），优雅降级为空映射
+  const objects = canvas?.getObjects?.()
+  if (objects) {
+    objects.forEach((o) => visit(o as SemanticObject))
+  }
+  return map
 }
 
 /**

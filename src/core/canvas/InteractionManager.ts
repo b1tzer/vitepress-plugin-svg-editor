@@ -12,8 +12,8 @@
 
 import type { Canvas, FabricObject, ModifiedEvent } from 'fabric'
 import type { IEventBus } from '../shared/types'
-import { FABRIC_TYPE } from '../shared/FabricTypes'
-import { ensureObjectInteractive } from '../shared/Interactive'
+import { FABRIC_TYPE } from '../shared/fabricTypes'
+import { ensureObjectInteractive } from '../shared/interactive'
 import { MoveCommand, ResizeCommand, PropertyChangeCommand } from '../history/Command'
 import type { ICommand } from '../history/Command'
 

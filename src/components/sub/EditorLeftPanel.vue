@@ -61,19 +61,18 @@ function layerIconKey(type: string): string {
     :class="[isLight ? 'left-light' : 'left-dark', { collapsed }]"
     aria-label="左侧面板"
   >
-    <!-- 折叠时：圆形展开按钮垂直居中 -->
+    <!-- 折叠/展开按钮：始终作为面板直接子元素，展开态凸出右边界、折叠态居中 -->
     <button
-      v-if="collapsed"
       class="floating-toggle"
-      data-tip="展开左侧面板"
+      :data-tip="collapsed ? '展开左侧面板' : '折叠左侧面板'"
       @click="emit('toggleCollapse')"
-      aria-label="展开左侧面板"
+      :aria-label="collapsed ? '展开左侧面板' : '折叠左侧面板'"
     >
-      <span v-html="ICONS.chevronRight"></span>
+      <span v-html="collapsed ? ICONS.chevronRight : ICONS.chevronLeft"></span>
     </button>
 
-    <!-- 展开时：标签栏 + 内容区 + 圆形折叠按钮 -->
-    <template v-else>
+    <!-- 展开时：标签栏 + 内容区（用 panel-inner 独立控制 overflow，避免裁切凸出的折叠按钮） -->
+    <div v-if="!collapsed" class="panel-inner">
       <nav class="tab-nav">
         <button
           class="tab-btn"
@@ -98,16 +97,6 @@ function layerIconKey(type: string): string {
       </nav>
 
       <div class="tab-content">
-        <!-- 圆形折叠按钮（绝对定位在右边界） -->
-        <button
-          class="floating-toggle"
-          data-tip="折叠左侧面板"
-          @click="emit('toggleCollapse')"
-          aria-label="折叠左侧面板"
-        >
-          <span v-html="ICONS.chevronLeft"></span>
-        </button>
-
         <!-- 元素清单 -->
         <div v-if="activeTab === 'elements'" class="elements-view">
           <div class="section-search">
@@ -167,18 +156,29 @@ function layerIconKey(type: string): string {
           </div>
         </div>
       </div>
-    </template>
+    </div>
   </aside>
 </template>
 
 <style scoped>
 /* ── 根容器 ── */
 .left-panel {
-  position: relative;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
   display: flex;
-  flex-shrink: 0;
-  height: 100%;
   transition: width 0.2s ease;
+  /* 允许折叠按钮凸出到面板右边界外，内部内容的裁剪下沉到 .panel-inner */
+  overflow: visible;
+}
+
+/* 展开内容的内部容器：独立裁剪，避免宽度过渡时内容溢出，同时不裁切凸出的折叠按钮 */
+.panel-inner {
+  display: flex;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -197,29 +197,30 @@ function layerIconKey(type: string): string {
   background: #f0f1f3;
 }
 
-/* ── 折叠按钮（20×64 直角竖条，参考站 close-btn 1:1 复刻）── */
+/* ── 折叠按钮（圆角胶囊把手，凸出面板边界，z-index 高于标尺层）── */
 .floating-toggle {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  z-index: 1;
+  z-index: 20;
   width: 20px;
   height: 64px;
-  border: none;
-  border-radius: 0;
+  border: 1px solid;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   padding: 0;
-  background: transparent;
-}
-/* 展开态：右边界外侧 */
-.floating-toggle {
+  /* 展开态：凸出右边界外侧 */
   right: -20px;
 }
-/* 折叠态：面板中间 */
+/* 折叠态：按钮居中于窄条 */
 .left-panel.collapsed .floating-toggle {
   right: auto;
   left: 50%;
@@ -227,16 +228,28 @@ function layerIconKey(type: string): string {
 }
 
 .left-dark .floating-toggle {
-  color: #999;
+  color: #aab0b8;
+  background: rgba(45, 45, 45, 0.92);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 .left-dark .floating-toggle:hover {
-  color: #5cadff;
+  color: #60a5fa;
+  background: rgba(58, 58, 58, 0.95);
+  border-color: rgba(96, 165, 250, 0.42);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
 }
 .left-light .floating-toggle {
-  color: #515a6e;
+  color: #5f6b7a;
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
 }
 .left-light .floating-toggle:hover {
-  color: #2d8cf0;
+  color: #2563eb;
+  background: #ffffff;
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
 }
 .floating-toggle span {
   display: flex;

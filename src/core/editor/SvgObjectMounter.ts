@@ -15,7 +15,8 @@
 import * as fabric from 'fabric'
 import type { Canvas, FabricObject } from 'fabric'
 import { convertTextToTextbox } from './ObjectFactory'
-import { ensureObjectInteractive } from '../shared/Interactive'
+import { ensureObjectInteractive } from '../shared/interactive'
+import { SVG_FILL_VAR_ATTR, SVG_STROKE_VAR_ATTR, type SvgSemanticColors } from '../shared/fabricTypes'
 
 export interface SvgObjectMounterOptions {
   /** 装载前对对象数组做转换（如箭头合并），默认透传 */
@@ -36,12 +37,20 @@ export function mountSvgObjects(
 ): Promise<void> {
   const transform = options.transform
 
-  return fabric.loadSVGFromString(svg).then(({ objects }) => {
-    // Fabric 类型上允许返回 null 对象，装载前过滤掉，避免 canvas.add(null)
+  // reviver：在每个 Fabric 对象创建后读取原始 SVG 元素上的 data-fill-var / data-stroke-var，
+  // 挂载语义化颜色 ID（变量名），作为颜色的一等身份。
+  const reviver = (element: Element, obj: FabricObject): void => {
+    const fillVar = element.getAttribute(SVG_FILL_VAR_ATTR)
+    const strokeVar = element.getAttribute(SVG_STROKE_VAR_ATTR)
+    if (fillVar) (obj as FabricObject & SvgSemanticColors).fillVar = fillVar
+    if (strokeVar) (obj as FabricObject & SvgSemanticColors).strokeVar = strokeVar
+  }
+
+  return fabric.loadSVGFromString(svg, reviver).then(({ objects }) => {
     const validObjects = objects.filter((o): o is FabricObject => o !== null)
     // 1. 对象级转换（默认透传；由调用方注入 mergeArrows 等）
     const processed = transform ? transform(validObjects) : validObjects
-    // 2. Text → Textbox（文本支持自动换行）
+    // 2. Text → Textbox（文本支持自动换行，需保留 fillVar/strokeVar 语义标记）
     const converted = processed.map(convertTextToTextbox)
     // 3. 添加到画布并确保可交互
     converted.forEach((obj) => {

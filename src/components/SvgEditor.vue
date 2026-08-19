@@ -25,7 +25,7 @@ import { mergeArrows } from '../plugins/arrow-merger'
 import { VitePressSaveAdapter } from '../adapters/storage/VitePressSaveAdapter'
 import { LocalStorageAdapter } from '../adapters/storage/LocalStorageAdapter'
 import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
-import { ensureObjectInteractive } from '../core/shared/Interactive'
+import { ensureObjectInteractive } from '../core/shared/interactive'
 import { createShape } from '../core/editor/ObjectFactory'
 import { mountSvgObjects } from '../core/editor/SvgObjectMounter'
 import { useEditorState } from '../composables/useEditorState'
@@ -86,7 +86,7 @@ const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 
 // ── 主题切换 ──
-const { themeMode, toggleTheme } = useTheme(canvasMgr)
+const { themeMode, toggleTheme, getDarkToLightMap } = useTheme(canvasMgr)
 
 // ── 图层管理 ──
 const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = useLayer(canvasMgr)
@@ -180,6 +180,8 @@ const { saving, errorMessage, save, showError } = useSave({
   storageAdapter,
   src: props.src,
   getOriginalViewBox: () => originalViewBox.value,
+  getThemeMode: () => themeMode.value,
+  getDarkToLightMap,
   onSaved: () => emit('saved'),
   onClose: () => emit('close'),
 })
@@ -229,7 +231,14 @@ async function loadAndInit() {
   // 拉取 + 清洗 + 预处理（下沉到 SvgLoader.loadFromUrl，issue #19 P1）
   let loaded: Awaited<ReturnType<typeof svgLoader.loadFromUrl>>
   try {
-    loaded = await timedAsync('svg:preprocess', () => svgLoader.loadFromUrl(url, themeMode.value))
+    // 第二步（可选能力）：开启「hex 精确匹配 → 语义 token」，
+    // 让普通 hex SVG 在编辑器内对精确命中色板的颜色自动升级为语义变量
+    // （跨主题撞色 hex 会被跳过，且绝不做近似匹配）。
+    loaded = await timedAsync('svg:preprocess', () =>
+      svgLoader.loadFromUrl(url, themeMode.value, {
+        mapHexToVar: __SVG_EDITOR_MAP_HEX_TO_VAR__ === true,
+      })
+    )
   } catch (e) {
     console.error('[SvgEditor] 获取 SVG 失败:', url, e)
     loading.value = false
@@ -519,11 +528,10 @@ onUnmounted(() => {
   background: #f0f1f3;
 }
 
-/* ── 主体：三栏弹性布局 ── */
+/* ── 主体：画布铺满，左右面板作为悬浮层覆盖其上 ── */
 .editor-body {
   flex: 1;
-  display: flex;
-  flex-direction: row;
+  position: relative;
   overflow: hidden;
   min-height: 0;
 }

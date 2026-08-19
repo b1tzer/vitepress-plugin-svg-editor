@@ -10,7 +10,8 @@
 
 import * as fabric from 'fabric'
 import type { FabricObject, FabricText } from 'fabric'
-import { FABRIC_TYPE } from '../shared/FabricTypes'
+import { FABRIC_TYPE } from '../shared/fabricTypes'
+import type { SvgSemanticColors } from '../shared/fabricTypes'
 
 /**
  * 创建内置图形对象（以画布逻辑中心为基准）
@@ -103,8 +104,8 @@ export function convertTextToTextbox(obj: FabricObject): FabricObject {
   if (!obj) return obj
   if (obj.type === FABRIC_TYPE.TEXT) {
     try {
-      const text = obj as FabricText
-      return new fabric.Textbox(text.text || '', {
+      const text = obj as FabricText & SvgSemanticColors
+      const textbox = new fabric.Textbox(text.text || '', {
         left: text.left || 0,
         top: text.top || 0,
         width: Math.max((text.width || 80) + 20, 40),
@@ -127,6 +128,10 @@ export function convertTextToTextbox(obj: FabricObject): FabricObject {
         editable: true,
         splitByGrapheme: true,
       })
+      // 语义化颜色 ID：Text → Textbox 会创建全新对象，需手动透传 fillVar/strokeVar
+      if (text.fillVar) (textbox as FabricObject & SvgSemanticColors).fillVar = text.fillVar
+      if (text.strokeVar) (textbox as FabricObject & SvgSemanticColors).strokeVar = text.strokeVar
+      return textbox
     } catch (e) {
       return obj
     }

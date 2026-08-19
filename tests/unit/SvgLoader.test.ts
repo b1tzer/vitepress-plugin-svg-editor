@@ -141,7 +141,7 @@ describe('SvgLoader.loadFromUrl', () => {
     )
     const loadSpy = vi.spyOn(loader, 'load')
     await loader.loadFromUrl('/diagrams/foo.svg', 'dark')
-    expect(loadSpy).toHaveBeenCalledWith(baseSvg, 'dark')
+    expect(loadSpy).toHaveBeenCalledWith(baseSvg, 'dark', {})
     loadSpy.mockRestore()
   })
 })

@@ -13,7 +13,7 @@
  */
 
 import type { FabricObject } from 'fabric'
-import type { FabricObjectProps } from '../shared/FabricTypes'
+import type { FabricObjectProps } from '../shared/fabricTypes'
 
 /**
  * 命令接口 — 所有编辑器操作都必须实现此接口

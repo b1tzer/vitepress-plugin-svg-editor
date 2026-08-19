@@ -4,7 +4,7 @@
  * 测试策略（四层金字塔）：
  *
  *   层级 1 — 常量正确性（unit）
- *     验证 LIGHT_TO_DARK / DARK_TO_LIGHT / ALL_HEX_TO_VAR 三个映射表
+ *     验证 LIGHT_TO_DARK / DARK_TO_LIGHT 双向映射表
  *     - 28 个 CSS 变量全部有双向映射
  *     - 键值统一大写
  *     - 亮→暗→亮往返等幂
@@ -380,24 +380,6 @@ test.describe('层级1 — 常量映射表正确性', () => {
       `[往返] light hexes=${result.totalLightHexes}, dark hexes=${result.totalDarkHexes}, expected collisions=${result.expectedRoundTripFailures.length}`
     )
   })
-
-  test('1.3 ALL_HEX_TO_VAR 同时包含亮暗两个方向的 hex 键', async ({ page }) => {
-    const result = await page.evaluate(() => {
-      // 验证：同一个 CSS 变量的亮暗两个 hex 值都应映射回同名变量
-      const checks = [
-        { var: '--diagram-text-1', lightHex: '#333333', darkHex: '#e0e0e0' },
-        { var: '--diagram-accent-1', lightHex: '#1565C0', darkHex: '#5C9CE6' },
-        { var: '--diagram-surface-1', lightHex: '#FFFFFF', darkHex: '#1a1a1a' },
-        { var: '--diagram-arrow', lightHex: '#555555', darkHex: '#b0b0b0' },
-      ]
-      const results: { var: string; ok: boolean }[] = []
-      for (const c of checks) {
-        results.push({ var: c.var, ok: true })
-      }
-      return results
-    })
-    expect(result.every((r) => r.ok)).toBe(true)
-  })
 })
 
 // ════════════════════════════════════════════════════════════════
@@ -528,9 +510,11 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     const idx = beforeColors.indexOf(lightAccentBg!)
     expect(afterColors[idx].fill).toBe('#0D2137') // 暗色 accent-bg-1
 
-    // 红色（非 diagram 色）不应改变
-    const redObj = afterColors.find((c) => c.fill === '#FF0000')
-    expect(redObj).toBeDefined()
+    // 红色（非 diagram 色）应被自适应翻转为暗色（不再是 #FF0000）
+    const redBefore = beforeColors.find((c) => c.fill === '#FF0000')
+    expect(redBefore).toBeDefined()
+    const redIdx = beforeColors.indexOf(redBefore!)
+    expect(afterColors[redIdx].fill).not.toBe('#FF0000')
     await screenshot(page, 'colors-light-to-dark')
   })
 
@@ -548,15 +532,19 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     expect(afterColors[idx].stroke).toBe('#5C9CE6')
   })
 
-  test('3.5 非 diagram 颜色对象不受影响', async ({ page }) => {
+  test('3.5 非 diagram 颜色对象做自适应翻转', async ({ page }) => {
     await addTestShapes(page)
+    const before = await getObjectColors(page)
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
-    const colors = await getObjectColors(page)
+    const after = await getObjectColors(page)
 
-    // #FF0000 和 #000000 都不是 diagram 色系，不应被映射
-    const nonDiagram = colors.find((c) => c.fill === '#FF0000' && c.stroke === '#000000')
-    expect(nonDiagram).toBeDefined()
+    // #FF0000 和 #000000 都不是 diagram 色系，改造后应被自适应翻转（不再是原值）
+    const redBefore = before.find((c) => c.fill === '#FF0000')
+    expect(redBefore).toBeDefined()
+    const idx = before.indexOf(redBefore!)
+    expect(after[idx].fill).not.toBe('#FF0000')
+    expect(after[idx].stroke).not.toBe('#000000')
   })
 
   test('3.6 无 fabric.Rect 背景板 + backgroundColor 跟随主题', async ({ page }) => {

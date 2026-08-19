@@ -73,6 +73,17 @@ describe('SvgSerializer', () => {
     expect(result).toBeTruthy()
   })
 
+  it('serialize 无语义对象时保留 hex 不还原（语义化 ID：不猜语义）', () => {
+    mockToSVG.mockReturnValue(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+        '<rect fill="#E1BEE7"/>' +
+        '</svg>'
+    )
+    const result = serializer.serialize(canvas, { theme: 'light' })
+    expect(result).toContain('#E1BEE7')
+    expect(result).not.toContain('var(--diagram-')
+  })
+
   it('serialize 应移除外层空白', () => {
     const result = serializer.serialize(canvas)
     // trim() 后不应以空白开头或结尾
@@ -87,5 +98,25 @@ describe('SvgSerializer', () => {
     const result = serializer.serialize(canvas)
     expect(result).toContain('<svg')
     expect(result).toContain('<rect')
+  })
+
+  it('serialize 传入 darkToLightMap 时应将非语义暗色 hex 归一化回亮色真值', () => {
+    // 模拟用户在暗色模式下保存：toSVG 输出的是暗色 hex（非语义色）
+    mockToSVG.mockReturnValue(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+        '<rect fill="#779CC4" stroke="#0D2137"/>' +
+        '</svg>'
+    )
+    const darkToLightMap = new Map<string, string>([
+      ['#779CC4', '#123456'],
+      ['#0D2137', '#E3F2FD'],
+    ])
+    const result = serializer.serialize(canvas, { darkToLightMap })
+
+    // 落盘应为亮色真值，而非暗色快照
+    expect(result).toContain('#123456')
+    expect(result).toContain('#E3F2FD')
+    expect(result).not.toContain('#779CC4')
+    expect(result).not.toContain('#0D2137')
   })
 })

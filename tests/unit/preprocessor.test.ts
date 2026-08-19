@@ -148,4 +148,56 @@ describe('preprocessSvg', () => {
     expect(result.svg).not.toContain('fill-opacity:0')
     expect(result.svg).toContain('fill="#00FF00"')
   })
+
+  // ── 语义化颜色 ID：打标记 ──
+  it('应保留语义标记：fill 属性打 data-fill-var', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="var(--diagram-accent-1)"/></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).toContain('fill="#1565C0" data-fill-var="--diagram-accent-1"')
+  })
+
+  it('应保留语义标记：stroke 属性打 data-stroke-var', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect stroke="var(--diagram-accent-1)"/></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).toContain('stroke="#1565C0" data-stroke-var="--diagram-accent-1"')
+  })
+
+  // ── 第二步（可选）：hex 精确匹配 → 语义 token ──
+  it('第二步开关关闭时（默认）不对裸 hex 打语义标记', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#1565C0"/></svg>'
+    const result = preprocessSvg(svg, 'light')
+    expect(result.svg).not.toContain('data-fill-var')
+  })
+
+  it('第二步开关开启时对精确命中的裸 hex 打语义标记', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#1565C0"/></svg>'
+    const result = preprocessSvg(svg, 'light', { mapHexToVar: true })
+    expect(result.svg).toContain('fill="#1565C0" data-fill-var="--diagram-accent-1"')
+  })
+
+  it('第二步开关开启时跨主题升级：暗色 hex 在亮色主题下也能命中', () => {
+    // 边界 2 修复：写死色板色无论当前主题，只要无歧义命中明/暗任一色板即升级
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#5C9CE6"/></svg>'
+    const result = preprocessSvg(svg, 'light', { mapHexToVar: true })
+    expect(result.svg).toContain('fill="#5C9CE6" data-fill-var="--diagram-accent-1"')
+  })
+
+  it('第二步开关开启时跳过撞色 hex（#E1BEE7）', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#E1BEE7"/></svg>'
+    const result = preprocessSvg(svg, 'light', { mapHexToVar: true })
+    expect(result.svg).not.toContain('data-fill-var')
+  })
+
+  it('第二步开关开启时不做近似匹配（非色板 hex 不打标记）', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#123456"/></svg>'
+    const result = preprocessSvg(svg, 'light', { mapHexToVar: true })
+    expect(result.svg).not.toContain('data-fill-var')
+  })
 })

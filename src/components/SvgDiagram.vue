@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import { defineClientComponent } from 'vitepress'
+import { useSvgDarkMode } from '../composables/useSvgDarkMode'
 
 // SvgEditor 依赖 Fabric.js（Canvas API），必须 defineClientComponent 包裹确保 SSR 安全
 const SvgEditor = defineClientComponent(() => import('./SvgEditor.vue'))
@@ -10,6 +11,10 @@ const props = defineProps({
 })
 
 const svgContent = ref('')
+// v-html 渲染容器，供暗色派生适配器遍历收集颜色
+const contentRef = ref<HTMLDivElement | null>(null)
+// 展示层暗色派生：裸 hex 在暗色模式下运行时派生，var(--diagram-*) 交给 CSS
+const { refresh: refreshDarkMode } = useSvgDarkMode(() => contentRef.value)
 // 编辑按钮显示条件：dev 模式，或 E2E 测试模式（SVG_EDITOR_E2E=1 注入 __SVG_EDITOR_E2E__）。
 // 默认生产构建两者均不满足，不渲染编辑按钮，保持文档站点零污染。
 const isDev = import.meta.env.DEV || __SVG_EDITOR_E2E__ === true
@@ -25,6 +30,9 @@ async function loadSvg() {
     let text = await resp.text()
     text = text.replace(/<\?xml[^?]*\?>\s*/g, '')
     svgContent.value = text
+    // 等待 v-html 渲染完成后再收集颜色入口并应用当前主题
+    await nextTick()
+    refreshDarkMode()
   } catch (e) {
     console.error('Failed to load SVG:', props.src, e)
   }
@@ -36,7 +44,7 @@ watch(() => props.src, loadSvg)
 
 <template>
   <div class="svg-container" @mouseenter="hovered = true" @mouseleave="hovered = false">
-    <div v-html="svgContent" />
+    <div ref="contentRef" v-html="svgContent" />
 
     <!-- 悬浮编辑按钮（dev 或 E2E 测试模式下显示） -->
     <button

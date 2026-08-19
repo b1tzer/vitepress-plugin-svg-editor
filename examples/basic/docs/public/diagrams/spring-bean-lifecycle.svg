@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 778 663">
+<defs>
+<clipPath id="CLIPPATH_0" >
+	<rect transform="matrix(1 0 0 1 389.5 332)" x="-389" y="-331.5" rx="0" ry="0" width="778" height="663" />
+</clipPath>
+</defs>
+<g clip-path="url(#CLIPPATH_0)" >
+<rect x="0" y="0" width="100%" height="100%" fill="transparent"></rect>
+<text x="232.9" y="26.0" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="15" font-style="normal" font-weight="bold" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >Bean 生命周期全流程</text>
+<g transform="matrix(0.4999 0 0 1 303.066 67.5)"  >
+<rect style="stroke: var(--diagram-ghost); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-surface-3); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<text x="250.5" y="70.8" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >BeanDefinition 加载</text>
+<text x="412.2" y="67.6" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="11" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-ghost); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >← 构造器调用</text>
+<g transform="matrix(1 0 0 1 305.1823 100.5)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-12.5" x2="0" y2="12.5" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,12.5 3.5,2.5 -3.5,2.5" />
+</g>
+</g>
+<g transform="matrix(0.5265 0 0 1 308.7896 135.1347)"  >
+<rect style="stroke: var(--diagram-ghost); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-surface-3); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<text x="245.9" y="135.8" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >实例化（Instantiation）</text>
+<text x="401.6" y="136.6" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="11" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-ghost); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >← @Autowired / @Value 注入</text>
+<g transform="matrix(1 0 0 1 304.3647 164.8653)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-12.5" x2="0" y2="12.5" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,12.5 3.5,2.5 -3.5,2.5" />
+</g>
+</g>
+<g transform="matrix(0.5132 0 0 1 308.3808 199.5)"  >
+<rect style="stroke: var(--diagram-accent-2); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-bg-2); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<text x="249.7" y="203.1" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >属性赋值（Populate）</text>
+<text x="402.5" y="203.1" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="11" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-ghost); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >← BeanNameAware / BeanFactoryAware / ApplicationContextAware</text>
+<g transform="matrix(1 0 0 1 304.3647 231.3653)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-13" x2="0" y2="13" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,13.0 3.5,3.0 -3.5,3.0" />
+</g>
+</g>
+<g transform="matrix(0.46 0 0 1 304.2925 264.0479)"  >
+<rect style="stroke: var(--diagram-ghost); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-surface-3); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<g transform="matrix(1 0 0 1 304.3647 297.3653)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-13" x2="0" y2="13" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,13.0 3.5,3.0 -3.5,3.0" />
+</g>
+</g>
+<text x="259.4" y="268.9" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >Aware 接口回调</text>
+<g transform="matrix(0.9652 0 0 1 314.9221 329.2306)"  >
+<rect style="stroke: var(--diagram-accent-3); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-text-3); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<g transform="matrix(1 0 0 1 306 365.5)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-12.5" x2="0" y2="12.5" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,12.5 3.5,2.5 -3.5,2.5" />
+</g>
+</g>
+<text x="170.2" y="333.0" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >BeanPostProcessor postProcessBeforeInitialization</text>
+<g transform="matrix(1.2976 0 0 1 307.8663 396.0479)"  >
+<rect style="stroke: var(--diagram-accent-4); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-bg-4); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<text x="472.0" y="469.0" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="11" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-ghost); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >← AOP 代理在此创建</text>
+<text x="115.7" y="402.0" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >@PostConstruct / InitializingBean afterPropertiesSet / init-method</text>
+<g transform="matrix(1 0 0 1 306 432)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-13" x2="0" y2="13" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,13.0 3.5,3.0 -3.5,3.0" />
+</g>
+</g>
+<g transform="matrix(0.9706 0 0 1 302.6571 463.0479)"  >
+<rect style="stroke: var(--diagram-accent-3); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-text-3); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<text x="165.7" y="467.7" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >BeanPostProcessor postProcessAfterInitialization</text>
+<g transform="matrix(1 0 0 1 306 498)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-13" x2="0" y2="13" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,13.0 3.5,3.0 -3.5,3.0" />
+</g>
+</g>
+<g transform="matrix(0.4308 0 0 1 311.2426 531.5)"  >
+<rect style="stroke: var(--diagram-accent-4); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-text-5); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<g transform="matrix(1 0 0 1 306 564.5)"  >
+<g style=""   >
+		<g transform="matrix(1 0 0 1 0 0)"  >
+<line style="stroke: var(--diagram-accent-3); stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;"  x1="0" y1="-12.5" x2="0" y2="12.5" />
+</g>
+		<polygon style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-accent-3); fill-rule: nonzero; opacity: 1;"  points="0.0,12.5 3.5,2.5 -3.5,2.5" />
+</g>
+</g>
+<text x="253.7" y="535.1" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >Bean 就绪，可被使用</text>
+<g transform="matrix(1.1009 0 0 1 311.2426 599.1347)"  >
+<rect style="stroke: var(--diagram-ghost); stroke-width: 1.5; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-surface-3); fill-rule: nonzero; opacity: 1;"  x="-153" y="-20.5" rx="8" ry="8" width="306" height="41" />
+</g>
+<text x="146.0" y="603.3" font-family="'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12" font-style="normal" font-weight="normal" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: var(--diagram-text-1); fill-rule: nonzero; opacity: 1; text-decoration-thickness: 6.6667%; white-space: pre;" >@PreDestroy / DisposableBean destroy / destroy-method</text>
+</g>
+</svg>

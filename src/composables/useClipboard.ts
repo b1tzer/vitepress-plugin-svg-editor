@@ -9,7 +9,7 @@
 
 import * as fabric from 'fabric'
 import type { ActiveSelection, Canvas, FabricObject } from 'fabric'
-import { FABRIC_TYPE } from '../core/shared/FabricTypes'
+import { FABRIC_TYPE } from '../core/shared/fabricTypes'
 
 /** 模块级剪贴板：单个对象或多对象数组（ActiveSelection 复制时保存子对象引用） */
 let _clipboard: FabricObject | FabricObject[] | null = null

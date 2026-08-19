@@ -8,6 +8,7 @@ import { ref, type Ref } from 'vue'
 import type { Canvas } from 'fabric'
 import type { SvgSerializer } from '../core/serialization/SvgSerializer'
 import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
+import type { ThemeMode } from '../core/shared/types'
 import { timed } from '../utils/perf'
 
 export interface UseSaveDeps {
@@ -16,6 +17,9 @@ export interface UseSaveDeps {
   storageAdapter: IStorageAdapter
   src: string
   getOriginalViewBox: () => string
+  getThemeMode: () => ThemeMode
+  /** 暗色 hex → 亮色 hex 反向映射（保存时归一化非语义色到亮色真值） */
+  getDarkToLightMap: () => Map<string, string>
   onSaved: () => void
   onClose: () => void
 }
@@ -43,8 +47,16 @@ export function useSave(deps: UseSaveDeps): {
     if (!fc) return
     saving.value = true
     try {
+      // 仅暗色模式下需要归一化：画布对象此时已是暗色 hex，需借 darkToLightCache
+      // 反向映射回亮色真值，保证落盘 SVG 永远保存亮色语义（暗色由运行时派生）。
+      const theme = deps.getThemeMode()
+      const darkToLightMap = theme === 'dark' ? deps.getDarkToLightMap() : undefined
       const svgText = timed('export:toSVG', () =>
-        deps.serializer.serialize(fc, { originalViewBox: deps.getOriginalViewBox() })
+        deps.serializer.serialize(fc, {
+          originalViewBox: deps.getOriginalViewBox(),
+          theme,
+          darkToLightMap,
+        })
       )
       const result = await deps.storageAdapter.save(svgText, deps.src)
       if (result.success) {
