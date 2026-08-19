@@ -510,9 +510,11 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     const idx = beforeColors.indexOf(lightAccentBg!)
     expect(afterColors[idx].fill).toBe('#0D2137') // 暗色 accent-bg-1
 
-    // 红色（非 diagram 色）不应改变
-    const redObj = afterColors.find((c) => c.fill === '#FF0000')
-    expect(redObj).toBeDefined()
+    // 红色（非 diagram 色）应被自适应翻转为暗色（不再是 #FF0000）
+    const redBefore = beforeColors.find((c) => c.fill === '#FF0000')
+    expect(redBefore).toBeDefined()
+    const redIdx = beforeColors.indexOf(redBefore!)
+    expect(afterColors[redIdx].fill).not.toBe('#FF0000')
     await screenshot(page, 'colors-light-to-dark')
   })
 
@@ -530,15 +532,19 @@ test.describe('层级3 — toggleTheme() 运行时正确性', () => {
     expect(afterColors[idx].stroke).toBe('#5C9CE6')
   })
 
-  test('3.5 非 diagram 颜色对象不受影响', async ({ page }) => {
+  test('3.5 非 diagram 颜色对象做自适应翻转', async ({ page }) => {
     await addTestShapes(page)
+    const before = await getObjectColors(page)
     await clickThemeToggle(page)
     await page.waitForTimeout(300)
-    const colors = await getObjectColors(page)
+    const after = await getObjectColors(page)
 
-    // #FF0000 和 #000000 都不是 diagram 色系，不应被映射
-    const nonDiagram = colors.find((c) => c.fill === '#FF0000' && c.stroke === '#000000')
-    expect(nonDiagram).toBeDefined()
+    // #FF0000 和 #000000 都不是 diagram 色系，改造后应被自适应翻转（不再是原值）
+    const redBefore = before.find((c) => c.fill === '#FF0000')
+    expect(redBefore).toBeDefined()
+    const idx = before.indexOf(redBefore!)
+    expect(after[idx].fill).not.toBe('#FF0000')
+    expect(after[idx].stroke).not.toBe('#000000')
   })
 
   test('3.6 无 fabric.Rect 背景板 + backgroundColor 跟随主题', async ({ page }) => {
