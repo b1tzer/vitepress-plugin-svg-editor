@@ -131,17 +131,18 @@ export function hexToCssVars(svg: string, map: Record<string, string>): string {
 /**
  * 非语义色「暗 → 亮」归一化（保存时强制存亮色真值的核心步骤）
  *
- * 背景：编辑器内主题切换会把「无语义 ID 的自定义色」在 OKLCH 空间做亮度翻转
- * 并记忆化（useTheme 的 darkToLightCache 记录 暗色hex → 亮色hex）。若用户在
- * 暗色模式下保存，画布上的非语义色已是暗色 hex，直接落盘会把「暗色快照」当
- * 真值，导致展示层切换明暗时无法恢复（这正是 issue #25 后续要打通的一环）。
+ * 背景：编辑器内主题切换把「无语义 ID 的自定义色」从亮色真值单向派生为暗色
+ * （对象 fillLight/strokeLight 记录亮色真值）。若用户在暗色模式下保存，画布上
+ * 的非语义色已是暗色 hex，直接落盘会把「暗色快照」当真值，导致展示层切换明暗
+ * 时无法恢复。
  *
  * 本步骤必须在 hexToCssVars（语义色还原 var）之后执行：此时 SVG 里剩余的 hex
  * 均为非语义色，按 darkToLightMap 把暗色 hex 还原为亮色真值，使文件永远保存
  * 亮色语义，展示层即可在暗色下由运行时派生暗色，实现「所见即所得」闭环。
  *
  * @param svg            待归一化的 SVG 文本
- * @param darkToLightMap 暗色 hex → 亮色 hex 映射（来自 useTheme 的记忆化缓存）
+ * @param darkToLightMap 暗色 hex → 亮色 hex 映射（由 collectNonSemanticLightMap
+ *                       从对象 fillLight/strokeLight 收集）
  */
 export function normalizeNonSemanticToLight(
   svg: string,
@@ -220,6 +221,45 @@ export function collectSemanticHexToVar(canvas: Canvas): Record<string, string> 
   if (objects) {
     objects.forEach((o) => visit(o as SemanticObject))
   }
+  return map
+}
+
+/**
+ * 收集「非语义色」的 暗色hex → 亮色真值 归一化映射（保存时强制存亮色真值的依据）
+ *
+ * 档位 2 重构后，编辑器不再维护「暗→亮」双向缓存，而是让对象以 fillLight /
+ * strokeLight 直接持有亮色真值。保存时若对象当前处于暗色态（fill ≠ fillLight），
+ * 本函数收集「当前暗色 hex → 亮色真值」，供 normalizeNonSemanticToLight 做文本替换。
+ *
+ * 与 collectSemanticHexToVar 互补：
+ *   - 语义色（有 fillVar）由 hexToCssVars 还原为 var()，不经过本表
+ *   - 非语义色（无 fillVar、有 fillLight）由本表归一化回亮色真值
+ *
+ * @returns 暗色 hex（大写）→ 亮色真值 hex 映射
+ */
+export function collectNonSemanticLightMap(canvas: Canvas): Map<string, string> {
+  const map = new Map<string, string>()
+
+  type SemanticObject = SvgSemanticColors & {
+    fill?: unknown
+    stroke?: unknown
+    _objects?: SemanticObject[]
+  }
+
+  const visit = (obj: SemanticObject): void => {
+    if (!obj) return
+    // 仅非语义色：无 fillVar，但有 fillLight 真值，且当前 fill 为 hex 字符串
+    if (typeof obj.fill === 'string' && !obj.fillVar && obj.fillLight) {
+      map.set(obj.fill.toUpperCase(), obj.fillLight)
+    }
+    if (typeof obj.stroke === 'string' && !obj.strokeVar && obj.strokeLight) {
+      map.set(obj.stroke.toUpperCase(), obj.strokeLight)
+    }
+    if (obj._objects) obj._objects.forEach(visit)
+  }
+
+  const objects = canvas?.getObjects?.()
+  if (objects) objects.forEach((o) => visit(o as SemanticObject))
   return map
 }
 

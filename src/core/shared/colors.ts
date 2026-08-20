@@ -3,11 +3,13 @@
  *
  * 定义亮色/暗色主题的 CSS 变量与 hex 值映射，包含：
  *   - THEME_VAR_TO_HEX: 按主题导出 VAR→HEX，供 preprocessor 导入时替换 CSS 变量
- *   - LIGHT_TO_DARK / DARK_TO_LIGHT: 亮↔暗双向 hex 映射，供编辑器内主题切换
+ *   - LIGHT_TO_DARK: 亮→暗单向 hex 映射，供 lightHexToDark 语义色板精确命中
  *   - THEME_HEX_TO_VAR: 按主题的单向 hex→VAR，供 COLLISION_HEXES 计算撞色集合
  *   - COLLISION_HEXES: 跨主题撞色 hex 集合，供第二步精确匹配排除
  *   - UNIQUE_HEX_TO_VAR: 跨主题无歧义的 hex→VAR 并集，供第二步精确匹配
  */
+
+import { adaptColorLuminance } from './adaptiveColor'
 
 // ═══════════════════════════════════════════════════════════════
 // 原始数据
@@ -87,13 +89,11 @@ export const THEME_VAR_TO_HEX: Record<'light' | 'dark', Record<string, string>> 
   dark: DARK_HEX,
 }
 
-/** 亮↔暗 双向 hex 映射（用于编辑器内主题切换：遍历 canvas 对象替换颜色）
- *  所有键值统一大写，确保 swapColor 的 .toUpperCase() 能正确匹配 */
+/** 亮→暗 单向 hex 映射（供 lightHexToDark 语义色板精确命中）
+ *  所有键值统一大写，确保 hex.toUpperCase() 能正确匹配 */
 export const LIGHT_TO_DARK: Record<string, string> = {}
-export const DARK_TO_LIGHT: Record<string, string> = {}
 for (const v of Object.keys(LIGHT_HEX)) {
   LIGHT_TO_DARK[LIGHT_HEX[v].toUpperCase()] = DARK_HEX[v].toUpperCase()
-  DARK_TO_LIGHT[DARK_HEX[v].toUpperCase()] = LIGHT_HEX[v].toUpperCase()
 }
 
 /**
@@ -170,4 +170,49 @@ for (const [varName, hex] of Object.entries(LIGHT_HEX)) {
 for (const [varName, hex] of Object.entries(DARK_HEX)) {
   const upper = hex.toUpperCase()
   if (!COLLISION_HEXES.has(upper)) UNIQUE_HEX_TO_VAR[upper] = varName
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 纯函数工具
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * 将 SVG 中的 var() 替换为 hex（含带 fallback 的 var(--xxx, fallback)）。
+ *
+ * 只做纯文本替换，不打语义标记（data-fill-var / data-stroke-var）。
+ * 供两处复用，消除「var→hex + fallback」逻辑的重复维护：
+ *   1. preprocessor.replaceCssVars 的「纯算法模式」（skipSemanticIds=true）
+ *   2. svgDarkMode.resolveVarsToLightHex（展示层纯算法派生）
+ *
+ * @param svg      待替换的 SVG 文本
+ * @param varToHex CSS 变量名 → hex 映射（如 THEME_VAR_TO_HEX.light）
+ */
+export function resolveCssVarsToHex(svg: string, varToHex: Record<string, string>): string {
+  let result = svg
+  for (const [varName, hex] of Object.entries(varToHex)) {
+    result = result.replaceAll(`var(${varName})`, hex)
+  }
+  // 带 fallback 的外部变量（如 var(--vp-c-brand-1, #2563eb)）→ fallback
+  result = result.replace(/var\(--[^,)]+,\s*([^)]+)\)/g, (_full, fallback: string) =>
+    fallback.trim()
+  )
+  return result
+}
+
+/**
+ * 亮色 hex → 暗色 hex（单向派生，编辑器与展示层共用的唯一算法）
+ *
+ * 优先级：语义色板精确映射（LIGHT_TO_DARK）→ 未命中走 OKLCH 亮度翻转。
+ * 由于「保存强制存亮色真值」，暗色一律由本函数从亮色真值单向派生，
+ * 切回亮色时直接恢复原始值，无需反向计算、无需记忆化往返缓存。
+ *
+ * @param hex           亮色真值 hex（#RRGGBB）
+ * @param algorithmOnly 纯算法模式：跳过色板精确映射，一律走 OKLCH 亮度翻转
+ */
+export function lightHexToDark(hex: string, algorithmOnly = false): string {
+  if (!algorithmOnly) {
+    const mapped = LIGHT_TO_DARK[hex.toUpperCase()]
+    if (mapped) return mapped
+  }
+  return adaptColorLuminance(hex)
 }

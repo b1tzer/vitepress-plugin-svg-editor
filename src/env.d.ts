@@ -39,3 +39,7 @@ declare const __SVG_EDITOR_E2E__: boolean | undefined
 // mapHexToVar 选项注入）。默认 false：不开启第二步升级，普通 hex SVG 保持原样；
 // 显式 svgEditorPlugin({ mapHexToVar: true }) 时才为 true，使普通 hex SVG 升级为语义色。
 declare const __SVG_EDITOR_MAP_HEX_TO_VAR__: boolean | undefined
+
+// Vite define 注入的颜色处理模式（由 svgEditorPlugin 的 colorMode 选项注入）。
+// 默认 'semantic'：语义 token 优先；'algorithm'：纯 OKLCH 算法，忽略语义变量。
+declare const __SVG_EDITOR_COLOR_MODE__: 'semantic' | 'algorithm' | undefined

@@ -16,11 +16,22 @@
  * 因此切回亮色时直接恢复原始值，无需反向计算，也无需记忆化往返缓存。
  */
 
-import { LIGHT_TO_DARK } from './colors'
-import { adaptColorLuminance } from './adaptiveColor'
+import { THEME_VAR_TO_HEX, resolveCssVarsToHex, lightHexToDark } from './colors'
 
 /** 6 位 hex（#RRGGBB，大小写不敏感） */
 const HEX_COLOR_RE = /^#([0-9a-f]{6})$/i
+
+/**
+ * 纯算法模式专用：把 SVG 中的 var(--diagram-*) 解析为亮色 hex（不保留语义 ID）。
+ *
+ * 展示层直接 v-html 渲染原始 SVG，`var()` 会被浏览器交给 CSS 变量切换；
+ * 纯算法模式要「忽略变量、只走 OKLCH」，必须先在此把 var() 换成亮色 hex，
+ * 后续 collectSvgColorEntries 才能收集这些 hex 并做 OKLCH 亮度翻转。
+ * 带 fallback 的外部变量（如 var(--vp-c-brand-1, #2563eb)）取 fallback。
+ */
+export function resolveVarsToLightHex(svg: string): string {
+  return resolveCssVarsToHex(svg, THEME_VAR_TO_HEX.light)
+}
 
 /** 需要跳过、交由 CSS/浏览器处理的颜色值 */
 function isProcessableColor(value: string): boolean {
@@ -31,13 +42,6 @@ function isProcessableColor(value: string): boolean {
   if (v.includes('url(')) return false // 渐变/图案引用
   if (v === 'none' || v === 'transparent' || v === 'currentColor' || v === 'inherit') return false
   return HEX_COLOR_RE.test(v)
-}
-
-/** 亮色 hex → 暗色 hex：语义色板精确映射优先，未命中走 OKLCH 亮度翻转 */
-export function lightHexToDark(hex: string): string {
-  const mapped = LIGHT_TO_DARK[hex.toUpperCase()]
-  if (mapped) return mapped
-  return adaptColorLuminance(hex)
 }
 
 /** 单个颜色入口：记录原始亮色值 + 派生暗色值 + 写回函数（闭包） */
@@ -83,7 +87,7 @@ function collectStyleColors(styleAttr: string): Map<string, string> {
  *
  * @param root 包含 <svg> 的容器元素（或 <svg> 自身）
  */
-export function collectSvgColorEntries(root: Element): SvgColorEntry[] {
+export function collectSvgColorEntries(root: Element, algorithmOnly = false): SvgColorEntry[] {
   const entries: SvgColorEntry[] = []
   const elements = root.querySelectorAll('*')
   elements.forEach((el) => {
@@ -93,7 +97,7 @@ export function collectSvgColorEntries(root: Element): SvgColorEntry[] {
 
     // style 来源
     for (const [prop, hex] of styleColors) {
-      entries.push(makeEntry(svgEl, 'style', prop, hex))
+      entries.push(makeEntry(svgEl, 'style', prop, hex, algorithmOnly))
     }
 
     // 属性来源：仅当 style 中无该 prop 时回退
@@ -101,7 +105,7 @@ export function collectSvgColorEntries(root: Element): SvgColorEntry[] {
       if (styleColors.has(prop)) continue
       const attr = el.getAttribute(prop)
       if (attr && isProcessableColor(attr)) {
-        entries.push(makeEntry(svgEl, 'attr', prop, attr.trim()))
+        entries.push(makeEntry(svgEl, 'attr', prop, attr.trim(), algorithmOnly))
       }
     }
   })
@@ -113,11 +117,12 @@ function makeEntry(
   el: SVGElement,
   kind: 'style' | 'attr',
   prop: string,
-  original: string
+  original: string,
+  algorithmOnly = false
 ): SvgColorEntry {
   return {
     original,
-    dark: lightHexToDark(original),
+    dark: lightHexToDark(original, algorithmOnly),
     apply(value: string) {
       if (kind === 'style') {
         el.style.setProperty(prop, value)

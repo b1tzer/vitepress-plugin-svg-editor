@@ -14,7 +14,7 @@
 
 import type { Canvas } from 'fabric'
 import { createPostprocessPipeline } from './pipeline/postprocessPipeline'
-import { collectSemanticHexToVar } from './postprocessor'
+import { collectSemanticHexToVar, collectNonSemanticLightMap } from './postprocessor'
 import type { ThemeMode } from '../shared/types'
 
 export interface SerializeOptions {
@@ -26,8 +26,6 @@ export interface SerializeOptions {
   removeCanvasBg?: boolean
   /** @deprecated 语义还原已改用对象级语义 ID（不依赖主题），此字段保留仅为兼容旧调用 */
   theme?: ThemeMode
-  /** 暗色 hex → 亮色 hex 映射（保存时强制存亮色真值：非语义色暗→亮归一化） */
-  darkToLightMap?: Map<string, string>
 }
 
 export class SvgSerializer {
@@ -43,13 +41,17 @@ export class SvgSerializer {
     // 其余（用户自定义色、无语义裸 hex）保留 hex，避免全局表撞色与猜语义。
     const semanticHexToVar = collectSemanticHexToVar(canvas)
 
+    // 非语义色暗→亮归一化：从对象 fillLight/strokeLight 收集「当前暗色 hex → 亮色真值」。
+    // 保证落盘 SVG 永远保存亮色真值（暗色由展示层运行时派生），不再依赖 useTheme 的运行时缓存。
+    const darkToLightMap = collectNonSemanticLightMap(canvas)
+
     const svg = canvas.toSVG()
 
     // 使用 Pipeline 处理链
     const pipeline = createPostprocessPipeline(
       options.originalViewBox,
       semanticHexToVar,
-      options.darkToLightMap
+      darkToLightMap
     )
 
     // 如果不需要 CSS 变量还原，移除 hexToCssVars 步骤

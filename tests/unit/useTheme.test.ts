@@ -67,4 +67,15 @@ describe('useTheme', () => {
 
     expect(obj.set).not.toHaveBeenCalled()
   })
+
+  it('纯算法模式下应跳过色板精确映射，走 OKLCH 亮度翻转', () => {
+    const obj = { type: 'rect', fill: '#FFFFFF', excludeFromExport: false, set: vi.fn() }
+    canvasMgr.canvas.getObjects.mockReturnValue([obj])
+
+    const { toggleTheme } = useTheme(canvasMgr as any, { colorMode: 'algorithm' })
+    toggleTheme()
+
+    // #FFFFFF 语义模式会映射到 #1A1A1A（surface-1），算法模式应翻转到 #000000
+    expect(obj.set).toHaveBeenCalledWith('fill', '#000000')
+  })
 })

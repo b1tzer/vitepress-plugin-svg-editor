@@ -100,18 +100,18 @@ describe('SvgSerializer', () => {
     expect(result).toContain('<rect')
   })
 
-  it('serialize 传入 darkToLightMap 时应将非语义暗色 hex 归一化回亮色真值', () => {
+  it('serialize 应基于对象 fillLight/strokeLight 将非语义暗色 hex 归一化回亮色真值', () => {
     // 模拟用户在暗色模式下保存：toSVG 输出的是暗色 hex（非语义色）
     mockToSVG.mockReturnValue(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
         '<rect fill="#779CC4" stroke="#0D2137"/>' +
         '</svg>'
     )
-    const darkToLightMap = new Map<string, string>([
-      ['#779CC4', '#123456'],
-      ['#0D2137', '#E3F2FD'],
-    ])
-    const result = serializer.serialize(canvas, { darkToLightMap })
+    // 暗色态画布对象：当前值为暗色 hex，fillLight/strokeLight 记录亮色真值
+    canvas.getObjects = () => [
+      { fill: '#779CC4', fillLight: '#123456', stroke: '#0D2137', strokeLight: '#E3F2FD' },
+    ]
+    const result = serializer.serialize(canvas)
 
     // 落盘应为亮色真值，而非暗色快照
     expect(result).toContain('#123456')

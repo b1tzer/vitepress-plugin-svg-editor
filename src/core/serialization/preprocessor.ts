@@ -8,7 +8,7 @@
  *   4. 提取 viewBox / 宽高
  */
 
-import { THEME_VAR_TO_HEX, UNIQUE_HEX_TO_VAR } from '../shared/colors'
+import { THEME_VAR_TO_HEX, UNIQUE_HEX_TO_VAR, resolveCssVarsToHex } from '../shared/colors'
 import { SVG_FILL_VAR_ATTR, SVG_STROKE_VAR_ATTR } from '../shared/fabricTypes'
 import type { ThemeMode, SvgLoadResult, SvgPreprocessOptions, MarkerInfo } from '../shared/types'
 
@@ -40,12 +40,22 @@ function parseSvgDom(svg: string): Document | null {
  * 但 SVG 作者已显式提供 fallback 兜底色，直接取 fallback 即可。
  * 若不处理，var() 字符串会被 Fabric 当作非法颜色，渲染为透明。
  */
-function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
+function replaceCssVars(
+  svg: string,
+  theme: ThemeMode = 'light',
+  skipSemanticIds = false
+): string {
   const mapping = THEME_VAR_TO_HEX[theme] || THEME_VAR_TO_HEX.light
+
+  // 纯算法模式：只把 var() 替换为 hex，不打语义标记（复用共享函数）。
+  // 颜色降级为裸 hex 身份，后续明暗一律由 OKLCH 算法计算。
+  if (skipSemanticIds) {
+    return resolveCssVarsToHex(svg, mapping)
+  }
+
+  // 语义模式：先在 fill/stroke 属性上打语义标记（data-fill-var / data-stroke-var），
+  // 供 SvgObjectMounter 的 reviver 挂载到 Fabric 对象（身份 = 变量名，而非 hex）。
   let result = svg
-  // 1. 替换已知主题变量（--diagram-* 系列）
-  //    语义化颜色 ID：在 fill/stroke 属性上同时打上 data-fill-var / data-stroke-var 标记，
-  //    供 SvgObjectMounter 的 reviver 挂载到 Fabric 对象（身份 = 变量名，而非 hex）。
   for (const [varName, hex] of Object.entries(mapping)) {
     // fill 属性：保留变量名标记
     result = result.replaceAll(
@@ -57,15 +67,10 @@ function replaceCssVars(svg: string, theme: ThemeMode = 'light'): string {
       `stroke="var(${varName})"`,
       `stroke="${hex}" ${SVG_STROKE_VAR_ATTR}="${varName}"`
     )
-    // 兜底：其余形式（style 内联、stop-color 等）仅替换 hex，不带标记
-    result = result.replaceAll(`var(${varName})`, hex)
   }
-  // 2. 处理带 fallback 的 var(--xxx, fallback)，例如 var(--vp-c-brand-1, #2563eb) → #2563eb
-  //    注意必须在步骤 1 之后执行，避免误匹配已替换的 --diagram-* 变量
-  result = result.replace(/var\(--[^,)]+,\s*([^)]+)\)/g, (_full, fallback: string) =>
-    fallback.trim()
-  )
-  return result
+  // 剩余 var()（style 内联、stop-color 等）以及带 fallback 的外部变量统一替换，
+  // 不携带语义标记。
+  return resolveCssVarsToHex(result, mapping)
 }
 
 /**
@@ -422,15 +427,19 @@ export function preprocessSvg(
 
   const { viewBox, width, height } = extractViewBox(svg)
 
+  // 纯算法模式：忽略语义 token，var() 仅当颜色值解析成 hex，全程走 OKLCH。
+  const algorithmOnly = options.colorMode === 'algorithm'
+
   // 第二步（可选）：hex 精确匹配 → 语义 token。
   // 必须在 var→hex 之前执行：此时 var 形式的 fill/stroke 尚未替换为 hex，
   // 裸 hex 正则不会误匹配到它们，也避免对已带 data-*-var 标记的元素重复打标。
-  if (options.mapHexToVar) {
+  // 纯算法模式下强制跳过（不要任何语义 token）。
+  if (!algorithmOnly && options.mapHexToVar) {
     svg = mapHexToVar(svg)
   }
 
-  // 1. CSS 变量 → hex（按当前主题，并打上语义标记）
-  svg = replaceCssVars(svg, theme)
+  // 1. CSS 变量 → hex（按当前主题；纯算法模式不打语义标记）
+  svg = replaceCssVars(svg, theme, algorithmOnly)
 
   // 2. <stop style="stop-color:..."> → 直接属性
   svg = fixStopColors(svg)

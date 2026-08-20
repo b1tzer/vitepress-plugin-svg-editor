@@ -87,4 +87,8 @@ export interface SvgSemanticColors {
   fillVar?: string
   /** 对象 stroke 对应的 CSS 变量名，无则为 undefined */
   strokeVar?: string
+  /** 对象 fill 的「亮色真值」（保存/切回亮色时恢复的基准色），无语义或非 hex 时为 undefined */
+  fillLight?: string
+  /** 对象 stroke 的「亮色真值」，无语义或非 hex 时为 undefined */
+  strokeLight?: string
 }

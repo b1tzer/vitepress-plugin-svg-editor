@@ -4,6 +4,7 @@
  */
 import type { Canvas, FabricObject, FabricText } from 'fabric'
 import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/fabricTypes'
+import { setFillHex } from '../core/shared/colorIdentity'
 
 export function getTextObjects(canvas: Canvas): FabricText[] {
   const a = canvas.getActiveObject()
@@ -57,7 +58,7 @@ export function applyTextAlign(canvas: Canvas, align: string): string {
 
 export function applyTextFill(canvas: Canvas, hex: string): string {
   const texts = getTextObjects(canvas)
-  texts.forEach((t) => t.set('fill', hex))
+  texts.forEach((t) => setFillHex(t, hex))
   canvas.renderAll()
   return hex
 }

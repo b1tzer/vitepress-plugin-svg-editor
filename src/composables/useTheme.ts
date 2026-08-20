@@ -3,90 +3,103 @@
  *
  * 从 SvgEditor.vue 中抽取主题切换逻辑，独立为可复用 composable。
  *
- * 颜色映射采用三级策略（swapColor）：
- *   1. hex 精确映射（LIGHT_TO_DARK / DARK_TO_LIGHT 语义色板双向表）
- *   2. 双向记忆化缓存（保证「亮→暗→亮」精确等幂恢复；高饱和边界色靠它兜底）
- *   3. OKLCH 亮度翻转计算（adaptColorLuminance，首次命中时计算并写入缓存）
+ * 颜色采用「亮色真值 + 单向派生」模型（档位 2 重构）：
+ *   - 导入时对象挂载 fillLight / strokeLight（亮色真值）
+ *   - 切暗：语义色查暗色语义表，非语义色 lightHexToDark(fillLight) 单向派生
+ *   - 切亮：直接写回 fillLight / strokeLight 真值
  *
- * 同时通过 getDarkToLightMap() 暴露「暗色 hex → 亮色 hex」反向映射，
- * 供保存链路（useSave → SvgSerializer）在暗色模式下把非语义色归一化回亮色真值。
+ * 因此无需双向映射表、无需记忆化往返缓存，也无需向保存链路暴露反向映射。
+ * 保存时的「非语义色暗→亮归一化」由 SvgSerializer 直接从对象 fillLight 收集。
  */
 
 import { ref, type Ref } from 'vue'
 import type { FabricObject } from 'fabric'
-import { LIGHT_TO_DARK, DARK_TO_LIGHT, THEME_VAR_TO_HEX } from '../core/shared/colors'
-import { adaptColorLuminance } from '../core/shared/adaptiveColor'
+import { THEME_VAR_TO_HEX, lightHexToDark } from '../core/shared/colors'
 import type { SvgSemanticColors } from '../core/shared/fabricTypes'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
+import type { ColorMode } from '../core/shared/types'
 
-export function useTheme(canvasMgr: CanvasManager): {
+/** 填充色单向派生：切暗从真值派生暗色，切亮恢复亮色真值。
+ *  非语义色首次切暗时惰性锚定 fillLight = 当前值（即亮色真值），
+ *  兼容直接 new 的裸对象（未经过 reviver 挂载 fillLight）。 */
+function resolveFill(
+  o: FabricObject & SvgSemanticColors,
+  isDark: boolean,
+  algorithmOnly: boolean,
+  targetHexMap: Record<string, string>,
+  current: string
+): string {
+  if (!isDark) return o.fillLight ?? current
+  const varName = o.fillVar
+  if (varName && targetHexMap[varName]) return targetHexMap[varName]
+  if (o.fillLight === undefined) o.fillLight = current
+  return lightHexToDark(o.fillLight, algorithmOnly)
+}
+
+/** 描边色单向派生：切暗从真值派生暗色，切亮恢复亮色真值。 */
+function resolveStroke(
+  o: FabricObject & SvgSemanticColors,
+  isDark: boolean,
+  algorithmOnly: boolean,
+  targetHexMap: Record<string, string>,
+  current: string
+): string {
+  if (!isDark) return o.strokeLight ?? current
+  const varName = o.strokeVar
+  if (varName && targetHexMap[varName]) return targetHexMap[varName]
+  if (o.strokeLight === undefined) o.strokeLight = current
+  return lightHexToDark(o.strokeLight, algorithmOnly)
+}
+
+export function useTheme(
+  canvasMgr: CanvasManager,
+  options: { colorMode?: ColorMode } = {}
+): {
   themeMode: Ref<'light' | 'dark'>
   toggleTheme: () => void
-  /** 暗色 hex → 亮色 hex 反向映射（供保存时归一化非语义色到亮色真值） */
-  getDarkToLightMap: () => Map<string, string>
 } {
+  // 纯算法模式：跳过色板精确映射，所有颜色一律走 OKLCH 亮度翻转。
+  const algorithmOnly = options.colorMode === 'algorithm'
+
   const themeMode = ref<'light' | 'dark'>(
     typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
       ? 'dark'
       : 'light'
   )
 
-  // 自适应颜色映射缓存（跨 toggleTheme 调用持久）：
-  // OKLCH 亮度翻转对高饱和边界色（如 #FF0000）会因 sRGB 色域裁剪而丢失信息，
-  // 单纯靠自逆函数无法保证「亮→暗→亮」精确恢复。这里用双向记忆化把
-  // 「计算出的对应关系」记住，往返时查表恢复——即「先计算、再记住」。
-  const lightToDarkCache = new Map<string, string>()
-  const darkToLightCache = new Map<string, string>()
-
   function toggleTheme(): void {
     const fc = canvasMgr.canvas
     if (!fc) return
-    const from = themeMode.value
-    const to = from === 'light' ? 'dark' : 'light'
-    const hexMapping: Record<string, string> = from === 'light' ? LIGHT_TO_DARK : DARK_TO_LIGHT
+    const to = themeMode.value === 'light' ? 'dark' : 'light'
     const targetHexMap = THEME_VAR_TO_HEX[to] || THEME_VAR_TO_HEX.light
-    if (!hexMapping || !Object.keys(hexMapping).length) return
+    const isDark = to === 'dark'
     themeMode.value = to
 
-    function swapColor(hex: string): string {
-      if (!hex) return hex
-      const upper = hex.toUpperCase()
-      // 1) hex 精确映射（语义色板双向表）
-      const mapped = hexMapping[upper]
-      if (mapped) return mapped
-      // 2) 自适应兜底 + 双向记忆化（保证「亮→暗→亮」精确等幂恢复）
-      if (from === 'light') {
-        const cached = lightToDarkCache.get(upper)
-        if (cached) return cached
-        const adapted = adaptColorLuminance(hex)
-        lightToDarkCache.set(upper, adapted)
-        // value 存原始 hex（保持大小写），避免往返后大小写被规范化
-        darkToLightCache.set(adapted.toUpperCase(), hex)
-        return adapted
-      }
-      const cached = darkToLightCache.get(upper)
-      if (cached) return cached
-      const adapted = adaptColorLuminance(hex)
-      darkToLightCache.set(upper, adapted)
-      lightToDarkCache.set(adapted.toUpperCase(), hex)
-      return adapted
-    }
-
-    // 语义化颜色 ID 优先：有 fillVar/strokeVar 则按变量名从目标主题精确取色（消除撞色歧义），
-    // 否则回退到 hex 双向映射（针对无语义的自定义色）。
+    // 单向派生：
+    //  - 切暗：语义色按变量名取暗色语义 hex；非语义色从亮色真值 lightHexToDark 派生
+    //  - 切亮：直接写回亮色真值（fillLight / strokeLight）
     fc.getObjects().forEach((obj: FabricObject) => {
       if (obj.excludeFromExport) return
       const processObject = (o: FabricObject & SvgSemanticColors): void => {
         const fill = o.fill
         if (typeof fill === 'string') {
-          const varName = o.fillVar
-          o.set('fill', varName && targetHexMap[varName] ? targetHexMap[varName] : swapColor(fill))
+          o.set('fill', resolveFill(o, isDark, algorithmOnly, targetHexMap, fill))
         } else if (fill && typeof fill === 'object') {
-          // 渐变填充（fabric.Gradient）：遍历 colorStops，对每个色标做映射
-          const stops = (fill as { colorStops?: { offset: number; color: string }[] }).colorStops
+          // 渐变填充（fabric.Gradient）：每个 colorStops 用「记录真值 + 单向派生」。
+          // 真值记在 stop._lightColor，切亮恢复，保证等幂且无需全局缓存。
+          const stops = (
+            fill as {
+              colorStops?: { offset: number; color: string; _lightColor?: string }[]
+            }
+          ).colorStops
           if (stops) {
             stops.forEach((stop) => {
-              stop.color = swapColor(stop.color)
+              if (isDark) {
+                if (stop._lightColor === undefined) stop._lightColor = stop.color
+                stop.color = lightHexToDark(stop._lightColor, algorithmOnly)
+              } else {
+                stop.color = stop._lightColor ?? stop.color
+              }
             })
             // colorStops 是渐变对象的内部可变属性，直接改不会触发对象 dirty，
             // 若 objectCaching 开启会继续用旧缓存位图；手动标记 dirty 强制重光栅化。
@@ -94,15 +107,19 @@ export function useTheme(canvasMgr: CanvasManager): {
           }
         }
         if (typeof o.stroke === 'string') {
-          const varName = o.strokeVar
-          o.set(
-            'stroke',
-            varName && targetHexMap[varName] ? targetHexMap[varName] : swapColor(o.stroke)
-          )
+          o.set('stroke', resolveStroke(o, isDark, algorithmOnly, targetHexMap, o.stroke))
         }
-        // 阴影颜色暂无语义 ID，沿用 swapColor（先精确映射、未命中则自适应亮度翻转）
-        const shadow = (o as FabricObject & { shadow?: { color?: string } }).shadow
-        if (shadow?.color) shadow.color = swapColor(shadow.color)
+        // 阴影颜色：同样用 _lightColor 记录真值 + 单向派生（无语义 ID）
+        const shadow = (o as FabricObject & { shadow?: { color?: string; _lightColor?: string } })
+          .shadow
+        if (shadow?.color) {
+          if (isDark) {
+            if (shadow._lightColor === undefined) shadow._lightColor = shadow.color
+            shadow.color = lightHexToDark(shadow._lightColor, algorithmOnly)
+          } else {
+            shadow.color = shadow._lightColor ?? shadow.color
+          }
+        }
         const children = (o as FabricObject & { _objects?: FabricObject[] })._objects
         if (children) {
           children.forEach((c) => processObject(c as FabricObject & SvgSemanticColors))
@@ -110,9 +127,9 @@ export function useTheme(canvasMgr: CanvasManager): {
       }
       processObject(obj as FabricObject & SvgSemanticColors)
     })
-    canvasMgr.updateWorkspaceTheme(to === 'light')
+    canvasMgr.updateWorkspaceTheme(!isDark)
     fc.requestRenderAll()
   }
 
-  return { themeMode, toggleTheme, getDarkToLightMap: () => darkToLightCache }
+  return { themeMode, toggleTheme }
 }
