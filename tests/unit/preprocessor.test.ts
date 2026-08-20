@@ -200,4 +200,30 @@ describe('preprocessSvg', () => {
     const result = preprocessSvg(svg, 'light', { mapHexToVar: true })
     expect(result.svg).not.toContain('data-fill-var')
   })
+
+  // ── 纯算法模式（colorMode: 'algorithm'）──
+  it('纯算法模式：var() 应替换为 hex 但不打语义标记', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="var(--diagram-accent-1)"/></svg>'
+    const result = preprocessSvg(svg, 'light', { colorMode: 'algorithm' })
+    expect(result.svg).not.toContain('var(--diagram-accent-1)')
+    expect(result.svg).toContain('fill="#1565C0"')
+    expect(result.svg).not.toContain('data-fill-var')
+  })
+
+  it('纯算法模式：stroke var() 也不打语义标记', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect stroke="var(--diagram-accent-1)"/></svg>'
+    const result = preprocessSvg(svg, 'light', { colorMode: 'algorithm' })
+    expect(result.svg).toContain('stroke="#1565C0"')
+    expect(result.svg).not.toContain('data-stroke-var')
+  })
+
+  it('纯算法模式：mapHexToVar 应被忽略（裸 hex 不打语义标记）', () => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="#1565C0"/></svg>'
+    const result = preprocessSvg(svg, 'light', { mapHexToVar: true, colorMode: 'algorithm' })
+    expect(result.svg).toContain('fill="#1565C0"')
+    expect(result.svg).not.toContain('data-fill-var')
+  })
 })

@@ -16,7 +16,7 @@ function createMockDeps(overrides: Partial<UseSaveDeps> = {}) {
       src: '/test.svg',
       getOriginalViewBox: vi.fn().mockReturnValue('0 0 800 600'),
       getThemeMode: vi.fn().mockReturnValue('light'),
-      getDarkToLightMap: vi.fn().mockReturnValue(new Map([['#779CC4', '#123456']])),
+      colorMode: 'semantic',
       onSaved: vi.fn(),
       onClose: vi.fn(),
       ...overrides,
@@ -33,27 +33,23 @@ describe('useSave', () => {
     ctx = createMockDeps()
   })
 
-  it('亮色模式下保存不传 darkToLightMap', async () => {
+  it('亮色模式下保存应传递 theme: light', async () => {
     ctx.deps.getThemeMode = vi.fn().mockReturnValue('light')
     const { save } = useSave(ctx.deps)
     await save()
 
     const opts = ctx.serialize.mock.calls[0][1]
-    expect(opts.darkToLightMap).toBeUndefined()
-    expect(ctx.deps.getDarkToLightMap).not.toHaveBeenCalled()
+    expect(opts.theme).toBe('light')
     expect(ctx.storageSave).toHaveBeenCalled()
   })
 
-  it('暗色模式下保存传入 darkToLightMap（归一化到亮色真值）', async () => {
+  it('暗色模式下保存应传递 theme: dark', async () => {
     ctx.deps.getThemeMode = vi.fn().mockReturnValue('dark')
     const { save } = useSave(ctx.deps)
     await save()
 
     const opts = ctx.serialize.mock.calls[0][1]
     expect(opts.theme).toBe('dark')
-    expect(opts.darkToLightMap).toBeInstanceOf(Map)
-    expect(opts.darkToLightMap.get('#779CC4')).toBe('#123456')
-    expect(ctx.deps.getDarkToLightMap).toHaveBeenCalled()
   })
 
   it('保存成功后触发 onSaved 与 onClose', async () => {
@@ -61,5 +57,21 @@ describe('useSave', () => {
     await save()
     expect(ctx.deps.onSaved).toHaveBeenCalled()
     expect(ctx.deps.onClose).toHaveBeenCalled()
+  })
+
+  it('语义模式下保存传入 restoreCssVars: true（还原 var()）', async () => {
+    ctx.deps.colorMode = 'semantic'
+    const { save } = useSave(ctx.deps)
+    await save()
+    const opts = ctx.serialize.mock.calls[0][1]
+    expect(opts.restoreCssVars).toBe(true)
+  })
+
+  it('纯算法模式下保存传入 restoreCssVars: false（不还原 var()）', async () => {
+    ctx.deps.colorMode = 'algorithm'
+    const { save } = useSave(ctx.deps)
+    await save()
+    const opts = ctx.serialize.mock.calls[0][1]
+    expect(opts.restoreCssVars).toBe(false)
   })
 })

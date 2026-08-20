@@ -35,6 +35,7 @@ export default tseslint.config(
         __SVG_EDITOR_SAVE_ENDPOINT__: 'readonly',
         __SVG_EDITOR_E2E__: 'readonly',
         __SVG_EDITOR_MAP_HEX_TO_VAR__: 'readonly',
+        __SVG_EDITOR_COLOR_MODE__: 'readonly',
       },
     },
   },

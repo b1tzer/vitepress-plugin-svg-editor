@@ -3,6 +3,7 @@
  */
 import * as fabric from 'fabric'
 import type { Canvas } from 'fabric'
+import { setFillHex, clearFillIdentity } from '../core/shared/colorIdentity'
 
 interface GradientOptions {
   type: 'none' | 'linear' | 'radial'
@@ -18,7 +19,7 @@ export function applyGradient(
   const a = canvas.getActiveObject()
   if (!a) return
   if (type === 'none') {
-    a.set('fill', color1)
+    setFillHex(a, color1)
   } else {
     const radAngle = (angle * Math.PI) / 180
     const len = Math.max(a.width || 100, a.height || 100) / 2
@@ -46,6 +47,7 @@ export function applyGradient(
       ],
     })
     a.set('fill', grad)
+    clearFillIdentity(a)
   }
   canvas.renderAll()
 }

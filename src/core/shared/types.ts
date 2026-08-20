@@ -27,6 +27,15 @@ export interface MarkerInfo {
 /** 主题模式 */
 export type ThemeMode = 'light' | 'dark'
 
+/**
+ * 颜色处理模式
+ * - 'semantic'（默认）：语义 token 优先。`var(--diagram-*)` 保留语义 ID，
+ *   编辑器切换 / 展示层派生时优先按色板精确映射取色，未命中才走 OKLCH 兜底。
+ * - 'algorithm'：纯算法模式。忽略语义变量（`var()` 仅当颜色值解析成 hex），
+ *   全程只用 OKLCH 亮度翻转计算明暗，不保留/不还原语义 token。
+ */
+export type ColorMode = 'semantic' | 'algorithm'
+
 /** SVG 预处理结果 */
 export interface SvgLoadResult {
   svg: string
@@ -43,8 +52,17 @@ export interface SvgPreprocessOptions {
    * 开启后，对色板中「精确命中」的裸 hex（fill/stroke）自动打上语义标记，
    * 使普通 hex SVG 也能获得明暗自适应能力；跨主题撞色 hex 会被跳过。
    * 只做精确匹配，绝不做近似匹配（避免猜错色）。
+   *
+   * 注意：仅在 colorMode === 'semantic' 时生效；'algorithm' 模式强制关闭。
    */
   mapHexToVar?: boolean
+
+  /**
+   * 颜色处理模式（默认 'semantic'）。'algorithm' 时：
+   *   - `var(--diagram-*)` 仍解析成 hex（Fabric 不支持 CSS 变量），但不打语义标记
+   *   - `mapHexToVar` 被忽略
+   */
+  colorMode?: ColorMode
 }
 
 // ═══════════════════════════════════════════════════════════════

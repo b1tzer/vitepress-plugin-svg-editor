@@ -9,6 +9,7 @@ import {
   restoreViewBox,
   removeCanvasBg,
   collectSemanticHexToVar,
+  collectNonSemanticLightMap,
   normalizeNonSemanticToLight,
 } from '../../src/core/serialization/postprocessor'
 import { THEME_HEX_TO_VAR, COLLISION_HEXES } from '../../src/core/shared/colors'
@@ -158,6 +159,40 @@ describe('postprocessor', () => {
       getObjects: () => [{ fill: '#5C9CE6', fillVar: '--diagram-accent-1' }],
     } as any
     expect(collectSemanticHexToVar(darkHexCanvas)['#5C9CE6']).toBe('--diagram-accent-1')
+  })
+
+  // ── collectNonSemanticLightMap ──
+  it('collectNonSemanticLightMap 应收集非语义色的 暗hex → 亮真值 映射', () => {
+    // 模拟暗色态画布：当前 fill/stroke 为暗色 hex，fillLight/strokeLight 记录亮色真值
+    const canvas = {
+      getObjects: () => [
+        { fill: '#779CC4', fillLight: '#123456', stroke: '#0D2137', strokeLight: '#E3F2FD' },
+      ],
+    } as any
+    const map = collectNonSemanticLightMap(canvas)
+    expect(map.get('#779CC4')).toBe('#123456')
+    expect(map.get('#0D2137')).toBe('#E3F2FD')
+  })
+
+  it('collectNonSemanticLightMap 应跳过语义色（有 fillVar 的对象）', () => {
+    const canvas = {
+      getObjects: () => [{ fill: '#1565C0', fillVar: '--diagram-accent-1', fillLight: '#1565C0' }],
+    } as any
+    const map = collectNonSemanticLightMap(canvas)
+    expect(map.size).toBe(0)
+  })
+
+  it('collectNonSemanticLightMap 应递归收集 Group 子对象', () => {
+    const canvas = {
+      getObjects: () => [{ _objects: [{ fill: '#779CC4', fillLight: '#123456' }] }],
+    } as any
+    const map = collectNonSemanticLightMap(canvas)
+    expect(map.get('#779CC4')).toBe('#123456')
+  })
+
+  it('collectNonSemanticLightMap 无 getObjects 时返回空映射', () => {
+    const map = collectNonSemanticLightMap({} as any)
+    expect(map.size).toBe(0)
   })
 
   // ── restoreViewBox ──

@@ -68,14 +68,17 @@ The plugin provides automatic light/dark theme adaptation for SVG diagrams:
 
 Enable exact hex → semantic token upgrading on import with `mapHexToVar: true` (collision colors are skipped).
 
+To ignore semantic tokens entirely and adapt **all** colors (including `var(--diagram-*)`) purely via the OKLCH algorithm, set `colorMode: 'algorithm'`.
+
 ## Plugin Options
 
-| Option           | Type                              | Default           | Description                                  |
-| ---------------- | --------------------------------- | ----------------- | -------------------------------------------- |
-| `storage`        | `'vitepress'` \| `'localStorage'` | `'vitepress'`     | Save strategy                               |
-| `saveEndpoint`   | `string`                          | `'/__svg-save__'` | Save API endpoint (vitepress mode only)     |
-| `markdownSyntax` | `boolean`                         | `true`            | Enable Markdown image interception          |
-| `mapHexToVar`    | `boolean`                         | `false`           | Upgrade exact palette-matching hex colors to semantic tokens |
+| Option           | Type                               | Default           | Description                                  |
+| ---------------- | ---------------------------------- | ----------------- | -------------------------------------------- |
+| `storage`        | `'vitepress'` \| `'localStorage'`  | `'vitepress'`     | Save strategy                               |
+| `saveEndpoint`   | `string`                           | `'/__svg-save__'` | Save API endpoint (vitepress mode only)     |
+| `markdownSyntax` | `boolean`                          | `true`            | Enable Markdown image interception          |
+| `mapHexToVar`    | `boolean`                          | `false`           | Upgrade exact palette-matching hex colors to semantic tokens |
+| `colorMode`      | `'semantic'` \| `'algorithm'`      | `'semantic'`      | Color handling mode: semantic tokens first (`semantic`) or pure OKLCH algorithm (`algorithm`) |
 
 ## Architecture
 

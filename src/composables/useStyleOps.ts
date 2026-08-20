@@ -8,6 +8,7 @@ import type { Canvas } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import { applyGradient } from '../plugins/gradient'
 import { toggleShadow, applyShadow } from '../plugins/shadow'
+import { setFillHex, setStrokeHex } from '../core/shared/colorIdentity'
 import type { useSelection } from './useSelection'
 
 type SelectionState = ReturnType<typeof useSelection>
@@ -26,14 +27,14 @@ export function useStyleOps(deps: UseStyleOpsDeps) {
   function applyFill(hex: string) {
     withSave((fc) => {
       const a = fc.getActiveObject()
-      if (a) a.set('fill', hex)
+      if (a) setFillHex(a, hex)
     })
   }
 
   function applyStroke(hex: string) {
     withSave((fc) => {
       const a = fc.getActiveObject()
-      if (a) a.set('stroke', hex)
+      if (a) setStrokeHex(a, hex)
     })
   }
 

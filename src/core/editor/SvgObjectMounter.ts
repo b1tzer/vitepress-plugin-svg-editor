@@ -17,6 +17,10 @@ import type { Canvas, FabricObject } from 'fabric'
 import { convertTextToTextbox } from './ObjectFactory'
 import { ensureObjectInteractive } from '../shared/interactive'
 import { SVG_FILL_VAR_ATTR, SVG_STROKE_VAR_ATTR, type SvgSemanticColors } from '../shared/fabricTypes'
+import { THEME_VAR_TO_HEX } from '../shared/colors'
+
+/** 6 位 hex（#RRGGBB，大小写不敏感），用于识别可记录亮色真值的裸 hex */
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
 
 export interface SvgObjectMounterOptions {
   /** 装载前对对象数组做转换（如箭头合并），默认透传 */
@@ -38,12 +42,29 @@ export function mountSvgObjects(
   const transform = options.transform
 
   // reviver：在每个 Fabric 对象创建后读取原始 SVG 元素上的 data-fill-var / data-stroke-var，
-  // 挂载语义化颜色 ID（变量名），作为颜色的一等身份。
+  // 挂载语义化颜色 ID（变量名），并锚定「亮色真值」fillLight / strokeLight，作为颜色的一等身份。
   const reviver = (element: Element, obj: FabricObject): void => {
+    const s = obj as FabricObject & SvgSemanticColors
     const fillVar = element.getAttribute(SVG_FILL_VAR_ATTR)
     const strokeVar = element.getAttribute(SVG_STROKE_VAR_ATTR)
-    if (fillVar) (obj as FabricObject & SvgSemanticColors).fillVar = fillVar
-    if (strokeVar) (obj as FabricObject & SvgSemanticColors).strokeVar = strokeVar
+
+    if (fillVar) {
+      // 语义色：亮色真值 = 该变量在亮色主题下的 hex（不依赖导入时的当前主题）
+      s.fillVar = fillVar
+      s.fillLight = THEME_VAR_TO_HEX.light[fillVar]
+    } else {
+      // 非语义色：亮色真值 = 原始 fill hex（裸 hex 或带 fallback 变量解析出的 hex）
+      const rawFill = element.getAttribute('fill')
+      if (rawFill && HEX_COLOR_RE.test(rawFill.trim())) s.fillLight = rawFill.trim()
+    }
+
+    if (strokeVar) {
+      s.strokeVar = strokeVar
+      s.strokeLight = THEME_VAR_TO_HEX.light[strokeVar]
+    } else {
+      const rawStroke = element.getAttribute('stroke')
+      if (rawStroke && HEX_COLOR_RE.test(rawStroke.trim())) s.strokeLight = rawStroke.trim()
+    }
   }
 
   return fabric.loadSVGFromString(svg, reviver).then(({ objects }) => {

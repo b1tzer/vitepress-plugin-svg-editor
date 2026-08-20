@@ -8,11 +8,18 @@
 
 import { onMounted, onUnmounted } from 'vue'
 import { collectSvgColorEntries, applySvgTheme, type SvgColorEntry } from '../core/shared/svgDarkMode'
+import type { ColorMode } from '../core/shared/types'
 
-export function useSvgDarkMode(getRoot: () => Element | null): {
+export function useSvgDarkMode(
+  getRoot: () => Element | null,
+  options: { colorMode?: ColorMode } = {}
+): {
   /** v-html 内容更新后调用：重新收集颜色入口并应用当前主题 */
   refresh: () => void
 } {
+  // 纯算法模式：展示层派生跳过色板精确映射，一律走 OKLCH
+  const algorithmOnly = options.colorMode === 'algorithm'
+
   let entries: SvgColorEntry[] = []
   let observer: MutationObserver | null = null
 
@@ -21,7 +28,7 @@ export function useSvgDarkMode(getRoot: () => Element | null): {
 
   function refresh(): void {
     const root = getRoot()
-    entries = root ? collectSvgColorEntries(root) : []
+    entries = root ? collectSvgColorEntries(root, algorithmOnly) : []
     applySvgTheme(entries, isDark())
   }
 

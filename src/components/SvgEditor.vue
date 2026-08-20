@@ -40,6 +40,7 @@ import { useToolbar } from '../composables/useToolbar'
 import { useMutation } from '../composables/useMutation'
 import { exposeTestHooks, clearTestHooks } from '../core/shared/testHooks'
 import { mark, measure, timedAsync, initPerfMonitor } from '../utils/perf'
+import type { ColorMode } from '../core/shared/types'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
 const storageAdapter: IStorageAdapter =
@@ -54,6 +55,12 @@ const storageAdapter: IStorageAdapter =
 const serializer = new SvgSerializer()
 // ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验）──
 const svgLoader = new SvgLoader()
+// ── 颜色处理模式：由插件 svgEditorPlugin({ colorMode }) 注入，默认 semantic ──
+// 用 typeof 防御：纯单元测试（不经 Vite 插件）环境下该常量未注入。
+const colorMode: ColorMode =
+  typeof __SVG_EDITOR_COLOR_MODE__ !== 'undefined' && __SVG_EDITOR_COLOR_MODE__ === 'algorithm'
+    ? 'algorithm'
+    : 'semantic'
 
 const props = defineProps({
   src: { type: String, required: true },
@@ -86,7 +93,7 @@ const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 
 // ── 主题切换 ──
-const { themeMode, toggleTheme, getDarkToLightMap } = useTheme(canvasMgr)
+const { themeMode, toggleTheme } = useTheme(canvasMgr, { colorMode })
 
 // ── 图层管理 ──
 const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = useLayer(canvasMgr)
@@ -181,7 +188,7 @@ const { saving, errorMessage, save, showError } = useSave({
   src: props.src,
   getOriginalViewBox: () => originalViewBox.value,
   getThemeMode: () => themeMode.value,
-  getDarkToLightMap,
+  colorMode,
   onSaved: () => emit('saved'),
   onClose: () => emit('close'),
 })
@@ -237,6 +244,7 @@ async function loadAndInit() {
     loaded = await timedAsync('svg:preprocess', () =>
       svgLoader.loadFromUrl(url, themeMode.value, {
         mapHexToVar: __SVG_EDITOR_MAP_HEX_TO_VAR__ === true,
+        colorMode,
       })
     )
   } catch (e) {
