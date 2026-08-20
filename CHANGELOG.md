@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.4.0 (2026-08-20)
+
+### Added
+
+- **`colorMode` 插件选项**：新增 `'semantic'`（默认）与 `'algorithm'` 两种颜色处理模式。`semantic` 保留原有语义 token 优先 + 色板精确映射 + OKLCH 兜底的行为；`algorithm` 为纯算法模式，忽略语义变量，全程只用 OKLCH 亮度翻转计算明暗。
+- **`colorIdentity` 模块**：统一维护对象改色时的亮色真值与语义 ID，作为明暗派生的唯一事实来源。
+
+### Changed
+
+- **明暗切换架构重构**：编辑器内主题切换由「双向缓存 + 反向映射」重构为「对象持有亮色真值（`fillLight`/`strokeLight`）+ 单向派生」，删除隐式的 `darkToLightMap`/`DARK_TO_LIGHT` 双向数据流。
+- 展示层（`svgDarkMode.ts`）、预处理、保存链路（`preprocessor`/`postprocessor`/`SvgSerializer`/`useSave`）同步支持 `colorMode`。
+
+### Fixed
+
+- 修复暗色模式下修改对象颜色后切回亮色、颜色被错误二次翻转的问题：改色入口现在锚定亮色真值，切回亮色时精确还原用户所改颜色。
+
+### Internal
+
+- 补充 `collectNonSemanticLightMap` 单元测试；清理失效的 e2e 层级 1 测试用例。
+
 ## v0.3.0 (2026-08-19)
 
 ### Added
