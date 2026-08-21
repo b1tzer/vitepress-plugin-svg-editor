@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.5.0 (2026-08-21)
+
+### Breaking Changes
+
+- **移除静态色板常量表**：删除 `colors.ts` 中的 `LIGHT_HEX` / `DARK_HEX` / `THEME_VAR_TO_HEX` / `LIGHT_TO_DARK` / `THEME_HEX_TO_VAR` / `COLLISION_HEXES` / `UNIQUE_HEX_TO_VAR` 等全部静态颜色常量，以及 `--diagram-*` 语义 token 体系与 `diagram-vars.css`。
+- **移除 `colorMode` 插件选项**：删除 `'semantic'` / `'algorithm'` 两种颜色处理模式，OKLCH 算法变色成为唯一行为。
+- **移除 `mapHexToVar` 插件选项**：删除「hex → 语义 token」自动升级能力。
+
+### Changed
+
+- **全面转入 OKLCH 算法变色**：明暗色一律由 `adaptColorLuminance`（OKLCH 亮度翻转，保色相、保饱和度）从亮色真值单向派生，不再有语义色板精确映射分支。
+- **编辑器明暗切换按键改为「按住预览」**：pointerdown 按住期间仅切换画布/SVG 颜色，编辑器 chrome 跟随网页 `.dark`，松手立即恢复亮色真值；保存恒为亮色。
+
+### Refactor
+
+- **SvgEditor 编排层瘦身**：抽 `useMutation`（`withSave`：执行 → 存档 → 刷新图层），消除 `useClipboard → useToolbar` 反向依赖；下沉 `SvgLoader.loadFromUrl` + `SvgObjectMounter.mountSvgObjects` 到 framework-free 的 `core/`。
+- **useToolbar 职责拆分**：按 3 域拆为 `useStyleOps`（fill/stroke/...）、`useTextOps`（fontSize/...）、`useStructureOps`（align/group/...），undo/redo/delete 归入 `useHistoryOps`；新增 `useEditorStore` / `theme` 收敛共享状态。
+
+## v0.4.0 (2026-08-20)
+### Breaking Changes
+
+- **移除静态色板常量表**：删除 `colors.ts` 中的 `LIGHT_HEX` / `DARK_HEX` / `THEME_VAR_TO_HEX` / `LIGHT_TO_DARK` / `THEME_HEX_TO_VAR` / `COLLISION_HEXES` / `UNIQUE_HEX_TO_VAR` 等全部静态颜色常量，以及 `--diagram-*` 语义 token 体系与 `diagram-vars.css`。
+- **移除 `colorMode` 插件选项**：删除 `'semantic'` / `'algorithm'` 两种颜色处理模式，OKLCH 算法变色成为唯一行为。
+- **移除 `mapHexToVar` 插件选项**：删除「hex → 语义 token」自动升级能力。
+
+### Changed
+
+- **全面转入 OKLCH 算法变色**：明暗色一律由 `adaptColorLuminance`（OKLCH 亮度翻转，保色相、保饱和度）从亮色真值单向派生，不再有语义色板精确映射分支。
+- **编辑器明暗切换按键改为「按住预览」**：pointerdown 按住期间仅切换画布/SVG 颜色，编辑器 chrome 跟随网页 `.dark`，松手立即恢复亮色真值；保存恒为亮色。
+
+### Refactor
+
+- **SvgEditor 编排层瘦身**：抽 `useMutation`（`withSave`：执行 → 存档 → 刷新图层），消除 `useClipboard → useToolbar` 反向依赖；下沉 `SvgLoader.loadFromUrl` + `SvgObjectMounter.mountSvgObjects` 到 framework-free 的 `core/`。
+- **useToolbar 职责拆分**：按 3 域拆为 `useStyleOps`（fill/stroke/...）、`useTextOps`（fontSize/...）、`useStructureOps`（align/group/...），undo/redo/delete 归入 `useHistoryOps`；新增 `useEditorStore` / `theme` 收敛共享状态。
+
 ## v0.4.0 (2026-08-20)
 
 ### Added
