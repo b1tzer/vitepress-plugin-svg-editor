@@ -1,15 +1,16 @@
 /**
  * 主题切换集成测试（对齐 design/10-test-strategy.md 2.3「ThemeAdapter 集成」）
  *
- * 覆盖 useTheme + CanvasManager + colors 映射的跨模块协同：
- *   亮色 → 暗色切换时，画布对象的 fill/stroke 应按 LIGHT_TO_DARK 映射替换。
+ * 覆盖 useTheme + CanvasManager + OKLCH 算法变色的跨模块协同：
+ *   按住预览切暗时，画布对象的 fill/stroke 应经 OKLCH 亮度翻转；
+ *   松手恢复时直接写回亮色真值。
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import * as fabric from 'fabric'
 import { CanvasManager } from '../../src/core/canvas/CanvasManager'
 import { useTheme } from '../../src/composables/useTheme'
-import { LIGHT_HEX, DARK_HEX } from '../../src/core/shared/colors'
+import { lightHexToDark } from '../../src/core/shared/colors'
 
 describe('主题切换集成测试', () => {
   let canvasEl: HTMLCanvasElement
@@ -35,65 +36,64 @@ describe('主题切换集成测试', () => {
     document.body.removeChild(canvasEl)
   })
 
-  it('亮色 → 暗色切换时，对象 fill/stroke 应映射到暗色 hex', () => {
+  it('按住预览切暗时，对象 fill/stroke 应做 OKLCH 亮度翻转', () => {
     const canvas = canvasMgr.canvas!
     const rect = new fabric.Rect({
       left: 10,
       top: 10,
       width: 100,
       height: 80,
-      fill: LIGHT_HEX['--diagram-accent-1'], // #1565C0
-      stroke: LIGHT_HEX['--diagram-stroke-1'], // #BDBDBD
+      fill: '#1565C0',
+      stroke: '#BDBDBD',
     })
     canvas.add(rect)
     canvas.renderAll()
 
-    const { toggleTheme, themeMode } = useTheme(canvasMgr)
-    expect(themeMode.value).toBe('light')
+    const { svgDark, setSvgDark } = useTheme(canvasMgr)
+    expect(svgDark.value).toBe(false)
 
-    toggleTheme()
+    setSvgDark(true)
 
-    expect(themeMode.value).toBe('dark')
-    expect(String(rect.fill).toUpperCase()).toBe(DARK_HEX['--diagram-accent-1'].toUpperCase())
-    expect(String(rect.stroke).toUpperCase()).toBe(DARK_HEX['--diagram-stroke-1'].toUpperCase())
+    expect(svgDark.value).toBe(true)
+    expect(String(rect.fill).toUpperCase()).toBe(lightHexToDark('#1565C0').toUpperCase())
+    expect(String(rect.stroke).toUpperCase()).toBe(lightHexToDark('#BDBDBD').toUpperCase())
   })
 
-  it('再次切换应从暗色恢复亮色 hex', () => {
+  it('松手恢复时应从暗色恢复亮色真值', () => {
     const canvas = canvasMgr.canvas!
     const rect = new fabric.Rect({
       left: 10,
       top: 10,
       width: 100,
       height: 80,
-      fill: LIGHT_HEX['--diagram-accent-1'],
+      fill: '#1565C0',
     })
     canvas.add(rect)
     canvas.renderAll()
 
-    const { toggleTheme } = useTheme(canvasMgr)
-    toggleTheme() // light → dark
-    toggleTheme() // dark → light
+    const { setSvgDark } = useTheme(canvasMgr)
+    setSvgDark(true) // 按住切暗
+    setSvgDark(false) // 松手恢复亮色
 
-    expect(String(rect.fill).toUpperCase()).toBe(LIGHT_HEX['--diagram-accent-1'].toUpperCase())
+    expect(String(rect.fill).toUpperCase()).toBe('#1565C0')
   })
 
-  it('无映射的颜色应做自适应亮度翻转（而非保持不变）', () => {
+  it('任意颜色都应做自适应亮度翻转（而非保持不变）', () => {
     const canvas = canvasMgr.canvas!
     const rect = new fabric.Rect({
       left: 10,
       top: 10,
       width: 100,
       height: 80,
-      fill: '#123456', // 不在映射表中
+      fill: '#123456',
     })
     canvas.add(rect)
     canvas.renderAll()
 
-    const { toggleTheme } = useTheme(canvasMgr)
-    toggleTheme()
+    const { setSvgDark } = useTheme(canvasMgr)
+    setSvgDark(true)
 
     const flipped = String(rect.fill).toUpperCase()
-    // 不再是「保持不变」，而是被自适应翻转为另一个色
     expect(flipped).not.toBe('#123456')
 
     // 亮度方向：#123456 是暗蓝，翻转后应变亮（RGB 总和增大）
@@ -104,35 +104,35 @@ describe('主题切换集成测试', () => {
     expect(sum(flipped)).toBeGreaterThan(sum('#123456'))
   })
 
-  it('无映射颜色往返切换应精确恢复（记忆化缓存保证等幂）', () => {
+  it('颜色往返切换应精确恢复（亮色真值锚定保证等幂）', () => {
     const canvas = canvasMgr.canvas!
     const rect = new fabric.Rect({
       left: 10,
       top: 10,
       width: 100,
       height: 80,
-      fill: '#FF0000', // 高饱和边界色：OKLCH 翻转会触 sRGB 色域裁剪，需靠缓存恢复
+      fill: '#FF0000', // 高饱和边界色：OKLCH 翻转会触 sRGB 色域裁剪
     })
     canvas.add(rect)
     canvas.renderAll()
 
-    const { toggleTheme } = useTheme(canvasMgr)
-    toggleTheme() // light → dark
+    const { setSvgDark } = useTheme(canvasMgr)
+    setSvgDark(true) // 按住切暗
     const darkFill = String(rect.fill).toUpperCase()
     expect(darkFill).not.toBe('#FF0000')
 
-    toggleTheme() // dark → light
+    setSvgDark(false) // 松手恢复
     expect(String(rect.fill).toUpperCase()).toBe('#FF0000')
   })
 
-  it('渐变填充的 colorStops 应被映射（语义色精确 + 自定义色自适应）', () => {
+  it('渐变填充的 colorStops 应做 OKLCH 亮度翻转', () => {
     const canvas = canvasMgr.canvas!
     const grad = new fabric.Gradient({
       type: 'linear',
       coords: { x1: 0, y1: 0, x2: 100, y2: 0 },
       colorStops: [
-        { offset: 0, color: '#1565C0' }, // diagram 语义色
-        { offset: 1, color: '#FF0000' }, // 自定义色
+        { offset: 0, color: '#1565C0' },
+        { offset: 1, color: '#FF0000' },
       ],
     })
     const rect = new fabric.Rect({
@@ -145,15 +145,12 @@ describe('主题切换集成测试', () => {
     canvas.add(rect)
     canvas.renderAll()
 
-    const { toggleTheme } = useTheme(canvasMgr)
-    toggleTheme()
+    const { setSvgDark } = useTheme(canvasMgr)
+    setSvgDark(true)
 
     const stops = (rect.fill as fabric.Gradient).colorStops
-    // 语义色 #1565C0 → 暗色 #5C9CE6（精确映射）
-    expect(String(stops[0].color).toUpperCase()).toBe(
-      DARK_HEX['--diagram-accent-1'].toUpperCase()
-    )
-    // 自定义色 #FF0000 被自适应翻转（不再是 #FF0000）
+    // 纯算法：一律 OKLCH 翻转（不再是语义色板精确映射）
+    expect(String(stops[0].color).toUpperCase()).toBe(lightHexToDark('#1565C0').toUpperCase())
     expect(String(stops[1].color).toUpperCase()).not.toBe('#FF0000')
   })
 })

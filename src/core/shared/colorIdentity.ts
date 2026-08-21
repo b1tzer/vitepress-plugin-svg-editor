@@ -1,29 +1,27 @@
 /**
- * 颜色身份维护模块 — 改色时同步维护「亮色真值」与语义 ID
+ * 颜色身份维护模块 — 改色时同步维护「亮色真值」
  *
- * 档位 2 重构：对象以 fillLight / strokeLight 记录「亮色真值」，
- * 主题切换退化为「单向派生」：
- *   - 切暗：fill = 语义色 ? 暗色语义 hex : lightHexToDark(fillLight)
- *   - 切亮：fill = fillLight（直接写回真值）
+ * 全面转入算法变色后，对象以 fillLight / strokeLight 记录「亮色真值」，
+ * 明暗切换退化为「单向派生」：
+ *   - 按住预览切暗：fill = lightHexToDark(fillLight)（OKLCH 亮度翻转）
+ *   - 松手 / 切回亮色：fill = fillLight（直接写回真值）
  *
- * 因此任何「用户改色」入口都必须同步更新真值并清空语义 ID，
+ * 因此任何「用户改色」入口都必须同步更新真值，
  * 否则切回亮色时会把用户刚改的色覆盖回旧值。
  * 这些 helper 统一封装「set + 身份维护」，供 useStyleOps / text-format / gradient 复用。
  */
 
 import type { FabricObject } from 'fabric'
-import type { SvgSemanticColors } from './fabricTypes'
+import type { SvgLightColors } from './fabricTypes'
 
-type ColorIdentityObject = FabricObject & SvgSemanticColors
+type ColorIdentityObject = FabricObject & SvgLightColors
 
 /**
- * 设置对象填充色为「新的亮色真值」：
- * 清空语义 ID（用户改色即脱离语义色板），并把亮色真值锚定为新色。
+ * 设置对象填充色为「新的亮色真值」：把亮色真值锚定为新色。
  */
 export function setFillHex(obj: FabricObject, hex: string): void {
   obj.set('fill', hex)
   const o = obj as ColorIdentityObject
-  o.fillVar = undefined
   o.fillLight = hex
 }
 
@@ -33,7 +31,6 @@ export function setFillHex(obj: FabricObject, hex: string): void {
 export function setStrokeHex(obj: FabricObject, hex: string): void {
   obj.set('stroke', hex)
   const o = obj as ColorIdentityObject
-  o.strokeVar = undefined
   o.strokeLight = hex
 }
 
@@ -43,6 +40,5 @@ export function setStrokeHex(obj: FabricObject, hex: string): void {
  */
 export function clearFillIdentity(obj: FabricObject): void {
   const o = obj as ColorIdentityObject
-  o.fillVar = undefined
   o.fillLight = undefined
 }

@@ -16,6 +16,7 @@ import { FABRIC_TYPE } from '../shared/fabricTypes'
 import { ensureObjectInteractive } from '../shared/interactive'
 import { MoveCommand, ResizeCommand, PropertyChangeCommand } from '../history/Command'
 import type { ICommand } from '../history/Command'
+import { ACCENT_COLOR } from '../shared/theme'
 
 /** 文本对象 + 编辑器缩放时临时记录的原始字号（运行时自定义属性） */
 type ScalingText = FabricObject & {
@@ -62,7 +63,7 @@ export class InteractionManager {
         if (!fc.getActiveObject()) {
           const target = e.target as Hoverable
           target._origBorderColor = target.borderColor
-          target.set({ borderColor: '#0078d4' })
+          target.set({ borderColor: ACCENT_COLOR })
           scheduleHoverRender()
         }
       }
@@ -72,7 +73,7 @@ export class InteractionManager {
       fc.setCursor('default')
       if (e.target && !fc.getActiveObject()) {
         const target = e.target as Hoverable
-        target.set({ borderColor: target._origBorderColor || '#0078d4' })
+        target.set({ borderColor: target._origBorderColor || ACCENT_COLOR })
         scheduleHoverRender()
       }
     })
@@ -132,8 +133,7 @@ export class InteractionManager {
     // saveObjectTransform 仅保存 scaleX/scaleY/skew/angle/left/top/flip 等变换分量，
     // 不包含 width/height（Fabric 缩放只改 scaleX/scaleY，不改变对象自身宽高）。
     const scaleChanged =
-      (orig.scaleX ?? 1) !== (obj.scaleX ?? 1) ||
-      (orig.scaleY ?? 1) !== (obj.scaleY ?? 1)
+      (orig.scaleX ?? 1) !== (obj.scaleX ?? 1) || (orig.scaleY ?? 1) !== (obj.scaleY ?? 1)
 
     if (scaleChanged) {
       const oldState = {

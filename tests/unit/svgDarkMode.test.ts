@@ -1,13 +1,12 @@
 /**
  * svgDarkMode 纯函数单元测试
- * 覆盖：lightHexToDark 映射、颜色入口收集、主题应用与恢复
+ * 覆盖：lightHexToDark OKLCH 翻转、颜色入口收集、主题应用与恢复
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { lightHexToDark } from '../../src/core/shared/colors'
 import {
   collectSvgColorEntries,
   applySvgTheme,
-  resolveVarsToLightHex,
   type SvgColorEntry,
 } from '../../src/core/shared/svgDarkMode'
 
@@ -19,23 +18,19 @@ function makeRoot(inner: string): Element {
 }
 
 describe('lightHexToDark', () => {
-  it('语义色板 hex 应走 LIGHT_TO_DARK 精确映射', () => {
-    // #FFFFFF → #1A1A1A（surface-1）
-    expect(lightHexToDark('#FFFFFF')).toBe('#1A1A1A')
-    // #1565C0 → #5C9CE6（accent-1）
-    expect(lightHexToDark('#1565C0')).toBe('#5C9CE6')
-  })
-
-  it('非语义裸 hex 应做 OKLCH 亮度翻转（变暗）', () => {
-    const dark = lightHexToDark('#FF7F50') // 珊瑚橙，非语义色
+  it('裸 hex 应做 OKLCH 亮度翻转（变暗）', () => {
+    const dark = lightHexToDark('#FF7F50') // 珊瑚橙
     expect(dark).not.toBe('#FF7F50')
   })
 
-  it('纯算法模式应跳过色板精确映射，走 OKLCH 亮度翻转', () => {
-    // #FFFFFF 语义模式映射到 #1A1A1A（surface-1），算法模式应翻转到 #000000
-    expect(lightHexToDark('#FFFFFF', true)).toBe('#000000')
-    // #1565C0 语义模式映射到 #5C9CE6（accent-1），算法模式应走 OKLCH 翻转
-    expect(lightHexToDark('#1565C0', true)).toBe('#075DB7')
+  it('白色 #FFFFFF 经 OKLCH 亮度翻转应为 #000000', () => {
+    // 不再走语义色板映射（旧值 #1A1A1A），纯算法翻转
+    expect(lightHexToDark('#FFFFFF')).toBe('#000000')
+  })
+
+  it('#1565C0 经 OKLCH 亮度翻转应走算法（非语义映射）', () => {
+    // 旧语义映射为 #5C9CE6，纯算法应为 #075DB7
+    expect(lightHexToDark('#1565C0')).toBe('#075DB7')
   })
 })
 
@@ -65,6 +60,18 @@ describe('collectSvgColorEntries', () => {
     expect(entries[0].original.toUpperCase()).toBe('#2563EB')
   })
 
+  it('应收集 3 位 hex 短写法（如 #fff，attribute 与 inline style）', () => {
+    const root = makeRoot(
+      '<svg><rect fill="#fff"/><rect style="fill:#abc"/></svg>'
+    )
+    const entries = collectSvgColorEntries(root)
+    const originals = entries.map((e) => e.original.toLowerCase())
+    expect(originals).toContain('#fff')
+    expect(originals).toContain('#abc')
+    // 3 位短写法应能派生暗色（而非被当非法颜色跳过）
+    expect(entries.every((e) => e.dark && e.dark.startsWith('#'))).toBe(true)
+  })
+
   it('应跳过 var()、none、transparent、url()', () => {
     const root = makeRoot(
       '<svg>' +
@@ -88,9 +95,9 @@ describe('collectSvgColorEntries', () => {
     expect(entries[0].original.toUpperCase()).toBe('#FF0000')
   })
 
-  it('纯算法模式下语义色板 hex 的 dark 值应走 OKLCH 翻转', () => {
+  it('裸 hex 的 dark 值应走 OKLCH 翻转（非语义映射）', () => {
     const root = makeRoot('<svg><rect fill="#1565C0"/></svg>')
-    const entries = collectSvgColorEntries(root, true)
+    const entries = collectSvgColorEntries(root)
     expect(entries.length).toBe(1)
     expect(entries[0].dark).toBe('#075DB7')
     expect(entries[0].dark).not.toBe('#5C9CE6')
@@ -115,21 +122,5 @@ describe('applySvgTheme', () => {
 
     applySvgTheme(entries, false) // 亮色恢复
     expect(current).toBe('#FF7F50')
-  })
-})
-
-describe('resolveVarsToLightHex', () => {
-  it('应将 var(--diagram-*) 解析为亮色 hex', () => {
-    const svg = '<rect fill="var(--diagram-accent-1)"/>'
-    const result = resolveVarsToLightHex(svg)
-    expect(result).toContain('#1565C0')
-    expect(result).not.toContain('var(--diagram-accent-1)')
-  })
-
-  it('应解析带 fallback 的外部变量为 fallback 值', () => {
-    const svg = '<rect fill="var(--vp-c-brand-1, #2563eb)"/>'
-    const result = resolveVarsToLightHex(svg)
-    expect(result).toContain('#2563eb')
-    expect(result).not.toContain('var(')
   })
 })

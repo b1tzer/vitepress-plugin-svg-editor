@@ -8,8 +8,6 @@ import { ref, type Ref } from 'vue'
 import type { Canvas } from 'fabric'
 import type { SvgSerializer } from '../core/serialization/SvgSerializer'
 import type { IStorageAdapter } from '../adapters/storage/StorageAdapter'
-import type { ThemeMode } from '../core/shared/types'
-import type { ColorMode } from '../core/shared/types'
 import { timed } from '../utils/perf'
 
 export interface UseSaveDeps {
@@ -18,9 +16,6 @@ export interface UseSaveDeps {
   storageAdapter: IStorageAdapter
   src: string
   getOriginalViewBox: () => string
-  getThemeMode: () => ThemeMode
-  /** 颜色处理模式：'algorithm' 时保存不还原 var()，落盘为纯 hex */
-  colorMode: ColorMode
   onSaved: () => void
   onClose: () => void
 }
@@ -49,14 +44,10 @@ export function useSave(deps: UseSaveDeps): {
     saving.value = true
     try {
       // 序列化器内部从对象 fillLight/strokeLight 收集非语义色归一化映射，
-      // 保证落盘 SVG 永远保存亮色语义（暗色由运行时派生），无需外部传入反向映射。
-      const theme = deps.getThemeMode()
+      // 保证落盘 SVG 永远保存亮色真值（暗色由运行时派生），无需外部传入主题。
       const svgText = timed('export:toSVG', () =>
         deps.serializer.serialize(fc, {
           originalViewBox: deps.getOriginalViewBox(),
-          theme,
-          // 纯算法模式不还原 var()：语义 ID 已在导入时被剥离，落盘为纯 hex
-          restoreCssVars: deps.colorMode === 'semantic',
         })
       )
       const result = await deps.storageAdapter.save(svgText, deps.src)

@@ -68,18 +68,13 @@ describe('SvgSerializer', () => {
     expect(result).toContain('viewBox="0 0 1000 800"')
   })
 
-  it('serialize 应支持关闭 CSS 变量还原', () => {
-    const result = serializer.serialize(canvas, { restoreCssVars: false })
-    expect(result).toBeTruthy()
-  })
-
-  it('serialize 无语义对象时保留 hex 不还原（语义化 ID：不猜语义）', () => {
+  it('serialize 保留裸 hex 不还原为 var()（全面算法化，不再还原语义变量）', () => {
     mockToSVG.mockReturnValue(
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
         '<rect fill="#E1BEE7"/>' +
         '</svg>'
     )
-    const result = serializer.serialize(canvas, { theme: 'light' })
+    const result = serializer.serialize(canvas)
     expect(result).toContain('#E1BEE7')
     expect(result).not.toContain('var(--diagram-')
   })

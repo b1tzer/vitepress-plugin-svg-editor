@@ -62,13 +62,9 @@ Click the **✏️ Edit SVG** button that appears on hover (dev mode only) to op
 
 The plugin provides automatic light/dark theme adaptation for SVG diagrams:
 
-- **Semantic tokens** (`--diagram-*` CSS variables): diagrams using `var(--diagram-accent-1)` etc. automatically follow the site theme via injected `diagram-vars.css`.
 - **Bare hex colors**: non-semantic hex colors are adapted at runtime in the OKLCH perceptual color space (brightness flip, hue/saturation preserved) when the site switches to dark mode.
+- **CSS variables with fallback** (`var(--vp-c-brand-1, #2563eb)`): resolved to their fallback value at load time.
 - **Editor + display consistency**: saving always normalizes colors to their light-mode canonical value, so what you see in the editor matches what renders on the page across theme switches.
-
-Enable exact hex → semantic token upgrading on import with `mapHexToVar: true` (collision colors are skipped).
-
-To ignore semantic tokens entirely and adapt **all** colors (including `var(--diagram-*)`) purely via the OKLCH algorithm, set `colorMode: 'algorithm'`.
 
 ## Plugin Options
 
@@ -77,8 +73,6 @@ To ignore semantic tokens entirely and adapt **all** colors (including `var(--di
 | `storage`        | `'vitepress'` \| `'localStorage'`  | `'vitepress'`     | Save strategy                               |
 | `saveEndpoint`   | `string`                           | `'/__svg-save__'` | Save API endpoint (vitepress mode only)     |
 | `markdownSyntax` | `boolean`                          | `true`            | Enable Markdown image interception          |
-| `mapHexToVar`    | `boolean`                          | `false`           | Upgrade exact palette-matching hex colors to semantic tokens |
-| `colorMode`      | `'semantic'` \| `'algorithm'`      | `'semantic'`      | Color handling mode: semantic tokens first (`semantic`) or pure OKLCH algorithm (`algorithm`) |
 
 ## Architecture
 

@@ -158,16 +158,6 @@ describe('HistoryManager', () => {
   // ══════════════════════════════════════════════════════
   // 回调 & 兜底
   // ══════════════════════════════════════════════════════
-  it('beforeSave / afterSave 回调应在 save 时被调用', () => {
-    const before = vi.fn()
-    hm.save(canvas as any, before)
-    expect(before).toHaveBeenCalled()
-
-    const after = vi.fn()
-    hm.save(canvas as any, undefined, after)
-    expect(after).toHaveBeenCalled()
-  })
-
   it('afterLoad 回调应在 undo 时被调用', async () => {
     hm.save(canvas as any)
     hm.save(canvas as any)

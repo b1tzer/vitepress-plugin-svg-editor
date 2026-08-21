@@ -15,6 +15,7 @@ import { EventBus } from '../shared/EventBus'
 import { ZoomPanController } from './ZoomPanController'
 import { InteractionManager } from './InteractionManager'
 import type { ICommand } from '../history/Command'
+import { ACCENT_COLOR, CORNER_COLOR, WORKSPACE_THEME } from '../shared/theme'
 
 export class CanvasManager {
   canvas: Canvas | null = null
@@ -93,10 +94,8 @@ export class CanvasManager {
     const ws = this._workspaceRect
     if (!ws) return
     this._themeMode = light ? 'light' : 'dark'
-    ws.set({
-      fill: light ? '#ffffff' : '#1e1e1e',
-      stroke: light ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)',
-    })
+    const t = light ? WORKSPACE_THEME.light : WORKSPACE_THEME.dark
+    ws.set({ fill: t.fill, stroke: t.stroke })
     this.canvas?.requestRenderAll()
   }
 
@@ -120,14 +119,15 @@ export class CanvasManager {
     const isLight = this._themeMode === 'light'
     // workspace Rect 固定位于 (0,0)，与 SVG 逻辑坐标原点一致
     // 视觉居中由 viewportTransform（zoomFit / zoom / pan）负责 — vue-fabric-editor 做法
+    const t = isLight ? WORKSPACE_THEME.light : WORKSPACE_THEME.dark
     const ws = new fabric.Rect({
       id: 'workspace',
       left: 0,
       top: 0,
       width: w,
       height: h,
-      fill: isLight ? '#ffffff' : '#1e1e1e',
-      stroke: isLight ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.10)',
+      fill: t.fill,
+      stroke: t.stroke,
       strokeWidth: 1,
       selectable: false,
       evented: false,
@@ -154,10 +154,10 @@ export class CanvasManager {
     Object.assign(fabric.Object.ownDefaults, {
       transparentCorners: false,
       cornerSize: 10,
-      cornerStrokeColor: '#0078d4',
-      cornerColor: '#ffffff',
+      cornerStrokeColor: ACCENT_COLOR,
+      cornerColor: CORNER_COLOR,
       cornerStyle: 'circle',
-      borderColor: '#0078d4',
+      borderColor: ACCENT_COLOR,
       borderScaleFactor: 1.5,
       borderDashArray: [4, 2],
       padding: 8,
@@ -172,6 +172,10 @@ export class CanvasManager {
   _setupCanvasEvents(fc: Canvas): void {
     fc.on('mouse:wheel', (opt: TPointerEventInfo<WheelEvent>) => {
       opt.e.preventDefault()
+      // 关键：stopPropagation 阻断事件冒泡到外层 DOM 的 @wheel 监听，划分滚轮缩放双通道边界。
+      // 内通道（本 handler）：指针落在对象上，带指针锚点缩放；
+      // 外通道：画布空白区走 EditorCanvas 的 DOM 层 @wheel → injectWheel（无锚点，中心缩放）。
+      // 移除 stopPropagation 会让同一滚轮事件被内外两个通道各处理一次，导致静默双重缩放。
       opt.e.stopPropagation()
       // 以鼠标指针位置为缩放锚点（对齐浏览器/地图/Figma 的滚轮缩放直觉）
       // 注意：不能用 fc.getPointer（返回逻辑坐标），需手动换算为相对 canvas 左上角的物理坐标
@@ -256,6 +260,12 @@ export class CanvasManager {
     this._eventBus.clear()
   }
 
+  /**
+   * 画布外部空白区的滚轮缩放入口（滚轮缩放双通道之外通道）。
+   * 由 EditorCanvas 的 DOM 层 @wheel 捕获后经此转发，无指针锚点，
+   * 由 ZoomPanController 使用默认（画布中心）缩放锚点。
+   * 与 _setupCanvasEvents 中的 mouse:wheel（内通道）互补，边界由 stopPropagation 划分。
+   */
   injectWheel(deltaY: number): void {
     if (!this.canvas) return
     this._zoomPan.handleWheel(deltaY)

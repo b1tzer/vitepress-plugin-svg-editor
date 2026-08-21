@@ -11,7 +11,7 @@
  * 职责（issue #15 第 2 条）：仅负责组件组合与事件转发；
  * 剪贴板/主题/选择状态/保存/图层/键盘等逻辑已下沉到 composable。
  */
-import { ref, shallowRef, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, shallowRef, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import type { Canvas } from 'fabric'
 import EditorToolbar from './sub/EditorToolbar.vue'
 import EditorCanvas from './sub/EditorCanvas.vue'
@@ -31,16 +31,13 @@ import { mountSvgObjects } from '../core/editor/SvgObjectMounter'
 import { useEditorState } from '../composables/useEditorState'
 import { useClipboard } from '../composables/useClipboard'
 import { useTheme } from '../composables/useTheme'
-import { useSelection } from '../composables/useSelection'
 import { useSave } from '../composables/useSave'
 import { useLayer } from '../composables/useLayer'
 import { useKeyboard } from '../composables/useKeyboard'
 import { useCanvasSize } from '../composables/useCanvasSize'
-import { useToolbar } from '../composables/useToolbar'
-import { useMutation } from '../composables/useMutation'
+import { useEditorStore, EditorStoreKey } from '../composables/useEditorStore'
 import { exposeTestHooks, clearTestHooks } from '../core/shared/testHooks'
 import { mark, measure, timedAsync, initPerfMonitor } from '../utils/perf'
-import type { ColorMode } from '../core/shared/types'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
 const storageAdapter: IStorageAdapter =
@@ -55,12 +52,6 @@ const storageAdapter: IStorageAdapter =
 const serializer = new SvgSerializer()
 // ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验）──
 const svgLoader = new SvgLoader()
-// ── 颜色处理模式：由插件 svgEditorPlugin({ colorMode }) 注入，默认 semantic ──
-// 用 typeof 防御：纯单元测试（不经 Vite 插件）环境下该常量未注入。
-const colorMode: ColorMode =
-  typeof __SVG_EDITOR_COLOR_MODE__ !== 'undefined' && __SVG_EDITOR_COLOR_MODE__ === 'algorithm'
-    ? 'algorithm'
-    : 'semantic'
 
 const props = defineProps({
   src: { type: String, required: true },
@@ -92,92 +83,45 @@ function toggleLeftPanel() {
 const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 
-// ── 主题切换 ──
-const { themeMode, toggleTheme } = useTheme(canvasMgr, { colorMode })
+// ── 主题切换（chrome 明暗跟随网页 .dark，SVG 暗色由按住预览按钮控制）──
+const { uiTheme, svgDark, setSvgDark, mountUiThemeSync, unmountUiThemeSync } = useTheme(canvasMgr)
 
 // ── 图层管理 ──
 const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = useLayer(canvasMgr)
-
-// ── 选择状态同步 ──
-const selection = useSelection(canvasMgr)
-const {
-  selectionInfo,
-  currentFill,
-  currentStroke,
-  currentFontSize,
-  currentFontWeight,
-  currentFontStyle,
-  currentUnderline,
-  currentTextAlign,
-  currentTextFill,
-  currentStrokeWidth,
-  currentStrokeDash,
-  currentRotation,
-  currentOpacity,
-  gradientType,
-  gradientAngle,
-  gradientColor1,
-  gradientColor2,
-  shadowEnabled,
-  shadowColor,
-  shadowBlur,
-  shadowOffsetX,
-  shadowOffsetY,
-  hasTextInSelection,
-  updateSelectionInfo,
-} = selection
 
 // ── 画布尺寸管理 ──
 const { svgWidth, svgHeight, originalViewBox, handleResize, onResizePreview, onResizeCommit } =
   useCanvasSize(canvasMgr)
 
-// ── 变更事务（withSave 独立，供 useToolbar / useClipboard / addElement 注入）──
-const { withSave } = useMutation({ canvasMgr, historyMgr, refreshLayerList })
-
-// ── 工具栏操作（聚合层：组合 history/style/text/structure 四个子 ops）──
-const {
-  undo,
-  redo,
-  deleteObj,
-  align,
-  applyFill,
-  applyStroke,
-  applyTextFill,
-  applyStrokeWidth,
-  toggleStrokeDash,
-  applyFontSize,
-  toggleBold,
-  toggleItalic,
-  toggleUnderline,
-  applyTextAlign,
-  applyRotation,
-  groupSelected,
-  ungroupSelected,
-  selectAll,
-  applyOpacity,
-  applyGradientUI,
-  toggleShadowUI,
-  applyShadowUI,
-  layerForward,
-  layerBackward,
-  layerToFront,
-  layerToBack,
-  distribute,
-} = useToolbar({
+// ── 编辑器 store（聚合 selection + toolbar + commit，供属性面板 inject）──
+const store = useEditorStore({
   canvasMgr,
   historyMgr,
   refreshLayerList,
   getSvgSize: () => ({ w: svgWidth.value, h: svgHeight.value }),
-  selection,
-  withSave,
 })
+provide(EditorStoreKey, store)
+
+// ── 从 store 解构本组件仍需复用的状态与操作 ──
+const {
+  selection,
+  updateSelectionInfo,
+  commit,
+  undo,
+  redo,
+  deleteObj,
+  selectAll,
+  toggleBold,
+  toggleItalic,
+  toggleUnderline,
+  groupSelected,
+  ungroupSelected,
+} = store
 
 // ── 剪贴板 ──
 const { copy: copyObj, paste: pasteObj } = useClipboard({
   getCanvas: () => canvasMgr.canvas,
-  afterChange: () => {
-    withSave(() => {})
-  },
+  commit,
 })
 
 // ── 保存 ──
@@ -187,8 +131,6 @@ const { saving, errorMessage, save, showError } = useSave({
   storageAdapter,
   src: props.src,
   getOriginalViewBox: () => originalViewBox.value,
-  getThemeMode: () => themeMode.value,
-  colorMode,
   onSaved: () => emit('saved'),
   onClose: () => emit('close'),
 })
@@ -200,13 +142,13 @@ function addElement(type: string) {
   const centerX = svgWidth.value / 2
   const centerY = svgHeight.value / 2
   const obj = createShape(type, centerX, centerY)
-  if (obj) {
+  if (!obj) return
+  commit((canvas) => {
     ensureObjectInteractive(obj)
-    fc.add(obj)
-    fc.setActiveObject(obj)
-    fc.renderAll()
-    withSave(() => {})
-  }
+    canvas.add(obj)
+    canvas.setActiveObject(obj)
+    canvas.renderAll()
+  })
 }
 
 // ── 编辑器状态桥接（含 EventBus 监听清理）──
@@ -214,12 +156,7 @@ const { zoomLevel, viewportVersion, canUndo, canRedo } = useEditorState(canvasMg
   onSelectionChange: updateSelectionInfo,
   onModified: (command) => {
     if (command) historyMgr.record(command)
-    else
-      historyMgr.save(
-        canvasMgr.canvas!,
-        () => {},
-        () => {}
-      )
+    else historyMgr.save(canvasMgr.canvas!)
     refreshLayerList()
   },
 })
@@ -238,15 +175,7 @@ async function loadAndInit() {
   // 拉取 + 清洗 + 预处理（下沉到 SvgLoader.loadFromUrl，issue #19 P1）
   let loaded: Awaited<ReturnType<typeof svgLoader.loadFromUrl>>
   try {
-    // 第二步（可选能力）：开启「hex 精确匹配 → 语义 token」，
-    // 让普通 hex SVG 在编辑器内对精确命中色板的颜色自动升级为语义变量
-    // （跨主题撞色 hex 会被跳过，且绝不做近似匹配）。
-    loaded = await timedAsync('svg:preprocess', () =>
-      svgLoader.loadFromUrl(url, themeMode.value, {
-        mapHexToVar: __SVG_EDITOR_MAP_HEX_TO_VAR__ === true,
-        colorMode,
-      })
-    )
+    loaded = await timedAsync('svg:preprocess', () => svgLoader.loadFromUrl(url))
   } catch (e) {
     console.error('[SvgEditor] 获取 SVG 失败:', url, e)
     loading.value = false
@@ -267,7 +196,7 @@ async function loadAndInit() {
   const h = svgHeight.value || DEFAULT_SVG_HEIGHT
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
-  const fc = canvasMgr.init(canvasEl, w, h, themeMode.value as 'light' | 'dark')
+  const fc = canvasMgr.init(canvasEl, w, h)
   fabricCanvasRef.value = fc
 
   // 集中暴露测试钩子（issue #15 第 1 条）
@@ -277,11 +206,7 @@ async function loadAndInit() {
   mountSvgObjects(fc, svg, { transform: mergeArrows })
     .then(() => {
       canvasMgr.zoomFit()
-      historyMgr.save(
-        fc,
-        () => {},
-        () => {}
-      )
+      historyMgr.save(fc)
       refreshLayerList()
     })
     .catch((e) => {
@@ -341,6 +266,8 @@ onMounted(() => {
   nextTick(() => {
     overlayRef.value?.focus()
   })
+  // 网页明暗监听下沉到 useTheme.mountUiThemeSync（监听 <html> class 变化，同步 chrome 明暗）
+  mountUiThemeSync()
   // dev-only：启动 FPS + longtask 监测，生产构建不写入
   if (import.meta.env.DEV) {
     _stopPerfMonitor = initPerfMonitor({
@@ -352,6 +279,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  unmountUiThemeSync()
   _stopPerfMonitor?.()
   keyboard.cleanup()
   clearTestHooks()
@@ -367,7 +295,7 @@ onUnmounted(() => {
     tabindex="-1"
     ref="overlayRef"
   >
-    <div class="editor-app" :class="themeMode === 'light' ? 'theme-light' : 'theme-dark'">
+    <div class="editor-app" :class="uiTheme === 'light' ? 'theme-light' : 'theme-dark'">
       <!-- 错误提示 toast -->
       <Transition name="toast-fade">
         <div v-if="errorMessage" class="editor-error-toast" role="alert">{{ errorMessage }}</div>
@@ -378,9 +306,10 @@ onUnmounted(() => {
         :zoomLevel="zoomLevel"
         :svgWidth="svgWidth"
         :svgHeight="svgHeight"
-        :selectionInfo="selectionInfo"
+        :selectionInfo="selection.selectionInfo"
         :showThemeToggle="props.showThemeToggle"
-        :themeMode="themeMode"
+        :themeMode="uiTheme"
+        :svgDark="svgDark"
         :saving="saving"
         :canUndo="canUndo"
         :canRedo="canRedo"
@@ -392,7 +321,8 @@ onUnmounted(() => {
         @zoomIn="canvasMgr.zoomIn()"
         @zoomOut="canvasMgr.zoomOut()"
         @zoomFit="canvasMgr.zoomFit()"
-        @toggleTheme="toggleTheme"
+        @previewDarkStart="setSvgDark(true)"
+        @previewDarkEnd="setSvgDark(false)"
         @save="save"
         @close="emit('close')"
         @resize="handleResize"
@@ -404,7 +334,7 @@ onUnmounted(() => {
         <EditorLeftPanel
           :canvasObjects="canvasObjects"
           :collapsed="leftPanelCollapsed"
-          :themeMode="themeMode"
+          :themeMode="uiTheme"
           @toggleCollapse="toggleLeftPanel"
           @addElement="addElement"
           @selectLayer="selectLayer"
@@ -418,7 +348,7 @@ onUnmounted(() => {
           :zoomLevel="zoomLevel"
           :canvasWidth="svgWidth"
           :canvasHeight="svgHeight"
-          :themeMode="themeMode"
+          :themeMode="uiTheme"
           :viewportVersion="viewportVersion"
           :fabricCanvas="fabricCanvasRef"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
@@ -434,65 +364,11 @@ onUnmounted(() => {
           "
         />
 
-        <!-- 右：属性面板 -->
+        <!-- 右：属性面板（经 inject store 消费选中状态与编辑操作，仅保留外观/布局 props） -->
         <EditorContextPanel
-          :selectionInfo="selectionInfo"
-          :hasTextInSelection="hasTextInSelection"
-          :currentFill="currentFill"
-          :currentStroke="currentStroke"
-          :currentFontSize="currentFontSize"
-          :currentFontWeight="currentFontWeight"
-          :currentFontStyle="currentFontStyle"
-          :currentUnderline="currentUnderline"
-          :currentTextAlign="currentTextAlign"
-          :currentTextFill="currentTextFill"
-          :currentStrokeWidth="currentStrokeWidth"
-          :currentStrokeDash="currentStrokeDash"
-          :currentRotation="currentRotation"
-          :currentOpacity="currentOpacity"
-          :gradientType="gradientType"
-          :gradientAngle="gradientAngle"
-          :gradientColor1="gradientColor1"
-          :gradientColor2="gradientColor2"
-          :shadowEnabled="shadowEnabled"
-          :shadowColor="shadowColor"
-          :shadowBlur="shadowBlur"
-          :shadowOffsetX="shadowOffsetX"
-          :shadowOffsetY="shadowOffsetY"
-          :themeMode="themeMode"
+          :themeMode="uiTheme"
           :collapsed="panelCollapsed"
           @toggleCollapse="togglePanel"
-          @align="align"
-          @layerForward="layerForward"
-          @layerBackward="layerBackward"
-          @layerToFront="layerToFront"
-          @layerToBack="layerToBack"
-          @distribute="distribute"
-          @group="groupSelected"
-          @ungroup="ungroupSelected"
-          @fill="applyFill"
-          @stroke="applyStroke"
-          @strokeWidth="applyStrokeWidth"
-          @strokeDash="toggleStrokeDash"
-          @fontSize="applyFontSize"
-          @bold="toggleBold"
-          @italic="toggleItalic"
-          @underline="toggleUnderline"
-          @textAlign="applyTextAlign"
-          @textFill="applyTextFill"
-          @rotation="applyRotation"
-          @opacity="applyOpacity"
-          @gradientChange="applyGradientUI"
-          @update:gradientType="gradientType = $event"
-          @update:gradientAngle="gradientAngle = $event"
-          @update:gradientColor1="gradientColor1 = $event"
-          @update:gradientColor2="gradientColor2 = $event"
-          @toggleShadow="toggleShadowUI"
-          @applyShadow="applyShadowUI"
-          @update:shadowColor="shadowColor = $event"
-          @update:shadowBlur="shadowBlur = $event"
-          @update:shadowOffsetX="shadowOffsetX = $event"
-          @update:shadowOffsetY="shadowOffsetY = $event"
         />
       </div>
     </div>

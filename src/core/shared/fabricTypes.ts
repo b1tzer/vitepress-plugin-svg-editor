@@ -67,28 +67,16 @@ export type { FabricObject }
 export type FabricObjectProps = Record<string, unknown>
 
 /**
- * 语义化颜色 ID 的载体属性名（SVG 字符串标记名）。
+ * 亮色真值载体：挂在 Fabric 对象上的「亮色基准色」。
  *
- * preprocessor 在 fill/stroke 属性上写入这些标记，SvgObjectMounter 的 reviver 据此
- * 读取并挂载到 Fabric 对象。两端必须引用这里的常量，避免魔法字符串跨模块耦合后
- * 一端改名、另一端静默失效。
+ * 全面转入算法变色后，语义 ID（fillVar / strokeVar）已删除，
+ * 对象仅以 fillLight / strokeLight 记录亮色真值：
+ *   - 按住预览切暗：由亮色真值经 OKLCH 亮度翻转派生暗色
+ *   - 松手 / 保存：直接写回亮色真值，保证「只保存亮色」
  */
-export const SVG_FILL_VAR_ATTR = 'data-fill-var'
-export const SVG_STROKE_VAR_ATTR = 'data-stroke-var'
-
-/**
- * 语义化颜色 ID：挂在 Fabric 对象上的 CSS 变量名标记。
- *
- * 导入时由 SvgObjectMounter 的 reviver 读取 data-fill-var / data-stroke-var 写入，
- * 作为颜色的一等身份（变量名而非 hex）；切换/导出时据此精确还原，避免 hex 撞色歧义。
- */
-export interface SvgSemanticColors {
-  /** 对象 fill 对应的 CSS 变量名（如 --diagram-accent-1），无则为 undefined */
-  fillVar?: string
-  /** 对象 stroke 对应的 CSS 变量名，无则为 undefined */
-  strokeVar?: string
-  /** 对象 fill 的「亮色真值」（保存/切回亮色时恢复的基准色），无语义或非 hex 时为 undefined */
+export interface SvgLightColors {
+  /** 对象 fill 的「亮色真值」（保存/切回亮色时恢复的基准色），非 hex 时为 undefined */
   fillLight?: string
-  /** 对象 stroke 的「亮色真值」，无语义或非 hex 时为 undefined */
+  /** 对象 stroke 的「亮色真值」，非 hex 时为 undefined */
   strokeLight?: string
 }

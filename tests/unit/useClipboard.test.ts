@@ -23,13 +23,13 @@ function createMockCanvas() {
 
 describe('useClipboard', () => {
   let canvas: ReturnType<typeof createMockCanvas>
-  let afterChange: ReturnType<typeof vi.fn>
+  let commit: ReturnType<typeof vi.fn>
   let cb: ReturnType<typeof useClipboard>
 
   beforeEach(() => {
     canvas = createMockCanvas()
-    afterChange = vi.fn()
-    cb = useClipboard({ getCanvas: () => canvas as unknown as Canvas, afterChange })
+    commit = vi.fn((fn: (fc: Canvas) => void) => fn(canvas as unknown as Canvas))
+    cb = useClipboard({ getCanvas: () => canvas as unknown as Canvas, commit })
   })
 
   it('copy 无选中对象时不应报错', async () => {
@@ -51,7 +51,7 @@ describe('useClipboard', () => {
     expect(sel.getObjects).toHaveBeenCalled()
   })
 
-  it('paste 单个对象时应 add + setActiveObject + afterChange', async () => {
+  it('paste 单个对象时应 add + setActiveObject + commit', async () => {
     const finalClone = { type: 'rect', left: 10, top: 10, set: vi.fn() }
     const clipboardClone = {
       type: 'rect',
@@ -72,7 +72,7 @@ describe('useClipboard', () => {
     await cb.paste()
     expect(canvas.add).toHaveBeenCalled()
     expect(canvas.setActiveObject).toHaveBeenCalled()
-    expect(afterChange).toHaveBeenCalled()
+    expect(commit).toHaveBeenCalled()
   })
 
   it('paste 多对象时应创建 ActiveSelection', async () => {
@@ -106,4 +106,3 @@ describe('useClipboard', () => {
     expect(active.type).toBe('activeselection')
   })
 })
-

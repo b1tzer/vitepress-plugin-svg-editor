@@ -7,75 +7,59 @@
  * 支持折叠/展开（toggle），适配明暗主题
  */
 
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { ICONS } from '../../core/shared/icons'
+import { EditorStoreKey } from '../../composables/useEditorStore'
 
 const props = defineProps<{
-  selectionInfo: string
-  hasTextInSelection: boolean
-  currentFill: string
-  currentStroke: string
-  currentFontSize: number
-  currentFontWeight: string
-  currentFontStyle: string
-  currentUnderline: boolean
-  currentTextAlign: string
-  currentTextFill: string
-  currentStrokeWidth: number
-  currentStrokeDash: boolean
-  currentRotation: number
-  currentOpacity: number
-  gradientType: string
-  gradientAngle: number
-  gradientColor1: string
-  gradientColor2: string
-  shadowEnabled: boolean
-  shadowColor: string
-  shadowBlur: number
-  shadowOffsetX: number
-  shadowOffsetY: number
   themeMode: string
   collapsed: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'align', type: string): void
-  (e: 'layerForward'): void
-  (e: 'layerBackward'): void
-  (e: 'layerToFront'): void
-  (e: 'layerToBack'): void
-  (e: 'distribute', dir: 'horizontal' | 'vertical'): void
-  (e: 'group'): void
-  (e: 'ungroup'): void
-  (e: 'fill', hex: string): void
-  (e: 'stroke', hex: string): void
-  (e: 'strokeWidth', w: number): void
-  (e: 'strokeDash'): void
-  (e: 'fontSize', size: number): void
-  (e: 'bold'): void
-  (e: 'italic'): void
-  (e: 'underline'): void
-  (e: 'textAlign', align: string): void
-  (e: 'textFill', hex: string): void
-  (e: 'rotation', angle: number): void
-  (e: 'opacity', value: number): void
-  (e: 'gradientChange'): void
-  (e: 'update:gradientType', value: string): void
-  (e: 'update:gradientAngle', value: number): void
-  (e: 'update:gradientColor1', value: string): void
-  (e: 'update:gradientColor2', value: string): void
-  (e: 'toggleShadow'): void
-  (e: 'applyShadow'): void
-  (e: 'update:shadowColor', value: string): void
-  (e: 'update:shadowBlur', value: number): void
-  (e: 'update:shadowOffsetX', value: number): void
-  (e: 'update:shadowOffsetY', value: number): void
   (e: 'toggleCollapse'): void
 }>()
 
-const hasActiveSelection = computed(() => !!props.selectionInfo)
-const isTextSelected = computed(() => props.hasTextInSelection)
+// 经 provide/inject 获取 editor store，直接消费选中状态与编辑操作（消除 prop drilling）
+const store = inject(EditorStoreKey)!
+
+const hasActiveSelection = computed(() => !!store.selection.selectionInfo)
+const isTextSelected = computed(() => store.selection.hasTextInSelection)
 const isLight = computed(() => props.themeMode === 'light')
+
+// ── 渐变/阴影的 v-model 风格更新：先写 selection state，再触发对应操作 ──
+function setGradientType(value: string) {
+  store.selection.gradientType = value as 'none' | 'linear' | 'radial'
+  store.applyGradientUI()
+}
+function setGradientColor1(value: string) {
+  store.selection.gradientColor1 = value
+  store.applyGradientUI()
+}
+function setGradientColor2(value: string) {
+  store.selection.gradientColor2 = value
+  store.applyGradientUI()
+}
+function setGradientAngle(value: number) {
+  store.selection.gradientAngle = value
+  store.applyGradientUI()
+}
+function setShadowColor(value: string) {
+  store.selection.shadowColor = value
+  store.applyShadowUI()
+}
+function setShadowBlur(value: number) {
+  store.selection.shadowBlur = value
+  store.applyShadowUI()
+}
+function setShadowOffsetX(value: number) {
+  store.selection.shadowOffsetX = value
+  store.applyShadowUI()
+}
+function setShadowOffsetY(value: number) {
+  store.selection.shadowOffsetY = value
+  store.applyShadowUI()
+}
 </script>
 
 <template>
@@ -109,24 +93,24 @@ const isLight = computed(() => props.themeMode === 'light')
       <div v-else class="context-content">
         <div class="context-section-title">布局</div>
         <div class="tool-group">
-          <button @click="emit('align', 'left')" data-tip="左对齐" aria-label="左对齐">
+          <button @click="store.align('left')" data-tip="左对齐" aria-label="左对齐">
             <span v-html="ICONS.alignLeft"></span>
           </button>
-          <button @click="emit('align', 'centerH')" data-tip="水平居中" aria-label="水平居中">
+          <button @click="store.align('centerH')" data-tip="水平居中" aria-label="水平居中">
             <span v-html="ICONS.alignCenter"></span>
           </button>
-          <button @click="emit('align', 'right')" data-tip="右对齐" aria-label="右对齐">
+          <button @click="store.align('right')" data-tip="右对齐" aria-label="右对齐">
             <span v-html="ICONS.alignRight"></span>
           </button>
         </div>
         <div class="tool-group">
-          <button @click="emit('align', 'top')" data-tip="顶对齐" aria-label="顶对齐">
+          <button @click="store.align('top')" data-tip="顶对齐" aria-label="顶对齐">
             <span v-html="ICONS.alignTop"></span>
           </button>
-          <button @click="emit('align', 'centerV')" data-tip="垂直居中" aria-label="垂直居中">
+          <button @click="store.align('centerV')" data-tip="垂直居中" aria-label="垂直居中">
             <span v-html="ICONS.alignMiddle"></span>
           </button>
-          <button @click="emit('align', 'bottom')" data-tip="底对齐" aria-label="底对齐">
+          <button @click="store.align('bottom')" data-tip="底对齐" aria-label="底对齐">
             <span v-html="ICONS.alignBottom"></span>
           </button>
         </div>
@@ -134,14 +118,14 @@ const isLight = computed(() => props.themeMode === 'light')
         <div class="context-section-title">分布</div>
         <div class="tool-group">
           <button
-            @click="emit('distribute', 'horizontal')"
+            @click="store.distribute('horizontal')"
             data-tip="水平等间距分布"
             aria-label="水平等间距分布"
           >
             <span v-html="ICONS.distributeH"></span>
           </button>
           <button
-            @click="emit('distribute', 'vertical')"
+            @click="store.distribute('vertical')"
             data-tip="垂直等间距分布"
             aria-label="垂直等间距分布"
           >
@@ -151,25 +135,25 @@ const isLight = computed(() => props.themeMode === 'light')
 
         <div class="context-section-title">层级</div>
         <div class="tool-group">
-          <button @click="emit('layerForward')" data-tip="上移一层" aria-label="上移一层">
+          <button @click="store.layerForward()" data-tip="上移一层" aria-label="上移一层">
             <span v-html="ICONS.layerUp"></span>
           </button>
-          <button @click="emit('layerBackward')" data-tip="下移一层" aria-label="下移一层">
+          <button @click="store.layerBackward()" data-tip="下移一层" aria-label="下移一层">
             <span v-html="ICONS.layerDown"></span>
           </button>
-          <button @click="emit('layerToFront')" data-tip="置顶" aria-label="置顶">
+          <button @click="store.layerToFront()" data-tip="置顶" aria-label="置顶">
             <span v-html="ICONS.layerTop"></span>
           </button>
-          <button @click="emit('layerToBack')" data-tip="置底" aria-label="置底">
+          <button @click="store.layerToBack()" data-tip="置底" aria-label="置底">
             <span v-html="ICONS.layerBottom"></span>
           </button>
         </div>
         <div class="tool-group">
-          <button @click="emit('group')" data-tip="组合 (Ctrl+G)" aria-label="组合 Ctrl+G">
+          <button @click="store.groupSelected()" data-tip="组合 (Ctrl+G)" aria-label="组合 Ctrl+G">
             <span v-html="ICONS.group"></span>
           </button>
           <button
-            @click="emit('ungroup')"
+            @click="store.ungroupSelected()"
             data-tip="取消组合 (Ctrl+Shift+G)"
             aria-label="取消组合 Ctrl+Shift+G"
           >
@@ -183,8 +167,8 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">填充</span>
             <input
               type="color"
-              :value="currentFill"
-              @input="emit('fill', ($event.target as HTMLInputElement).value)"
+              :value="store.selection.currentFill"
+              @input="store.applyFill(($event.target as HTMLInputElement).value)"
               aria-label="填充颜色"
             />
           </div>
@@ -192,8 +176,8 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">边框</span>
             <input
               type="color"
-              :value="currentStroke"
-              @input="emit('stroke', ($event.target as HTMLInputElement).value)"
+              :value="store.selection.currentStroke"
+              @input="store.applyStroke(($event.target as HTMLInputElement).value)"
               aria-label="边框颜色"
             />
           </div>
@@ -201,8 +185,8 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">粗细</span>
             <select
               class="prop-select"
-              :value="currentStrokeWidth"
-              @change="emit('strokeWidth', +($event.target as HTMLSelectElement).value)"
+              :value="store.selection.currentStrokeWidth"
+              @change="store.applyStrokeWidth(+($event.target as HTMLSelectElement).value)"
               aria-label="边框粗细"
             >
               <option v-for="w in [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]" :key="w" :value="w">
@@ -213,9 +197,9 @@ const isLight = computed(() => props.themeMode === 'light')
           <div class="prop-row">
             <span class="label">虚线</span>
             <button
-              @click="emit('strokeDash')"
+              @click="store.toggleStrokeDash()"
               data-tip="虚线"
-              :class="{ active: currentStrokeDash }"
+              :class="{ active: store.selection.currentStrokeDash }"
               aria-label="切换虚线"
             >
               <span v-html="ICONS.dashed"></span>
@@ -229,8 +213,8 @@ const isLight = computed(() => props.themeMode === 'light')
               <input
                 type="number"
                 class="prop-number"
-                :value="currentRotation"
-                @change="emit('rotation', +($event.target as HTMLInputElement).value)"
+                :value="store.selection.currentRotation"
+                @change="store.applyRotation(+($event.target as HTMLInputElement).value)"
                 min="-360"
                 max="360"
                 step="15"
@@ -245,14 +229,14 @@ const isLight = computed(() => props.themeMode === 'light')
               <input
                 type="range"
                 class="prop-range"
-                :value="currentOpacity"
-                @input="emit('opacity', +($event.target as HTMLInputElement).value)"
+                :value="store.selection.currentOpacity"
+                @input="store.applyOpacity(+($event.target as HTMLInputElement).value)"
                 min="0"
                 max="100"
                 step="1"
                 aria-label="透明度"
               />
-              <span class="info">{{ currentOpacity }}%</span>
+              <span class="info">{{ store.selection.currentOpacity }}%</span>
             </div>
           </div>
 
@@ -261,11 +245,8 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">类型</span>
             <select
               class="prop-select"
-              :value="gradientType"
-              @change="
-                (emit('update:gradientType', ($event.target as HTMLSelectElement).value),
-                emit('gradientChange'))
-              "
+              :value="store.selection.gradientType"
+              @change="setGradientType(($event.target as HTMLSelectElement).value)"
               aria-label="渐变类型"
             >
               <option value="none">纯色</option>
@@ -273,16 +254,13 @@ const isLight = computed(() => props.themeMode === 'light')
               <option value="radial">径向渐变</option>
             </select>
           </div>
-          <template v-if="gradientType !== 'none'">
+          <template v-if="store.selection.gradientType !== 'none'">
             <div class="prop-row">
               <span class="label">颜色1</span>
               <input
                 type="color"
-                :value="gradientColor1"
-                @input="
-                  (emit('update:gradientColor1', ($event.target as HTMLInputElement).value),
-                  emit('gradientChange'))
-                "
+                :value="store.selection.gradientColor1"
+                @input="setGradientColor1(($event.target as HTMLInputElement).value)"
                 aria-label="渐变颜色1"
               />
             </div>
@@ -290,25 +268,19 @@ const isLight = computed(() => props.themeMode === 'light')
               <span class="label">颜色2</span>
               <input
                 type="color"
-                :value="gradientColor2"
-                @input="
-                  (emit('update:gradientColor2', ($event.target as HTMLInputElement).value),
-                  emit('gradientChange'))
-                "
+                :value="store.selection.gradientColor2"
+                @input="setGradientColor2(($event.target as HTMLInputElement).value)"
                 aria-label="渐变颜色2"
               />
             </div>
-            <div v-if="gradientType === 'linear'" class="prop-row">
+            <div v-if="store.selection.gradientType === 'linear'" class="prop-row">
               <span class="label">角度</span>
               <div class="prop-input-group">
                 <input
                   type="number"
                   class="prop-number"
-                  :value="gradientAngle"
-                  @change="
-                    (emit('update:gradientAngle', +($event.target as HTMLInputElement).value),
-                    emit('gradientChange'))
-                  "
+                  :value="store.selection.gradientAngle"
+                  @change="setGradientAngle(+($event.target as HTMLInputElement).value)"
                   min="0"
                   max="360"
                   step="15"
@@ -323,24 +295,21 @@ const isLight = computed(() => props.themeMode === 'light')
           <div class="prop-row">
             <span class="label">启用</span>
             <button
-              @click="emit('toggleShadow')"
+              @click="store.toggleShadowUI()"
               data-tip="阴影"
-              :class="{ active: shadowEnabled }"
+              :class="{ active: store.selection.shadowEnabled }"
               aria-label="切换阴影"
             >
               <span v-html="ICONS.shadow"></span>
             </button>
           </div>
-          <template v-if="shadowEnabled">
+          <template v-if="store.selection.shadowEnabled">
             <div class="prop-row">
               <span class="label">颜色</span>
               <input
                 type="color"
-                :value="shadowColor"
-                @input="
-                  (emit('update:shadowColor', ($event.target as HTMLInputElement).value),
-                  emit('applyShadow'))
-                "
+                :value="store.selection.shadowColor"
+                @input="setShadowColor(($event.target as HTMLInputElement).value)"
                 aria-label="阴影颜色"
               />
             </div>
@@ -349,11 +318,8 @@ const isLight = computed(() => props.themeMode === 'light')
               <input
                 type="number"
                 class="prop-number"
-                :value="shadowBlur"
-                @change="
-                  (emit('update:shadowBlur', +($event.target as HTMLInputElement).value),
-                  emit('applyShadow'))
-                "
+                :value="store.selection.shadowBlur"
+                @change="setShadowBlur(+($event.target as HTMLInputElement).value)"
                 min="0"
                 max="50"
                 aria-label="阴影模糊"
@@ -364,11 +330,8 @@ const isLight = computed(() => props.themeMode === 'light')
               <input
                 type="number"
                 class="prop-number"
-                :value="shadowOffsetX"
-                @change="
-                  (emit('update:shadowOffsetX', +($event.target as HTMLInputElement).value),
-                  emit('applyShadow'))
-                "
+                :value="store.selection.shadowOffsetX"
+                @change="setShadowOffsetX(+($event.target as HTMLInputElement).value)"
                 min="-50"
                 max="50"
                 aria-label="阴影X偏移"
@@ -379,11 +342,8 @@ const isLight = computed(() => props.themeMode === 'light')
               <input
                 type="number"
                 class="prop-number"
-                :value="shadowOffsetY"
-                @change="
-                  (emit('update:shadowOffsetY', +($event.target as HTMLInputElement).value),
-                  emit('applyShadow'))
-                "
+                :value="store.selection.shadowOffsetY"
+                @change="setShadowOffsetY(+($event.target as HTMLInputElement).value)"
                 min="-50"
                 max="50"
                 aria-label="阴影Y偏移"
@@ -398,8 +358,8 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">字号</span>
             <select
               class="prop-select"
-              :value="currentFontSize"
-              @change="emit('fontSize', +($event.target as HTMLSelectElement).value)"
+              :value="store.selection.currentFontSize"
+              @change="store.applyFontSize(+($event.target as HTMLSelectElement).value)"
               aria-label="字号"
             >
               <option
@@ -415,25 +375,25 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">样式</span>
             <div class="tool-group">
               <button
-                @click="emit('bold')"
+                @click="store.toggleBold()"
                 data-tip="加粗"
-                :class="{ active: currentFontWeight === 'bold' }"
+                :class="{ active: store.selection.currentFontWeight === 'bold' }"
                 aria-label="加粗 Ctrl+B"
               >
                 <span v-html="ICONS.bold"></span>
               </button>
               <button
-                @click="emit('italic')"
+                @click="store.toggleItalic()"
                 data-tip="斜体"
-                :class="{ active: currentFontStyle === 'italic' }"
+                :class="{ active: store.selection.currentFontStyle === 'italic' }"
                 aria-label="斜体 Ctrl+I"
               >
                 <span v-html="ICONS.italic"></span>
               </button>
               <button
-                @click="emit('underline')"
+                @click="store.toggleUnderline()"
                 data-tip="下划线"
-                :class="{ active: currentUnderline }"
+                :class="{ active: store.selection.currentUnderline }"
                 aria-label="下划线 Ctrl+U"
               >
                 <span v-html="ICONS.underline"></span>
@@ -444,8 +404,8 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">颜色</span>
             <input
               type="color"
-              :value="currentTextFill"
-              @input="emit('textFill', ($event.target as HTMLInputElement).value)"
+              :value="store.selection.currentTextFill"
+              @input="store.applyTextFill(($event.target as HTMLInputElement).value)"
               aria-label="文字颜色"
             />
           </div>
@@ -453,25 +413,25 @@ const isLight = computed(() => props.themeMode === 'light')
             <span class="label">对齐</span>
             <div class="tool-group">
               <button
-                @click="emit('textAlign', 'left')"
+                @click="store.applyTextAlign('left')"
                 data-tip="文字左对齐"
-                :class="{ active: currentTextAlign === 'left' }"
+                :class="{ active: store.selection.currentTextAlign === 'left' }"
                 aria-label="左对齐"
               >
                 <span v-html="ICONS.textLeft"></span>
               </button>
               <button
-                @click="emit('textAlign', 'center')"
+                @click="store.applyTextAlign('center')"
                 data-tip="文字居中"
-                :class="{ active: currentTextAlign === 'center' }"
+                :class="{ active: store.selection.currentTextAlign === 'center' }"
                 aria-label="居中"
               >
                 <span v-html="ICONS.textCenter"></span>
               </button>
               <button
-                @click="emit('textAlign', 'right')"
+                @click="store.applyTextAlign('right')"
                 data-tip="文字右对齐"
-                :class="{ active: currentTextAlign === 'right' }"
+                :class="{ active: store.selection.currentTextAlign === 'right' }"
                 aria-label="右对齐"
               >
                 <span v-html="ICONS.textRight"></span>

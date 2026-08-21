@@ -1,6 +1,7 @@
 /**
  * useTheme 单元测试
- * 覆盖：初始主题、主题切换、颜色映射替换、workspace 主题更新
+ * 覆盖：uiTheme 初始跟随网页 .dark、svgDark 默认亮色、
+ * setSvgDark 按住预览 OKLCH 翻转 / 松手恢复亮色真值、workspace 主题更新
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTheme } from '../../src/composables/useTheme'
@@ -20,62 +21,120 @@ describe('useTheme', () => {
 
   beforeEach(() => {
     canvasMgr = createMockCanvasMgr()
+    // 确保干净环境：移除 .dark
+    document.documentElement.classList.remove('dark')
   })
 
-  it('无 dark class 时初始主题应为 light', () => {
-    const { themeMode } = useTheme(canvasMgr as any)
-    expect(themeMode.value).toBe('light')
+  it('无 dark class 时 uiTheme 初始应为 light，svgDark 默认 false', () => {
+    const { uiTheme, svgDark } = useTheme(canvasMgr as any)
+    expect(uiTheme.value).toBe('light')
+    expect(svgDark.value).toBe(false)
   })
 
-  it('toggleTheme 应切换主题模式', () => {
-    const { themeMode, toggleTheme } = useTheme(canvasMgr as any)
-    toggleTheme()
-    expect(themeMode.value).toBe('dark')
-    toggleTheme()
-    expect(themeMode.value).toBe('light')
-  })
-
-  it('toggleTheme 应调用 updateWorkspaceTheme（light→dark 传 false）', () => {
-    const { toggleTheme } = useTheme(canvasMgr as any)
-    toggleTheme()
+  it('setSvgDark(true) 应调用 updateWorkspaceTheme(false)', () => {
+    const { setSvgDark } = useTheme(canvasMgr as any)
+    setSvgDark(true)
     expect(canvasMgr.updateWorkspaceTheme).toHaveBeenCalledWith(false)
   })
 
-  it('toggleTheme 应遍历对象替换颜色', () => {
+  it('setSvgDark(false) 应调用 updateWorkspaceTheme(true) 恢复亮色', () => {
+    const { setSvgDark } = useTheme(canvasMgr as any)
+    setSvgDark(true)
+    setSvgDark(false)
+    expect(canvasMgr.updateWorkspaceTheme).toHaveBeenCalledWith(true)
+  })
+
+  it('setSvgDark 相同状态应等幂（不重复触发）', () => {
+    const { setSvgDark } = useTheme(canvasMgr as any)
+    setSvgDark(true)
+    setSvgDark(true)
+    expect(canvasMgr.updateWorkspaceTheme).toHaveBeenCalledTimes(1)
+  })
+
+  it('setSvgDark(true) 应遍历对象将 fill 做 OKLCH 亮度翻转', () => {
     const obj = {
       type: 'rect',
       fill: '#FFFFFF',
-      stroke: '#333333',
+      stroke: '',
       excludeFromExport: false,
       set: vi.fn(),
     }
     canvasMgr.canvas.getObjects.mockReturnValue([obj])
 
-    const { toggleTheme } = useTheme(canvasMgr as any)
-    toggleTheme()
+    const { setSvgDark } = useTheme(canvasMgr as any)
+    setSvgDark(true)
 
-    // fill 与 stroke 均为字符串颜色，应触发 set 替换
-    expect(obj.set).toHaveBeenCalled()
+    // #FFFFFF 经 OKLCH 亮度翻转 → #000000（不再走语义色板映射）
+    expect(obj.set).toHaveBeenCalledWith('fill', '#000000')
   })
 
-  it('toggleTheme 应跳过 excludeFromExport 对象', () => {
+  it('setSvgDark 往返后应恢复亮色真值', () => {
+    const obj = {
+      type: 'rect',
+      fill: '#FFFFFF',
+      stroke: '',
+      excludeFromExport: false,
+      set: vi.fn(),
+    }
+    canvasMgr.canvas.getObjects.mockReturnValue([obj])
+
+    const { setSvgDark } = useTheme(canvasMgr as any)
+    setSvgDark(true)
+    obj.set.mockClear()
+    setSvgDark(false)
+
+    // 松手恢复：直接写回 fillLight 亮色真值 #FFFFFF
+    expect(obj.set).toHaveBeenCalledWith('fill', '#FFFFFF')
+  })
+
+  it('setSvgDark 应跳过 excludeFromExport 对象', () => {
     const obj = { type: 'rect', fill: '#FFFFFF', stroke: '', excludeFromExport: true, set: vi.fn() }
     canvasMgr.canvas.getObjects.mockReturnValue([obj])
 
-    const { toggleTheme } = useTheme(canvasMgr as any)
-    toggleTheme()
+    const { setSvgDark } = useTheme(canvasMgr as any)
+    setSvgDark(true)
 
     expect(obj.set).not.toHaveBeenCalled()
   })
 
-  it('纯算法模式下应跳过色板精确映射，走 OKLCH 亮度翻转', () => {
-    const obj = { type: 'rect', fill: '#FFFFFF', excludeFromExport: false, set: vi.fn() }
-    canvasMgr.canvas.getObjects.mockReturnValue([obj])
+  it('syncUiTheme 应根据当前 .dark class 同步 uiTheme', () => {
+    const { uiTheme, syncUiTheme } = useTheme(canvasMgr as any)
+    expect(uiTheme.value).toBe('light')
 
-    const { toggleTheme } = useTheme(canvasMgr as any, { colorMode: 'algorithm' })
-    toggleTheme()
+    document.documentElement.classList.add('dark')
+    syncUiTheme()
+    expect(uiTheme.value).toBe('dark')
 
-    // #FFFFFF 语义模式会映射到 #1A1A1A（surface-1），算法模式应翻转到 #000000
-    expect(obj.set).toHaveBeenCalledWith('fill', '#000000')
+    document.documentElement.classList.remove('dark')
+    syncUiTheme()
+    expect(uiTheme.value).toBe('light')
+  })
+
+  it('mountUiThemeSync 后，网页 .dark class 变化应自动同步 uiTheme', async () => {
+    const { uiTheme, mountUiThemeSync, unmountUiThemeSync } = useTheme(canvasMgr as any)
+    mountUiThemeSync()
+
+    document.documentElement.classList.add('dark')
+    await vi.waitFor(() => {
+      expect(uiTheme.value).toBe('dark')
+    })
+
+    document.documentElement.classList.remove('dark')
+    await vi.waitFor(() => {
+      expect(uiTheme.value).toBe('light')
+    })
+
+    unmountUiThemeSync()
+  })
+
+  it('unmountUiThemeSync 后，class 变化不再触发 uiTheme 同步', async () => {
+    const { uiTheme, mountUiThemeSync, unmountUiThemeSync } = useTheme(canvasMgr as any)
+    mountUiThemeSync()
+    unmountUiThemeSync()
+
+    document.documentElement.classList.add('dark')
+    // 等待足够的异步周期，确保即便有残留 observer 也已触发完毕
+    await new Promise((r) => setTimeout(r, 20))
+    expect(uiTheme.value).toBe('light')
   })
 })

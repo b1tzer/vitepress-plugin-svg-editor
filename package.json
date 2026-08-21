@@ -1,6 +1,6 @@
 {
   "name": "vitepress-plugin-svg-editor",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": false,
   "type": "module",
   "description": "A VitePress plugin that provides interactive SVG editing capabilities directly in Markdown",
@@ -42,8 +42,7 @@
       "types": "./dist/plugins/index.d.ts",
       "import": "./dist/plugins/index.mjs",
       "require": "./dist/plugins/index.cjs"
-    },
-    "./styles/*": "./src/styles/*"
+    }
   },
   "files": [
     "dist",
@@ -53,7 +52,6 @@
     "src/core",
     "src/utils",
     "src/plugins",
-    "src/styles",
     "src/adapters",
     "src/env.d.ts"
   ],

@@ -352,6 +352,9 @@ function drawRuler() {
 // ── 画布区域外滚轮/框选事件代理 ──
 let _injectDragging = false
 
+// 画布空白区滚轮缩放（外通道）：仅当指针未落在 Fabric 对象上时才会走到这里，
+// 因为 Fabric 的 mouse:wheel 内部已 stopPropagation 阻断冒泡。
+// 与画布内通道（CanvasManager._setupCanvasEvents）互补，转发给 injectWheel 处理。
 function onCanvasWheel(e: WheelEvent) {
   e.preventDefault()
   emit('canvasWheel', e.deltaY)

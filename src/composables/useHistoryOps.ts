@@ -1,7 +1,7 @@
 /**
  * 历史操作 composable — undo / redo / 删除对象（issue #19 P2）
  *
- * 从 useToolbar 中拆出的「历史与删除」职责，注入 withSave（来自 useMutation），
+ * 从 useToolbar 中拆出的「历史与删除」职责，注入 commit（来自 useMutation），
  * 与样式/文本/结构操作解耦，保持依赖单向流动。
  */
 
@@ -18,11 +18,11 @@ export interface UseHistoryOpsDeps {
   /** 图层列表刷新 */
   refreshLayerList: () => void
   /** 变更事务（来自 useMutation） */
-  withSave: (fn: (fc: Canvas) => void) => void
+  commit: (fn: (fc: Canvas) => void) => void
 }
 
 export function useHistoryOps(deps: UseHistoryOpsDeps) {
-  const { canvasMgr, historyMgr, getSvgSize, refreshLayerList, withSave } = deps
+  const { canvasMgr, historyMgr, getSvgSize, refreshLayerList, commit } = deps
 
   function undo() {
     historyMgr.undo(canvasMgr.canvas!, () => {
@@ -44,14 +44,17 @@ export function useHistoryOps(deps: UseHistoryOpsDeps) {
     const fc = canvasMgr.canvas
     const a = fc?.getActiveObject()
     if (!a) return
-    if (a.type === FABRIC_TYPE.ACTIVE_SELECTION) {
-      ;(a as ActiveSelection).forEachObject((o) => fc!.remove(o))
-      fc!.discardActiveObject()
-    } else {
-      fc!.remove(a)
-    }
-    fc!.renderAll()
-    withSave(() => {})
+    commit((canvas) => {
+      const active = canvas.getActiveObject()
+      if (!active) return
+      if (active.type === FABRIC_TYPE.ACTIVE_SELECTION) {
+        ;(active as ActiveSelection).forEachObject((o) => canvas.remove(o))
+        canvas.discardActiveObject()
+      } else {
+        canvas.remove(active)
+      }
+      canvas.renderAll()
+    })
   }
 
   return { undo, redo, deleteObj }

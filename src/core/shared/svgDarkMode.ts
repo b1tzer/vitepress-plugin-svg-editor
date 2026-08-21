@@ -5,33 +5,18 @@
  * 通过运行时派生暗色，实现「编辑器所见 = 页面所得」的闭环。
  *
  * 与编辑器内 useTheme 的区别：
- *   - 编辑器：遍历 Fabric 对象，双向明暗切换（用户可在任意主题下编辑）
+ *   - 编辑器：遍历 Fabric 对象，按住预览按钮时切暗、松手恢复亮色
  *   - 展示层：遍历 SVG DOM，单向派生（文件永远是亮色真值，暗色由运行时生成）
  *
- * 颜色处理分轨（与保存侧对称）：
- *   - var(--diagram-*) → 跳过，交给已注入的 diagram-vars.css 随 .dark 自动切换
- *   - 裸 hex → 命中语义色板走 LIGHT_TO_DARK 精确映射，未命中走 OKLCH 亮度翻转
+ * 颜色处理：
+ *   - var(--*, fallback) → 跳过，交给 CSS 变量自动切换
+ *   - 裸 hex → 一律走 OKLCH 亮度翻转（不再有语义色板精确映射）
  *
  * 关键设计：收集阶段记录「原始亮色值」，应用阶段按主题写回原始值或派生暗色值，
  * 因此切回亮色时直接恢复原始值，无需反向计算，也无需记忆化往返缓存。
  */
 
-import { THEME_VAR_TO_HEX, resolveCssVarsToHex, lightHexToDark } from './colors'
-
-/** 6 位 hex（#RRGGBB，大小写不敏感） */
-const HEX_COLOR_RE = /^#([0-9a-f]{6})$/i
-
-/**
- * 纯算法模式专用：把 SVG 中的 var(--diagram-*) 解析为亮色 hex（不保留语义 ID）。
- *
- * 展示层直接 v-html 渲染原始 SVG，`var()` 会被浏览器交给 CSS 变量切换；
- * 纯算法模式要「忽略变量、只走 OKLCH」，必须先在此把 var() 换成亮色 hex，
- * 后续 collectSvgColorEntries 才能收集这些 hex 并做 OKLCH 亮度翻转。
- * 带 fallback 的外部变量（如 var(--vp-c-brand-1, #2563eb)）取 fallback。
- */
-export function resolveVarsToLightHex(svg: string): string {
-  return resolveCssVarsToHex(svg, THEME_VAR_TO_HEX.light)
-}
+import { lightHexToDark, isHexColor } from './colors'
 
 /** 需要跳过、交由 CSS/浏览器处理的颜色值 */
 function isProcessableColor(value: string): boolean {
@@ -41,7 +26,7 @@ function isProcessableColor(value: string): boolean {
   if (v.includes('var(')) return false // 语义变量 → CSS 自动切换
   if (v.includes('url(')) return false // 渐变/图案引用
   if (v === 'none' || v === 'transparent' || v === 'currentColor' || v === 'inherit') return false
-  return HEX_COLOR_RE.test(v)
+  return isHexColor(v)
 }
 
 /** 单个颜色入口：记录原始亮色值 + 派生暗色值 + 写回函数（闭包） */
@@ -68,8 +53,9 @@ const COLOR_PROPS = ['fill', 'stroke', 'stop-color'] as const
  */
 function collectStyleColors(styleAttr: string): Map<string, string> {
   const map = new Map<string, string>()
-  // 精确匹配 fill/stroke/stop-color 后紧跟冒号（排除 fill-rule/stroke-width 等）
-  const re = /(fill|stroke|stop-color)\s*:\s*(#[0-9a-fA-F]{6})/g
+  // 精确匹配 fill/stroke/stop-color 后紧跟冒号（排除 fill-rule/stroke-width 等）。
+  // 支持 6 位与 3 位 hex；负向边界 (?![0-9a-fA-F]) 防止 3 位分支截断 6 位色值。
+  const re = /(fill|stroke|stop-color)\s*:\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})(?![0-9a-fA-F])/g
   let m: RegExpExecArray | null
   while ((m = re.exec(styleAttr)) !== null) {
     if (!map.has(m[1])) {
@@ -87,7 +73,7 @@ function collectStyleColors(styleAttr: string): Map<string, string> {
  *
  * @param root 包含 <svg> 的容器元素（或 <svg> 自身）
  */
-export function collectSvgColorEntries(root: Element, algorithmOnly = false): SvgColorEntry[] {
+export function collectSvgColorEntries(root: Element): SvgColorEntry[] {
   const entries: SvgColorEntry[] = []
   const elements = root.querySelectorAll('*')
   elements.forEach((el) => {
@@ -97,7 +83,7 @@ export function collectSvgColorEntries(root: Element, algorithmOnly = false): Sv
 
     // style 来源
     for (const [prop, hex] of styleColors) {
-      entries.push(makeEntry(svgEl, 'style', prop, hex, algorithmOnly))
+      entries.push(makeEntry(svgEl, 'style', prop, hex))
     }
 
     // 属性来源：仅当 style 中无该 prop 时回退
@@ -105,7 +91,7 @@ export function collectSvgColorEntries(root: Element, algorithmOnly = false): Sv
       if (styleColors.has(prop)) continue
       const attr = el.getAttribute(prop)
       if (attr && isProcessableColor(attr)) {
-        entries.push(makeEntry(svgEl, 'attr', prop, attr.trim(), algorithmOnly))
+        entries.push(makeEntry(svgEl, 'attr', prop, attr.trim()))
       }
     }
   })
@@ -117,12 +103,11 @@ function makeEntry(
   el: SVGElement,
   kind: 'style' | 'attr',
   prop: string,
-  original: string,
-  algorithmOnly = false
+  original: string
 ): SvgColorEntry {
   return {
     original,
-    dark: lightHexToDark(original, algorithmOnly),
+    dark: lightHexToDark(original),
     apply(value: string) {
       if (kind === 'style') {
         el.style.setProperty(prop, value)

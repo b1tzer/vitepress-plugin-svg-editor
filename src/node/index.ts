@@ -11,7 +11,6 @@ import path from 'path'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin, ViteDevServer } from 'vite'
 import type MarkdownIt from 'markdown-it'
-import type { ColorMode } from '../core/shared/types'
 
 export interface SvgEditorPluginOptions {
   /**
@@ -27,21 +26,6 @@ export interface SvgEditorPluginOptions {
 
   /** 是否注册 markdown-it 图片拦截（默认 true） */
   markdownSyntax?: boolean
-
-  /**
-   * 是否开启「hex 精确匹配 → 语义 token」升级（默认 false，显式开启才生效）。
-   * 开启后，对色板中精确命中的裸 hex（fill/stroke）自动打上语义标记，
-   * 使普通 hex SVG 也能获得明暗自适应能力；跨主题撞色 hex 会被跳过。
-   * 注意：仅在 colorMode === 'semantic' 时生效。
-   */
-  mapHexToVar?: boolean
-
-  /**
-   * 颜色处理模式（默认 'semantic'）。
-   * - 'semantic'：语义 token 优先，var(--diagram-*) 保留语义 ID，明暗按色板精确映射 + OKLCH 兜底。
-   * - 'algorithm'：纯算法模式，忽略语义变量，全程只用 OKLCH 亮度翻转计算明暗，不保留/不还原 var()。
-   */
-  colorMode?: ColorMode
 }
 
 /** 最大请求体大小（与 SvgLoader 的 10MB 上限对齐），防止内存 DoS */
@@ -79,8 +63,6 @@ export function resolveSafeSvgPath(publicDir: string, svgPath: string): string |
 export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): Plugin {
   const storage = options.storage || 'vitepress'
   const saveEndpoint = options.saveEndpoint || '/__svg-save__'
-  const mapHexToVar = options.mapHexToVar === true
-  const colorMode: ColorMode = options.colorMode === 'algorithm' ? 'algorithm' : 'semantic'
 
   return {
     name: 'vitepress-plugin-svg-editor',
@@ -170,12 +152,6 @@ export function svgEditorPlugin(options: SvgEditorPluginOptions = {}): Plugin {
         define: {
           __SVG_EDITOR_STORAGE__: JSON.stringify(storage),
           __SVG_EDITOR_SAVE_ENDPOINT__: JSON.stringify(saveEndpoint),
-          // 「hex 精确匹配 → 语义 token」开关：默认 false（普通 hex SVG 保持原样），
-          // 显式 svgEditorPlugin({ mapHexToVar: true }) 时才开启升级为语义色。
-          __SVG_EDITOR_MAP_HEX_TO_VAR__: JSON.stringify(mapHexToVar),
-          // 颜色处理模式：默认 'semantic'（语义 token 优先），
-          // 显式 svgEditorPlugin({ colorMode: 'algorithm' }) 时走纯 OKLCH 算法。
-          __SVG_EDITOR_COLOR_MODE__: JSON.stringify(colorMode),
           // E2E 测试模式开关：仅当显式设置 SVG_EDITOR_E2E=1 时才为 true，使 vitepress preview
           // 静态产物也能暴露测试钩子（testHooks.ts）并渲染「编辑 SVG」按钮（SvgDiagram.vue）。
           // 真正发布给使用者的构建不设置该变量，二者均关闭（配合 import.meta.env.DEV 的
