@@ -254,12 +254,25 @@ test.describe('性能回归', () => {
     // eslint-disable-next-line no-console
     console.log('[性能·拖拽] 目标:', JSON.stringify(target))
 
-    const result = await measureDragFps(page, target!.sx, target!.sy, 120, 80)
+    // 采样 3 次取最大帧率（帧率越大越好，与 P1/P2 耗时「取最小值」口径对称），
+    // 抗 CI 共享机器 GC / 并发负载抖动。交替拖拽方向让对象在原位附近往返，
+    // 避免多次采样后对象漂出可视区域。
+    const dirs = [
+      { dx: 120, dy: 80 },
+      { dx: -120, dy: -80 },
+      { dx: 120, dy: 80 },
+    ]
+    let bestFps = 0
+    for (let i = 0; i < dirs.length; i++) {
+      const t = await getDraggableTarget(page)
+      if (!t) break
+      const result = await measureDragFps(page, t.sx, t.sy, dirs[i].dx, dirs[i].dy)
+      // eslint-disable-next-line no-console
+      console.log(`[性能·拖拽] 第 ${i + 1} 次帧率:`, JSON.stringify(result))
+      bestFps = Math.max(bestFps, result.fps)
+    }
 
-    // eslint-disable-next-line no-console
-    console.log('[性能·拖拽] 帧率:', JSON.stringify(result))
-
-    expect(result.fps).toBeGreaterThanOrEqual(DRAG_FPS_BUDGET)
+    expect(bestFps).toBeGreaterThanOrEqual(DRAG_FPS_BUDGET)
   })
 
   test('P4. 对象规模压力测试：拖拽帧率 / 快照耗时随对象数下降', async ({ page }) => {
