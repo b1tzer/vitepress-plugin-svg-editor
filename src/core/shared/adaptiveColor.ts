@@ -10,7 +10,7 @@
  *   - 仅对「色域内颜色」自逆：高饱和边界色（如 #FF0000）翻转后会被推出 sRGB
  *     色域，裁剪丢失信息导致往返无法精确恢复。因此本函数只负责「计算一次」，
  *     往返等幂需由调用方（useTheme）配合双向记忆化缓存保证——不要在此依赖自逆。
- *   - 仅处理 6 位 hex（#RRGGBB），rgba/transparent/none/3 位 hex 原样返回
+ *   - 仅处理 hex（6 位 #RRGGBB 或 3 位 #RGB），rgba/transparent/none 原样返回
  *
  * 为什么用 OKLCH 而非 HSL：
  *   - HSL 同 L 值的黄/蓝肉眼亮度差 20%+，调 L 会掉饱和度、色相漂移
@@ -34,16 +34,39 @@ export interface Oklch {
 
 /** 6 位 hex 匹配（#RRGGBB，大小写不敏感） */
 const HEX_RE = /^#([0-9a-f]{6})$/i
+/** 3 位 hex 匹配（#RGB，大小写不敏感），SVG 中常见的短写法 */
+const HEX3_RE = /^#([0-9a-f]{3})$/i
+
+/**
+ * 判断字符串是否为合法 hex 颜色（6 位 #RRGGBB 或 3 位 #RGB，大小写不敏感）。
+ *
+ * 供 svgDarkMode / SvgObjectMounter 等「识别裸 hex」的模块复用，
+ * 统一 hex 识别口径，避免各处散落不一致的 hex 正则（3 位短写法漏识别）。
+ *
+ * @param value 待判断的颜色字符串（可为 attribute 值 / style 值）
+ */
+export function isHexColor(value: string): boolean {
+  const v = value.trim()
+  return HEX_RE.test(v) || HEX3_RE.test(v)
+}
 
 /**
  * hex → RGB
- * @param hex 形如 "#RRGGBB"
+ * @param hex 形如 "#RRGGBB" 或 "#RGB"（3 位短写法自动展开为 6 位）
  * @returns RGB 通道；非法输入返回 null
  */
 export function hexToRgb(hex: string): Rgb | null {
-  const m = HEX_RE.exec(hex.trim())
-  if (!m) return null
-  const v = parseInt(m[1], 16)
+  const trimmed = hex.trim()
+  const m = HEX_RE.exec(trimmed)
+  if (m) {
+    const v = parseInt(m[1], 16)
+    return { r: (v >> 16) & 0xff, g: (v >> 8) & 0xff, b: v & 0xff }
+  }
+  const m3 = HEX3_RE.exec(trimmed)
+  if (!m3) return null
+  // 3 位短写法展开：#RGB → #RRGGBB
+  const [r, g, b] = m3[1].split('')
+  const v = parseInt(`${r}${r}${g}${g}${b}${b}`, 16)
   return { r: (v >> 16) & 0xff, g: (v >> 8) & 0xff, b: v & 0xff }
 }
 
@@ -136,9 +159,10 @@ export function oklchToRgb({ l: L, c: C, h: H }: Oklch): Rgb {
  *
  * - 仅对色域内颜色自逆；高饱和边界色会因 sRGB 色域裁剪丢信息，往返等幂需由
  *   调用方（useTheme）配合双向记忆化缓存保证。
- * - 仅接受 6 位 hex，其余输入（rgba / transparent / none / 3 位 hex）原样返回
+ * - 接受 6 位（#RRGGBB）与 3 位（#RGB）hex，其余输入（rgba / transparent / none）
+ *   原样返回
  *
- * @param hex 形如 "#RRGGBB"
+ * @param hex 形如 "#RRGGBB" 或 "#RGB"
  * @returns 翻转亮度后的 "#RRGGBB"；非法输入原样返回
  */
 export function adaptColorLuminance(hex: string): string {

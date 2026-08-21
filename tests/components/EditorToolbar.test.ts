@@ -10,6 +10,7 @@ const defaultProps = {
   selectionInfo: '',
   showThemeToggle: true,
   themeMode: 'light',
+  svgDark: false,
   saving: false,
   canUndo: false,
   canRedo: false,
@@ -105,15 +106,30 @@ describe('EditorToolbar', () => {
   })
 
   // ══════════════════════════════════════════════════════
-  // 5. 主题切换
+  // 5. 主题预览（按住/松开）
   // ══════════════════════════════════════════════════════
-  it('showThemeToggle 控制主题按钮显隐，点击触发 toggleTheme', async () => {
+  it('showThemeToggle 控制主题按钮显隐', async () => {
     let w = mount(EditorToolbar, { props: { ...defaultProps, showThemeToggle: true } })
     expect(w.find('.theme-btn').exists()).toBe(true)
-    await w.find('.theme-btn').trigger('click')
-    expect(w.emitted('toggleTheme')).toBeTruthy()
 
     w = mount(EditorToolbar, { props: { ...defaultProps, showThemeToggle: false } })
     expect(w.find('.theme-btn').exists()).toBe(false)
+  })
+
+  it('按住主题按钮触发 previewDarkStart，松开触发 previewDarkEnd', async () => {
+    const w = mount(EditorToolbar, { props: { ...defaultProps, showThemeToggle: true } })
+    await w.find('.theme-btn').trigger('pointerdown')
+    expect(w.emitted('previewDarkStart')).toBeTruthy()
+
+    await w.find('.theme-btn').trigger('pointerup')
+    expect(w.emitted('previewDarkEnd')).toBeTruthy()
+  })
+
+  it('默认（svgDark=false）tooltip 为"按住预览暗色"，按住（svgDark=true）为"松开恢复亮色"', async () => {
+    let w = mount(EditorToolbar, { props: { ...defaultProps, svgDark: false } })
+    expect(w.find('.theme-btn').attributes('data-tip')).toBe('按住预览暗色')
+
+    w = mount(EditorToolbar, { props: { ...defaultProps, svgDark: true } })
+    expect(w.find('.theme-btn').attributes('data-tip')).toBe('松开恢复亮色')
   })
 })

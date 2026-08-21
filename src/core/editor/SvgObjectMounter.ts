@@ -16,11 +16,8 @@ import * as fabric from 'fabric'
 import type { Canvas, FabricObject } from 'fabric'
 import { convertTextToTextbox } from './ObjectFactory'
 import { ensureObjectInteractive } from '../shared/interactive'
-import { SVG_FILL_VAR_ATTR, SVG_STROKE_VAR_ATTR, type SvgSemanticColors } from '../shared/fabricTypes'
-import { THEME_VAR_TO_HEX } from '../shared/colors'
-
-/** 6 位 hex（#RRGGBB，大小写不敏感），用于识别可记录亮色真值的裸 hex */
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/
+import type { SvgLightColors } from '../shared/fabricTypes'
+import { isHexColor } from '../shared/colors'
 
 export interface SvgObjectMounterOptions {
   /** 装载前对对象数组做转换（如箭头合并），默认透传 */
@@ -41,37 +38,25 @@ export function mountSvgObjects(
 ): Promise<void> {
   const transform = options.transform
 
-  // reviver：在每个 Fabric 对象创建后读取原始 SVG 元素上的 data-fill-var / data-stroke-var，
-  // 挂载语义化颜色 ID（变量名），并锚定「亮色真值」fillLight / strokeLight，作为颜色的一等身份。
+  // reviver：在每个 Fabric 对象创建后读取原始 SVG 元素上的 fill / stroke，
+  // 锚定「亮色真值」fillLight / strokeLight，作为颜色的身份
+  // （按住预览切暗 / 松手恢复亮色的依据）。
   const reviver = (element: Element, obj: FabricObject): void => {
-    const s = obj as FabricObject & SvgSemanticColors
-    const fillVar = element.getAttribute(SVG_FILL_VAR_ATTR)
-    const strokeVar = element.getAttribute(SVG_STROKE_VAR_ATTR)
+    const s = obj as FabricObject & SvgLightColors
 
-    if (fillVar) {
-      // 语义色：亮色真值 = 该变量在亮色主题下的 hex（不依赖导入时的当前主题）
-      s.fillVar = fillVar
-      s.fillLight = THEME_VAR_TO_HEX.light[fillVar]
-    } else {
-      // 非语义色：亮色真值 = 原始 fill hex（裸 hex 或带 fallback 变量解析出的 hex）
-      const rawFill = element.getAttribute('fill')
-      if (rawFill && HEX_COLOR_RE.test(rawFill.trim())) s.fillLight = rawFill.trim()
-    }
+    // 亮色真值 = 原始 fill hex（裸 hex 或带 fallback 变量已解析出的 hex）
+    const rawFill = element.getAttribute('fill')
+    if (rawFill && isHexColor(rawFill)) s.fillLight = rawFill.trim()
 
-    if (strokeVar) {
-      s.strokeVar = strokeVar
-      s.strokeLight = THEME_VAR_TO_HEX.light[strokeVar]
-    } else {
-      const rawStroke = element.getAttribute('stroke')
-      if (rawStroke && HEX_COLOR_RE.test(rawStroke.trim())) s.strokeLight = rawStroke.trim()
-    }
+    const rawStroke = element.getAttribute('stroke')
+    if (rawStroke && isHexColor(rawStroke)) s.strokeLight = rawStroke.trim()
   }
 
   return fabric.loadSVGFromString(svg, reviver).then(({ objects }) => {
     const validObjects = objects.filter((o): o is FabricObject => o !== null)
     // 1. 对象级转换（默认透传；由调用方注入 mergeArrows 等）
     const processed = transform ? transform(validObjects) : validObjects
-    // 2. Text → Textbox（文本支持自动换行，需保留 fillVar/strokeVar 语义标记）
+    // 2. Text → Textbox（文本支持自动换行）
     const converted = processed.map(convertTextToTextbox)
     // 3. 添加到画布并确保可交互
     converted.forEach((obj) => {

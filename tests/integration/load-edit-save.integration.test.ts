@@ -5,8 +5,8 @@
  *   SvgLoader.load（清洗 + 预处理）→ mountSvgObjects（装载到真实 Fabric 画布）
  *   → 编辑对象 → SvgSerializer.serialize（后处理）→ LocalStorageAdapter.save/load
  *
- * 单测（SvgLoader / SvgSerializer / LocalStorageAdapter）验证单模块逻辑，
- * 本文件验证模块间数据正确流动（CSS 变量 hex 往返、viewBox 恢复、持久化一致性）。
+ * 全面算法化后：带 fallback 的 var() 解析为 hex，保存不再还原语义变量，
+ * 落盘永远为纯 hex（亮色真值）。
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -23,10 +23,10 @@ vi.mock('dompurify', () => ({
   default: { sanitize: (dirty: string) => dirty },
 }))
 
-// 含 CSS 变量的最小 SVG
+// 含带 fallback CSS 变量的最小 SVG
 const cssVarSvg =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">' +
-  '<rect x="10" y="10" width="80" height="50" fill="var(--diagram-accent-1)"/>' +
+  '<rect x="10" y="10" width="80" height="50" fill="var(--diagram-accent-1, #1565C0)"/>' +
   '</svg>'
 
 describe('load → edit → save 完整闭环', () => {
@@ -55,10 +55,10 @@ describe('load → edit → save 完整闭环', () => {
   it('应完成 load → mount → edit → serialize → save → load 全链路', async () => {
     const loader = new SvgLoader()
 
-    // 1. load：CSS 变量应被替换为 hex
-    const loadResult = loader.load(cssVarSvg, 'light')
+    // 1. load：带 fallback 的 CSS 变量应被替换为 fallback hex
+    const loadResult = loader.load(cssVarSvg)
     expect(loadResult.svg).toContain('#1565C0')
-    expect(loadResult.svg).not.toContain('var(--diagram-accent-1)')
+    expect(loadResult.svg).not.toContain('var(--diagram-accent-1')
     expect(loadResult.originalViewBox).toBe('0 0 200 100')
 
     // 2. mount：装载到真实 Fabric 画布
@@ -88,24 +88,23 @@ describe('load → edit → save 完整闭环', () => {
     expect(loaded).toBe(svgText)
   })
 
-  it('CSS 变量应完成语义化 hex 往返（preprocess 打标记 → mount 挂载 → serialize 还原）', async () => {
+  it('带 fallback 的 var() 应解析为 hex（不再保留语义变量）', async () => {
     const loader = new SvgLoader()
-    const loadResult = loader.load(cssVarSvg, 'light')
+    const loadResult = loader.load(cssVarSvg)
 
-    // 装载到真实 Fabric 画布：reviver 会读取 data-fill-var 并挂载语义 ID
     await mountSvgObjects(canvas, loadResult.svg)
     const rect = canvas.getObjects()[0] as any
-    expect(rect.fillVar).toBe('--diagram-accent-1')
+    expect(String(rect.fill).toUpperCase()).toBe('#1565C0')
 
     const serializer = new SvgSerializer()
     const svgText = serializer.serialize(canvas, { originalViewBox: loadResult.originalViewBox })
 
-    // 序列化时语义化 hex 应还原为 CSS 变量
-    expect(svgText).toContain('var(--diagram-accent-1)')
+    // 全面算法化：保存不再还原 var()，落盘为纯 hex
+    expect(svgText).not.toContain('var(--diagram-')
+    expect(svgText).toContain('#1565C0')
   })
 
-  it('无语义对象（无 fillVar）的 hex 不应被还原为 CSS 变量', async () => {
-    // 直接构造无 fillVar 的 Fabric 对象，验证语义化 ID「不猜语义」
+  it('纯 hex 对象保存后保持 hex 不变（不再还原为 CSS 变量）', async () => {
     const rect = new fabric.Rect({
       left: 10,
       top: 10,

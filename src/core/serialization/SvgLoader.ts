@@ -13,7 +13,7 @@
  */
 
 import { preprocessSvg } from './preprocessor'
-import type { SvgLoadResult, SvgPreprocessOptions, ThemeMode } from '../shared/types'
+import type { SvgLoadResult } from '../shared/types'
 import DOMPurify from 'dompurify'
 
 /** 安全配置 */
@@ -45,15 +45,10 @@ function sanitizeSvg(svg: string): string {
 export class SvgLoader {
   /**
    * 加载并预处理 SVG 文本
-   * @param rawSvg  — 原始 SVG 字符串（可含 <?xml> 声明）
-   * @param theme   — 目标主题模式（决定 CSS 变量映射到哪套 hex）
+   * @param rawSvg — 原始 SVG 字符串（可含 <?xml> 声明）
    * @returns 标准化结果，包含预处理后的 SVG、原始 viewBox、宽高
    */
-  load(
-    rawSvg: string,
-    theme: ThemeMode = 'light',
-    options: SvgPreprocessOptions = {}
-  ): SvgLoadResult {
+  load(rawSvg: string): SvgLoadResult {
     // 🔒 安全校验：拒绝超大文件
     if (rawSvg.length > SECURITY.maxFileSize) {
       throw new Error(
@@ -63,23 +58,18 @@ export class SvgLoader {
     }
     // 🔒 安全清洗：移除 XSS / CSS 注入向量
     const cleaned = sanitizeSvg(rawSvg)
-    return preprocessSvg(cleaned, theme, options)
+    return preprocessSvg(cleaned)
   }
 
   /**
    * 从 URL 拉取并加载 SVG（封装 fetch + 清洗 + 预处理，issue #19 P1）
-   * @param url   目标 SVG 地址（相对或绝对）
-   * @param theme 目标主题模式
+   * @param url 目标 SVG 地址（相对或绝对）
    * @returns 标准化结果；HTTP 非 2xx 时抛出错误
    */
-  async loadFromUrl(
-    url: string,
-    theme: ThemeMode = 'light',
-    options: SvgPreprocessOptions = {}
-  ): Promise<SvgLoadResult> {
+  async loadFromUrl(url: string): Promise<SvgLoadResult> {
     const resp = await fetch(url)
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     const rawSvg = await resp.text()
-    return this.load(rawSvg, theme, options)
+    return this.load(rawSvg)
   }
 }

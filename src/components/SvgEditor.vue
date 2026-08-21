@@ -40,7 +40,6 @@ import { useToolbar } from '../composables/useToolbar'
 import { useMutation } from '../composables/useMutation'
 import { exposeTestHooks, clearTestHooks } from '../core/shared/testHooks'
 import { mark, measure, timedAsync, initPerfMonitor } from '../utils/perf'
-import type { ColorMode } from '../core/shared/types'
 
 // ── 存储适配器（根据插件配置的 storage 模式选择）──
 const storageAdapter: IStorageAdapter =
@@ -55,12 +54,6 @@ const storageAdapter: IStorageAdapter =
 const serializer = new SvgSerializer()
 // ── 加载器（含 sanitizeSvg XSS 清洗 + 文件大小校验）──
 const svgLoader = new SvgLoader()
-// ── 颜色处理模式：由插件 svgEditorPlugin({ colorMode }) 注入，默认 semantic ──
-// 用 typeof 防御：纯单元测试（不经 Vite 插件）环境下该常量未注入。
-const colorMode: ColorMode =
-  typeof __SVG_EDITOR_COLOR_MODE__ !== 'undefined' && __SVG_EDITOR_COLOR_MODE__ === 'algorithm'
-    ? 'algorithm'
-    : 'semantic'
 
 const props = defineProps({
   src: { type: String, required: true },
@@ -92,8 +85,8 @@ function toggleLeftPanel() {
 const canvasMgr = new CanvasManager()
 const historyMgr = new HistoryManager()
 
-// ── 主题切换 ──
-const { themeMode, toggleTheme } = useTheme(canvasMgr, { colorMode })
+// ── 主题切换（chrome 明暗跟随网页 .dark，SVG 暗色由按住预览按钮控制）──
+const { uiTheme, svgDark, setSvgDark, syncUiTheme } = useTheme(canvasMgr)
 
 // ── 图层管理 ──
 const { canvasObjects, refreshLayerList, selectLayer, toggleLayerVisibility } = useLayer(canvasMgr)
@@ -187,8 +180,6 @@ const { saving, errorMessage, save, showError } = useSave({
   storageAdapter,
   src: props.src,
   getOriginalViewBox: () => originalViewBox.value,
-  getThemeMode: () => themeMode.value,
-  colorMode,
   onSaved: () => emit('saved'),
   onClose: () => emit('close'),
 })
@@ -238,15 +229,7 @@ async function loadAndInit() {
   // 拉取 + 清洗 + 预处理（下沉到 SvgLoader.loadFromUrl，issue #19 P1）
   let loaded: Awaited<ReturnType<typeof svgLoader.loadFromUrl>>
   try {
-    // 第二步（可选能力）：开启「hex 精确匹配 → 语义 token」，
-    // 让普通 hex SVG 在编辑器内对精确命中色板的颜色自动升级为语义变量
-    // （跨主题撞色 hex 会被跳过，且绝不做近似匹配）。
-    loaded = await timedAsync('svg:preprocess', () =>
-      svgLoader.loadFromUrl(url, themeMode.value, {
-        mapHexToVar: __SVG_EDITOR_MAP_HEX_TO_VAR__ === true,
-        colorMode,
-      })
-    )
+    loaded = await timedAsync('svg:preprocess', () => svgLoader.loadFromUrl(url))
   } catch (e) {
     console.error('[SvgEditor] 获取 SVG 失败:', url, e)
     loading.value = false
@@ -267,7 +250,7 @@ async function loadAndInit() {
   const h = svgHeight.value || DEFAULT_SVG_HEIGHT
   const canvasEl = area.querySelector('canvas')
   if (!canvasEl) return
-  const fc = canvasMgr.init(canvasEl, w, h, themeMode.value as 'light' | 'dark')
+  const fc = canvasMgr.init(canvasEl, w, h)
   fabricCanvasRef.value = fc
 
   // 集中暴露测试钩子（issue #15 第 1 条）
@@ -335,11 +318,20 @@ async function loadAndInit() {
 
 // ── 生命周期集中管理（issue #15 第 3 条）──
 let _stopPerfMonitor: (() => void) | null = null
+// 网页明暗监听器：仅同步编辑器 chrome（uiTheme），SVG 画布颜色由按住预览按钮控制。
+let _themeObserver: MutationObserver | null = null
 
 onMounted(() => {
   loadAndInit()
   nextTick(() => {
     overlayRef.value?.focus()
+  })
+  // 监听 <html> class 变化（VitePress 通过增删 .dark 切换网页明暗），
+  // 同步编辑器 chrome 明暗到 uiTheme。
+  _themeObserver = new MutationObserver(() => syncUiTheme())
+  _themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class'],
   })
   // dev-only：启动 FPS + longtask 监测，生产构建不写入
   if (import.meta.env.DEV) {
@@ -352,6 +344,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  _themeObserver?.disconnect()
+  _themeObserver = null
   _stopPerfMonitor?.()
   keyboard.cleanup()
   clearTestHooks()
@@ -367,7 +361,7 @@ onUnmounted(() => {
     tabindex="-1"
     ref="overlayRef"
   >
-    <div class="editor-app" :class="themeMode === 'light' ? 'theme-light' : 'theme-dark'">
+    <div class="editor-app" :class="uiTheme === 'light' ? 'theme-light' : 'theme-dark'">
       <!-- 错误提示 toast -->
       <Transition name="toast-fade">
         <div v-if="errorMessage" class="editor-error-toast" role="alert">{{ errorMessage }}</div>
@@ -380,7 +374,8 @@ onUnmounted(() => {
         :svgHeight="svgHeight"
         :selectionInfo="selectionInfo"
         :showThemeToggle="props.showThemeToggle"
-        :themeMode="themeMode"
+        :themeMode="uiTheme"
+        :svgDark="svgDark"
         :saving="saving"
         :canUndo="canUndo"
         :canRedo="canRedo"
@@ -392,7 +387,8 @@ onUnmounted(() => {
         @zoomIn="canvasMgr.zoomIn()"
         @zoomOut="canvasMgr.zoomOut()"
         @zoomFit="canvasMgr.zoomFit()"
-        @toggleTheme="toggleTheme"
+        @previewDarkStart="setSvgDark(true)"
+        @previewDarkEnd="setSvgDark(false)"
         @save="save"
         @close="emit('close')"
         @resize="handleResize"
@@ -404,7 +400,7 @@ onUnmounted(() => {
         <EditorLeftPanel
           :canvasObjects="canvasObjects"
           :collapsed="leftPanelCollapsed"
-          :themeMode="themeMode"
+          :themeMode="uiTheme"
           @toggleCollapse="toggleLeftPanel"
           @addElement="addElement"
           @selectLayer="selectLayer"
@@ -418,7 +414,7 @@ onUnmounted(() => {
           :zoomLevel="zoomLevel"
           :canvasWidth="svgWidth"
           :canvasHeight="svgHeight"
-          :themeMode="themeMode"
+          :themeMode="uiTheme"
           :viewportVersion="viewportVersion"
           :fabricCanvas="fabricCanvasRef"
           @canvasWheel="(deltaY: number) => canvasMgr.injectWheel(deltaY)"
@@ -459,7 +455,7 @@ onUnmounted(() => {
           :shadowBlur="shadowBlur"
           :shadowOffsetX="shadowOffsetX"
           :shadowOffsetY="shadowOffsetY"
-          :themeMode="themeMode"
+          :themeMode="uiTheme"
           :collapsed="panelCollapsed"
           @toggleCollapse="togglePanel"
           @align="align"

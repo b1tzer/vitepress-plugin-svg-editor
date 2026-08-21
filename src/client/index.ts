@@ -14,11 +14,6 @@
 import type { EnhanceAppContext } from 'vitepress'
 import { defineClientComponent } from 'vitepress'
 
-// 默认图表配色方案（--diagram-* 变量，含亮/暗两套）。
-// 在此入口自动引入，使用者无需在 theme/index.ts 中手动 import；
-// 如需自定义配色，在自己的 CSS 中后定义同名变量即可覆盖。
-import '../styles/diagram-vars.css'
-
 // SvgDiagram 是纯展示组件，不依赖浏览器 API，可直接 SSR
 import _SvgDiagram from '../components/SvgDiagram.vue'
 export const SvgDiagram = _SvgDiagram

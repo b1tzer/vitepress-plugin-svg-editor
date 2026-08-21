@@ -27,7 +27,7 @@ describe('SvgLoader', () => {
   const loader = new SvgLoader()
 
   it('应正确加载合法 SVG', () => {
-    const result = loader.load(baseSvg, 'light')
+    const result = loader.load(baseSvg)
     expect(result.svg).toContain('<svg')
     expect(result.svg).toContain('<rect')
     expect(result.svgWidth).toBe(100)
@@ -37,37 +37,28 @@ describe('SvgLoader', () => {
 
   it('应支持含 <?xml?> 声明的 SVG', () => {
     const withXml = '<?xml version="1.0" encoding="UTF-8"?>\n' + baseSvg
-    const result = loader.load(withXml, 'light')
+    const result = loader.load(withXml)
     // <?xml?> 应被移除
     expect(result.svg).not.toContain('<?xml')
     expect(result.svg).toContain('<svg')
   })
 
   it('应正确解析 viewBox', () => {
-    const result = loader.load(baseSvg, 'light')
+    const result = loader.load(baseSvg)
     expect(result.originalViewBox).toBe('0 0 100 100')
   })
 
   it('应处理无 viewBox 的 SVG', () => {
     const noViewBox =
       '<svg xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40"/></svg>'
-    const result = loader.load(noViewBox, 'dark')
+    const result = loader.load(noViewBox)
     expect(result.svg).toContain('<circle')
-  })
-
-  it('应正确传递 theme 参数', () => {
-    // 暗色模式：CSS 变量应映射为暗色 hex 值
-    const lightResult = loader.load(baseSvg, 'light')
-    const darkResult = loader.load(baseSvg, 'dark')
-    // 两者都应返回 SVG 字符串
-    expect(lightResult.svg).toBeTruthy()
-    expect(darkResult.svg).toBeTruthy()
   })
 
   it('应保持 SVG 结构完整性', () => {
     const svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><g><path d="M10 10 L90 90"/><text x="20" y="50">Hello</text></g></svg>'
-    const result = loader.load(svg, 'light')
+    const result = loader.load(svg)
     expect(result.svg).toContain('<path')
     expect(result.svg).toContain('<text')
     expect(result.svgWidth).toBe(200)
@@ -78,7 +69,7 @@ describe('SvgLoader', () => {
   it('应移除 <script> 标签防止 XSS', () => {
     const malicious =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><script>alert("xss")</script><rect/></svg>'
-    const result = loader.load(malicious, 'light')
+    const result = loader.load(malicious)
     expect(result.svg).not.toContain('<script')
     expect(result.svg).not.toContain('alert')
   })
@@ -86,7 +77,7 @@ describe('SvgLoader', () => {
   it('应移除内联事件处理器（onclick/onload 等）', () => {
     const malicious =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect onclick="alert(1)" onload="bad()"/></svg>'
-    const result = loader.load(malicious, 'light')
+    const result = loader.load(malicious)
     expect(result.svg).not.toContain('onclick')
     expect(result.svg).not.toContain('onload')
   })
@@ -94,7 +85,7 @@ describe('SvgLoader', () => {
   it('应移除 CSS @import 外部引用防止 CSS 注入', () => {
     const malicious =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><style>@import url(http://evil.com/bad.css);</style><rect/></svg>'
-    const result = loader.load(malicious, 'light')
+    const result = loader.load(malicious)
     expect(result.svg).not.toContain('@import')
   })
 
@@ -103,7 +94,7 @@ describe('SvgLoader', () => {
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
       'A'.repeat(11 * 1024 * 1024) +
       '</svg>'
-    expect(() => loader.load(hugeSvg, 'light')).toThrow(/过大/)
+    expect(() => loader.load(hugeSvg)).toThrow(/过大/)
   })
 })
 
@@ -122,7 +113,7 @@ describe('SvgLoader.loadFromUrl', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await loader.loadFromUrl('/diagrams/foo.svg', 'light')
+    const result = await loader.loadFromUrl('/diagrams/foo.svg')
     expect(fetchMock).toHaveBeenCalledWith('/diagrams/foo.svg')
     expect(result.svg).toContain('<svg')
     expect(result.svgWidth).toBe(100)
@@ -131,17 +122,17 @@ describe('SvgLoader.loadFromUrl', () => {
 
   it('HTTP 非 2xx 时应抛出错误', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }))
-    await expect(loader.loadFromUrl('/missing.svg', 'light')).rejects.toThrow(/404/)
+    await expect(loader.loadFromUrl('/missing.svg')).rejects.toThrow(/404/)
   })
 
-  it('应将 theme 参数透传给 load', async () => {
+  it('应从 URL 拉取并透传给 load', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({ ok: true, text: vi.fn().mockResolvedValue(baseSvg) })
     )
     const loadSpy = vi.spyOn(loader, 'load')
-    await loader.loadFromUrl('/diagrams/foo.svg', 'dark')
-    expect(loadSpy).toHaveBeenCalledWith(baseSvg, 'dark', {})
+    await loader.loadFromUrl('/diagrams/foo.svg')
+    expect(loadSpy).toHaveBeenCalledWith(baseSvg)
     loadSpy.mockRestore()
   })
 })

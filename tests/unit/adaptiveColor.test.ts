@@ -19,9 +19,15 @@ describe('hexToRgb', () => {
     expect(hexToRgb('#123456')).toEqual({ r: 0x12, g: 0x34, b: 0x56 })
   })
 
+  it('解析 3 位 hex（短写法展开为 6 位）', () => {
+    expect(hexToRgb('#FFF')).toEqual({ r: 255, g: 255, b: 255 })
+    expect(hexToRgb('#abc')).toEqual({ r: 0xaa, g: 0xbb, b: 0xcc })
+    expect(hexToRgb('#000')).toEqual({ r: 0, g: 0, b: 0 })
+  })
+
   it('非法输入返回 null', () => {
     expect(hexToRgb('red')).toBeNull()
-    expect(hexToRgb('#FFF')).toBeNull() // 3 位 hex 不支持
+    expect(hexToRgb('#FFFF')).toBeNull() // 4 位非法
     expect(hexToRgb('rgba(0,0,0,0.5)')).toBeNull()
     expect(hexToRgb('transparent')).toBeNull()
     expect(hexToRgb('')).toBeNull()
@@ -101,9 +107,17 @@ describe('adaptColorLuminance', () => {
     expect(sum(adaptColorLuminance('#123456'))).toBeGreaterThan(sum('#123456'))
   })
 
+  it('3 位 hex 短写法应被翻转', () => {
+    // #FFF 白色 → #000000 黑色（大写保持）
+    expect(adaptColorLuminance('#FFF')).toBe('#000000')
+    // #fff 白色 → #000000 黑色（小写保持，全数字无大小写差异）
+    expect(adaptColorLuminance('#fff')).toBe('#000000')
+    // #abc → 6 位展开后翻转，不再是原值
+    expect(adaptColorLuminance('#abc')).not.toBe('#abc')
+  })
+
   it('非法输入原样返回', () => {
     expect(adaptColorLuminance('rgba(0,0,0,0.5)')).toBe('rgba(0,0,0,0.5)')
-    expect(adaptColorLuminance('#FFF')).toBe('#FFF')
     expect(adaptColorLuminance('transparent')).toBe('transparent')
     expect(adaptColorLuminance('')).toBe('')
   })

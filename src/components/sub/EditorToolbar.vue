@@ -17,6 +17,7 @@ const props = defineProps<{
   selectionInfo: string
   showThemeToggle: boolean
   themeMode: string
+  svgDark: boolean
   saving: boolean
   canUndo: boolean
   canRedo: boolean
@@ -31,7 +32,8 @@ const emit = defineEmits<{
   (e: 'zoomIn'): void
   (e: 'zoomOut'): void
   (e: 'zoomFit'): void
-  (e: 'toggleTheme'): void
+  (e: 'previewDarkStart'): void
+  (e: 'previewDarkEnd'): void
   (e: 'save'): void
   (e: 'close'): void
   (e: 'resize', w: number, h: number): void
@@ -40,7 +42,7 @@ const emit = defineEmits<{
 const isLight = computed(() => props.themeMode === 'light')
 
 // 画布尺寸本地编辑态（失焦/回车时提交 emit('resize', w, h)）
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 const editingWidth = ref(props.svgWidth)
 const editingHeight = ref(props.svgHeight)
 watch(
@@ -62,6 +64,26 @@ function commitResize() {
   editingHeight.value = h
   emit('resize', w, h)
 }
+
+// ── 按住预览暗色 ──
+// pointerdown 触发 start；window 上的 pointerup/pointercancel 兜底，
+// 确保即使用户按住后移出按钮甚至移出浏览器窗口再松手，也能立即恢复亮色。
+function onPreviewPointerDown() {
+  emit('previewDarkStart')
+  window.addEventListener('pointerup', onPreviewWindowPointerUp, { once: true })
+  window.addEventListener('pointercancel', onPreviewWindowPointerUp, { once: true })
+}
+function onPreviewWindowPointerUp() {
+  emit('previewDarkEnd')
+}
+
+// 组件卸载时清理可能残留的兜底监听器（如 pointerdown 后组件立刻销毁、
+// pointerup 从未发生的情况），并确保预览状态复位。
+onUnmounted(() => {
+  window.removeEventListener('pointerup', onPreviewWindowPointerUp)
+  window.removeEventListener('pointercancel', onPreviewWindowPointerUp)
+  emit('previewDarkEnd')
+})
 </script>
 
 <template>
@@ -149,16 +171,19 @@ function commitResize() {
       <span class="info-selection">{{ selectionInfo || '未选中' }}</span>
     </div>
 
-    <!-- 右侧：主题 + 保存 + 关闭 -->
+    <!-- 右侧：主题预览 + 保存 + 关闭 -->
     <div class="toolbar-right">
       <button
         v-if="showThemeToggle"
-        @click="emit('toggleTheme')"
-        :data-tip="themeMode === 'light' ? '暗色模式' : '亮色模式'"
+        @pointerdown="onPreviewPointerDown"
+        @pointerup="onPreviewWindowPointerUp"
+        @pointercancel="onPreviewWindowPointerUp"
+        :data-tip="svgDark ? '松开恢复亮色' : '按住预览暗色'"
         class="theme-btn"
-        aria-label="切换主题"
+        :class="{ 'theme-btn--pressed': svgDark }"
+        aria-label="按住预览暗色"
       >
-        <span v-if="themeMode === 'light'" v-html="ICONS.sun"></span>
+        <span v-if="!svgDark" v-html="ICONS.sun"></span>
         <span v-else v-html="ICONS.moon"></span>
       </button>
       <button
@@ -407,6 +432,12 @@ function commitResize() {
 .toolbar-light .size-sep,
 .toolbar-light .size-unit {
   color: #999;
+}
+
+/* ── 主题预览按钮 ── */
+.theme-btn.theme-btn--pressed {
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #60a5fa !important;
 }
 
 /* ── 保存按钮 ── */

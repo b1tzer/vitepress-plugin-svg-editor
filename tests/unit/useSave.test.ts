@@ -15,8 +15,6 @@ function createMockDeps(overrides: Partial<UseSaveDeps> = {}) {
       storageAdapter: { save: storageSave } as any,
       src: '/test.svg',
       getOriginalViewBox: vi.fn().mockReturnValue('0 0 800 600'),
-      getThemeMode: vi.fn().mockReturnValue('light'),
-      colorMode: 'semantic',
       onSaved: vi.fn(),
       onClose: vi.fn(),
       ...overrides,
@@ -33,23 +31,13 @@ describe('useSave', () => {
     ctx = createMockDeps()
   })
 
-  it('亮色模式下保存应传递 theme: light', async () => {
-    ctx.deps.getThemeMode = vi.fn().mockReturnValue('light')
+  it('保存应调用 serialize 并传入 originalViewBox', async () => {
     const { save } = useSave(ctx.deps)
     await save()
 
     const opts = ctx.serialize.mock.calls[0][1]
-    expect(opts.theme).toBe('light')
+    expect(opts.originalViewBox).toBe('0 0 800 600')
     expect(ctx.storageSave).toHaveBeenCalled()
-  })
-
-  it('暗色模式下保存应传递 theme: dark', async () => {
-    ctx.deps.getThemeMode = vi.fn().mockReturnValue('dark')
-    const { save } = useSave(ctx.deps)
-    await save()
-
-    const opts = ctx.serialize.mock.calls[0][1]
-    expect(opts.theme).toBe('dark')
   })
 
   it('保存成功后触发 onSaved 与 onClose', async () => {
@@ -59,19 +47,22 @@ describe('useSave', () => {
     expect(ctx.deps.onClose).toHaveBeenCalled()
   })
 
-  it('语义模式下保存传入 restoreCssVars: true（还原 var()）', async () => {
-    ctx.deps.colorMode = 'semantic'
-    const { save } = useSave(ctx.deps)
+  it('保存失败时不触发 onSaved/onClose 并提示错误', async () => {
+    ctx.storageSave.mockResolvedValue({ success: false, error: '写入失败' })
+    const { save, errorMessage } = useSave(ctx.deps)
     await save()
-    const opts = ctx.serialize.mock.calls[0][1]
-    expect(opts.restoreCssVars).toBe(true)
+    expect(ctx.deps.onSaved).not.toHaveBeenCalled()
+    expect(ctx.deps.onClose).not.toHaveBeenCalled()
+    expect(errorMessage.value).toContain('写入失败')
   })
 
-  it('纯算法模式下保存传入 restoreCssVars: false（不还原 var()）', async () => {
-    ctx.deps.colorMode = 'algorithm'
-    const { save } = useSave(ctx.deps)
+  it('序列化抛错时提示错误且不触发回调', async () => {
+    ctx.serialize.mockImplementation(() => {
+      throw new Error('序列化异常')
+    })
+    const { save, errorMessage } = useSave(ctx.deps)
     await save()
-    const opts = ctx.serialize.mock.calls[0][1]
-    expect(opts.restoreCssVars).toBe(false)
+    expect(ctx.deps.onSaved).not.toHaveBeenCalled()
+    expect(errorMessage.value).toContain('序列化异常')
   })
 })
