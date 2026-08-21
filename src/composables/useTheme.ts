@@ -10,9 +10,10 @@
  *   - 按住预览切暗：applyObjectTheme 做 OKLCH 亮度翻转
  *   - 松手切回亮色：直接写回真值
  *
- * 本 composable 不依赖 Vue 生命周期钩子：uiTheme 的同步由组件层（SvgEditor）
- * 通过 MutationObserver 调用 syncUiTheme，避免在非组件环境（单测）触发
- * onMounted/onUnmounted 警告。
+ * 本 composable 不依赖 Vue 生命周期钩子：网页明暗监听的 MutationObserver 由
+ * mountUiThemeSync / unmountUiThemeSync 提供（观察逻辑下沉至此），但挂载/卸载
+ * 的时机仍由组件层（SvgEditor）在 onMounted/onUnmounted 中控制，从而避免在
+ * 非组件环境（单测直接调用 useTheme）触发 onMounted/onUnmounted 警告。
  */
 
 import { ref, type Ref } from 'vue'
@@ -33,15 +34,37 @@ export function useTheme(canvasMgr: CanvasManager): {
   svgDark: Ref<boolean>
   setSvgDark: (dark: boolean) => void
   syncUiTheme: () => void
+  /** 挂载网页明暗监听（组件 onMounted 调用）：创建 MutationObserver 监听 <html> class */
+  mountUiThemeSync: () => void
+  /** 卸载网页明暗监听（组件 onUnmounted 调用） */
+  unmountUiThemeSync: () => void
 } {
   // 编辑器 chrome 明暗：跟随网页 <html> 的 .dark class
   const uiTheme = ref<ThemeMode>(readUiTheme())
   // SVG 画布暗色预览：默认 false（亮色原始色）
   const svgDark = ref(false)
+  /** 网页明暗监听器（闭包持有；挂载/卸载由组件层控制，保持本 composable 不依赖 Vue 生命周期钩子） */
+  let observer: MutationObserver | null = null
 
-  /** 由组件层的 MutationObserver 调用：同步 uiTheme 到当前网页明暗 */
+  /** 由 MutationObserver 调用：同步 uiTheme 到当前网页明暗 */
   function syncUiTheme(): void {
     uiTheme.value = readUiTheme()
+  }
+
+  /** 挂载网页明暗监听：监听 <html> class 变化（VitePress 通过增删 .dark 切换明暗） */
+  function mountUiThemeSync(): void {
+    if (typeof document === 'undefined') return
+    observer = new MutationObserver(() => syncUiTheme())
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+  }
+
+  /** 卸载网页明暗监听 */
+  function unmountUiThemeSync(): void {
+    observer?.disconnect()
+    observer = null
   }
 
   function setSvgDark(dark: boolean): void {
@@ -61,5 +84,12 @@ export function useTheme(canvasMgr: CanvasManager): {
     fc.requestRenderAll()
   }
 
-  return { uiTheme, svgDark, setSvgDark, syncUiTheme }
+  return {
+    uiTheme,
+    svgDark,
+    setSvgDark,
+    syncUiTheme,
+    mountUiThemeSync,
+    unmountUiThemeSync,
+  }
 }

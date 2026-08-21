@@ -3,10 +3,14 @@
  *
  * 从 SvgEditor.vue 中抽取 20+ 个选中属性 ref 与 updateSelectionInfo，
  * 集中管理「选中对象 → 属性面板」的状态同步，独立为可复用 composable。
+ *
+ * 重构（issue #19 P2）：将 20+ 个独立 ref 收敛为单一 reactive 对象 state，
+ * 消除散装 ref 样板；对外仅暴露 { state, updateSelectionInfo }，
+ * 供 editor store 聚合后注入属性面板，替代此前的 prop drilling。
  */
 
-import { ref, type Ref } from 'vue'
-import type { ActiveSelection, Shadow } from 'fabric'
+import { reactive } from 'vue'
+import type { ActiveSelection } from 'fabric'
 import type { CanvasManager } from '../core/canvas/CanvasManager'
 import { FABRIC_TYPE, TEXT_TYPES } from '../core/shared/fabricTypes'
 import * as TextFormatPlugin from '../plugins/text-format'
@@ -18,120 +22,131 @@ interface FillGradient {
   colorStops?: { color: string }[]
 }
 
-export function useSelection(canvasMgr: CanvasManager) {
-  const selectionInfo = ref('')
-  const currentFill = ref('')
-  const currentStroke = ref('')
-  const currentFontSize = ref(12)
-  const currentFontWeight = ref('normal')
-  const currentFontStyle = ref('normal')
-  const currentUnderline = ref(false)
-  const currentTextAlign = ref('left')
-  const currentTextFill = ref('')
-  const currentStrokeWidth = ref(1)
-  const currentStrokeDash = ref(false)
-  const currentRotation = ref(0)
-  const currentOpacity = ref(100)
-  const gradientType = ref<'none' | 'linear' | 'radial'>('none')
-  const gradientAngle = ref(0)
-  const gradientColor1 = ref('#1565C0')
-  const gradientColor2 = ref('#E3F2FD')
-  const shadowEnabled = ref(false)
-  const shadowColor = ref('#000000')
-  const shadowBlur = ref(5)
-  const shadowOffsetX = ref(3)
-  const shadowOffsetY = ref(3)
-  const hasTextInSelection = ref(false)
+/** 选中对象的属性状态（单一 reactive 对象，面板与操作直接读写） */
+export interface SelectionState {
+  selectionInfo: string
+  currentFill: string
+  currentStroke: string
+  currentFontSize: number
+  currentFontWeight: string
+  currentFontStyle: string
+  currentUnderline: boolean
+  currentTextAlign: string
+  currentTextFill: string
+  currentStrokeWidth: number
+  currentStrokeDash: boolean
+  currentRotation: number
+  currentOpacity: number
+  gradientType: 'none' | 'linear' | 'radial'
+  gradientAngle: number
+  gradientColor1: string
+  gradientColor2: string
+  shadowEnabled: boolean
+  shadowColor: string
+  shadowBlur: number
+  shadowOffsetX: number
+  shadowOffsetY: number
+  hasTextInSelection: boolean
+}
+
+export function useSelection(canvasMgr: CanvasManager): {
+  /** 选中对象属性状态（reactive） */
+  state: SelectionState
+  /** 同步选中对象属性到 state */
+  updateSelectionInfo: () => void
+} {
+  const state = reactive<SelectionState>({
+    selectionInfo: '',
+    currentFill: '',
+    currentStroke: '',
+    currentFontSize: 12,
+    currentFontWeight: 'normal',
+    currentFontStyle: 'normal',
+    currentUnderline: false,
+    currentTextAlign: 'left',
+    currentTextFill: '',
+    currentStrokeWidth: 1,
+    currentStrokeDash: false,
+    currentRotation: 0,
+    currentOpacity: 100,
+    gradientType: 'none',
+    gradientAngle: 0,
+    gradientColor1: '#1565C0',
+    gradientColor2: '#E3F2FD',
+    shadowEnabled: false,
+    shadowColor: '#000000',
+    shadowBlur: 5,
+    shadowOffsetX: 3,
+    shadowOffsetY: 3,
+    hasTextInSelection: false,
+  })
 
   function updateSelectionInfo(): void {
     const fc = canvasMgr.canvas
     if (!fc) return
     const active = fc.getActiveObject()
     if (!active) {
-      selectionInfo.value = ''
+      state.selectionInfo = ''
       return
     }
     const isMulti = active.type === FABRIC_TYPE.ACTIVE_SELECTION
-    selectionInfo.value = isMulti ? `${(active as ActiveSelection)._objects.length} 个选中` : active.type
+    state.selectionInfo = isMulti
+      ? `${(active as ActiveSelection)._objects.length} 个选中`
+      : active.type
 
     // 判断选中集合中是否包含文本对象（支持多选时显示文字对齐按钮）
     if (isMulti) {
-      hasTextInSelection.value = (active as ActiveSelection)._objects.some((o) =>
+      state.hasTextInSelection = (active as ActiveSelection)._objects.some((o) =>
         (TEXT_TYPES as readonly string[]).includes(o.type)
       )
     } else {
-      hasTextInSelection.value = (TEXT_TYPES as readonly string[]).includes(active.type)
+      state.hasTextInSelection = (TEXT_TYPES as readonly string[]).includes(active.type)
     }
 
-    if (active.fill && typeof active.fill === 'string') currentFill.value = active.fill
-    if (active.stroke && typeof active.stroke === 'string') currentStroke.value = active.stroke
-    if (active.strokeWidth != null) currentStrokeWidth.value = active.strokeWidth
-    currentStrokeDash.value = !!active.strokeDashArray
-    currentRotation.value = Math.round(active.angle || 0)
-    currentOpacity.value = Math.round((active.opacity != null ? active.opacity : 1) * 100)
+    if (active.fill && typeof active.fill === 'string') state.currentFill = active.fill
+    if (active.stroke && typeof active.stroke === 'string') state.currentStroke = active.stroke
+    if (active.strokeWidth != null) state.currentStrokeWidth = active.strokeWidth
+    state.currentStrokeDash = !!active.strokeDashArray
+    state.currentRotation = Math.round(active.angle || 0)
+    state.currentOpacity = Math.round((active.opacity != null ? active.opacity : 1) * 100)
 
     const f = active.fill as unknown as FillGradient | null
     if (f && f.type) {
-      gradientType.value = f.type
-      gradientAngle.value =
+      state.gradientType = f.type
+      state.gradientAngle =
         f.type === 'linear'
           ? Math.round(
               (Math.atan2(f.coords.y2 - f.coords.y1, f.coords.x2 - f.coords.x1) * 180) / Math.PI
             )
           : 0
       const stops = f.colorStops || []
-      if (stops[0]) gradientColor1.value = stops[0].color
-      if (stops[1]) gradientColor2.value = stops[1].color
+      if (stops[0]) state.gradientColor1 = stops[0].color
+      if (stops[1]) state.gradientColor2 = stops[1].color
     } else {
-      gradientType.value = 'none'
+      state.gradientType = 'none'
     }
 
     const s = active.shadow
     if (s) {
-      shadowEnabled.value = true
-      shadowColor.value = s.color || '#000'
-      shadowBlur.value = s.blur || 5
-      shadowOffsetX.value = s.offsetX || 3
-      shadowOffsetY.value = s.offsetY || 3
+      state.shadowEnabled = true
+      state.shadowColor = s.color || '#000'
+      state.shadowBlur = s.blur || 5
+      state.shadowOffsetX = s.offsetX || 3
+      state.shadowOffsetY = s.offsetY || 3
     } else {
-      shadowEnabled.value = false
+      state.shadowEnabled = false
     }
 
     const textObj = TextFormatPlugin.getTextObjects(fc)[0]
     if (textObj) {
-      if (textObj.fontSize) currentFontSize.value = textObj.fontSize
-      if (textObj.fontWeight) currentFontWeight.value = String(textObj.fontWeight)
-      if (textObj.fontStyle) currentFontStyle.value = textObj.fontStyle
-      if (textObj.underline !== undefined) currentUnderline.value = textObj.underline
-      if (textObj.textAlign) currentTextAlign.value = textObj.textAlign
-      if (textObj.fill && typeof textObj.fill === 'string') currentTextFill.value = textObj.fill
+      if (textObj.fontSize) state.currentFontSize = textObj.fontSize
+      if (textObj.fontWeight) state.currentFontWeight = String(textObj.fontWeight)
+      if (textObj.fontStyle) state.currentFontStyle = textObj.fontStyle
+      if (textObj.underline !== undefined) state.currentUnderline = textObj.underline
+      if (textObj.textAlign) state.currentTextAlign = textObj.textAlign
+      if (textObj.fill && typeof textObj.fill === 'string') state.currentTextFill = textObj.fill
     }
   }
 
-  return {
-    selectionInfo,
-    currentFill,
-    currentStroke,
-    currentFontSize,
-    currentFontWeight,
-    currentFontStyle,
-    currentUnderline,
-    currentTextAlign,
-    currentTextFill,
-    currentStrokeWidth,
-    currentStrokeDash,
-    currentRotation,
-    currentOpacity,
-    gradientType,
-    gradientAngle,
-    gradientColor1,
-    gradientColor2,
-    shadowEnabled,
-    shadowColor,
-    shadowBlur,
-    shadowOffsetX,
-    shadowOffsetY,
-    hasTextInSelection,
-    updateSelectionInfo,
-  }
+  return { state, updateSelectionInfo }
 }

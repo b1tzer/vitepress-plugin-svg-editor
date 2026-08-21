@@ -1,7 +1,7 @@
 /**
  * 结构操作 composable — 对齐/组合/图层/分布/全选（issue #19 P2）
  *
- * 从 useToolbar 中拆出的「结构」职责，注入 withSave 与 selection 状态。
+ * 从 useToolbar 中拆出的「结构」职责，注入 commit 与 selection 状态。
  */
 
 import * as fabric from 'fabric'
@@ -11,20 +11,17 @@ import * as AlignPlugin from '../plugins/align'
 import * as LayerPlugin from '../plugins/layer'
 import * as DistributePlugin from '../plugins/distribute'
 import { FABRIC_TYPE } from '../core/shared/fabricTypes'
-import type { useSelection } from './useSelection'
-
-type SelectionState = ReturnType<typeof useSelection>
 
 export interface UseStructureOpsDeps {
   canvasMgr: CanvasManager
-  /** 选中对象属性状态（来自 useSelection） */
-  selection: SelectionState
+  /** 选中对象属性同步回调（来自 useSelection） */
+  updateSelectionInfo: () => void
   /** 变更事务（来自 useMutation） */
-  withSave: (fn: (fc: Canvas) => void) => void
+  commit: (fn: (fc: Canvas) => void) => void
 }
 
 export function useStructureOps(deps: UseStructureOpsDeps) {
-  const { canvasMgr, selection, withSave } = deps
+  const { canvasMgr, updateSelectionInfo, commit } = deps
 
   function align(type: string) {
     const alignFns: Record<string, (canvas: Canvas) => void> = {
@@ -36,36 +33,42 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
       alignCenterV: AlignPlugin.alignCenterV,
     }
     const fn = alignFns[`align${type.charAt(0).toUpperCase() + type.slice(1)}`]
-    if (fn) withSave(fn)
+    if (fn) commit(fn)
   }
 
   function groupSelected() {
     const fc = canvasMgr.canvas
     const a = fc?.getActiveObject()
     if (!fc || !a || a.type !== FABRIC_TYPE.ACTIVE_SELECTION) return
-    // Fabric v6 已移除 ActiveSelection#toGroup()，需手动：取子对象 → 移除 → 建 Group → 添加。
-    // issue #8034 未合入前，需先 canvas.remove 再入组，避免对象仍挂在 canvas 上导致重复引用。
-    const objects = (a as ActiveSelection).getObjects()
-    fc.discardActiveObject()
-    fc.remove(...objects)
-    const group = new fabric.Group(objects)
-    fc.add(group)
-    fc.setActiveObject(group)
-    fc.renderAll()
-    withSave(() => {})
+    commit((canvas) => {
+      const active = canvas.getActiveObject()
+      if (!active || active.type !== FABRIC_TYPE.ACTIVE_SELECTION) return
+      // Fabric v6 已移除 ActiveSelection#toGroup()，需手动：取子对象 → 移除 → 建 Group → 添加。
+      // issue #8034 未合入前，需先 canvas.remove 再入组，避免对象仍挂在 canvas 上导致重复引用。
+      const objects = (active as ActiveSelection).getObjects()
+      canvas.discardActiveObject()
+      canvas.remove(...objects)
+      const group = new fabric.Group(objects)
+      canvas.add(group)
+      canvas.setActiveObject(group)
+      canvas.renderAll()
+    })
   }
 
   function ungroupSelected() {
     const fc = canvasMgr.canvas
     const a = fc?.getActiveObject()
     if (!fc || !a || a.type !== FABRIC_TYPE.GROUP) return
-    // Fabric v6 已移除 Group#toActiveSelection()，需手动：removeAll 取子对象 → 移除 Group → 建 ActiveSelection。
-    const objects = (a as Group).removeAll()
-    fc.remove(a)
-    const sel = new fabric.ActiveSelection(objects, { canvas: fc })
-    fc.setActiveObject(sel)
-    fc.renderAll()
-    withSave(() => {})
+    commit((canvas) => {
+      const active = canvas.getActiveObject()
+      if (!active || active.type !== FABRIC_TYPE.GROUP) return
+      // Fabric v6 已移除 Group#toActiveSelection()，需手动：removeAll 取子对象 → 移除 Group → 建 ActiveSelection。
+      const objects = (active as Group).removeAll()
+      canvas.remove(active)
+      const sel = new fabric.ActiveSelection(objects, { canvas })
+      canvas.setActiveObject(sel)
+      canvas.renderAll()
+    })
   }
 
   function selectAll() {
@@ -78,24 +81,24 @@ export function useStructureOps(deps: UseStructureOpsDeps) {
     const sel = new fabric.ActiveSelection(objs, { canvas: fc })
     fc.setActiveObject(sel)
     fc.renderAll()
-    selection.updateSelectionInfo()
+    updateSelectionInfo()
   }
 
   function layerForward() {
-    withSave((fc) => LayerPlugin.forward(fc))
+    commit((fc) => LayerPlugin.forward(fc))
   }
   function layerBackward() {
-    withSave((fc) => LayerPlugin.backward(fc))
+    commit((fc) => LayerPlugin.backward(fc))
   }
   function layerToFront() {
-    withSave((fc) => LayerPlugin.toFront(fc))
+    commit((fc) => LayerPlugin.toFront(fc))
   }
   function layerToBack() {
-    withSave((fc) => LayerPlugin.toBack(fc))
+    commit((fc) => LayerPlugin.toBack(fc))
   }
 
   function distribute(dir: string) {
-    withSave((fc) =>
+    commit((fc) =>
       dir === 'horizontal'
         ? DistributePlugin.distributeHorizontal(fc)
         : DistributePlugin.distributeVertical(fc)

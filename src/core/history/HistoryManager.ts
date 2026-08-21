@@ -21,8 +21,7 @@ const MAX_STACK = 50
 
 /** 历史条目：全量快照或增量命令（渐进替换 Command 模式） */
 type HistoryEntry =
-  | { type: 'snapshot'; json: Record<string, unknown> }
-  | { type: 'command'; cmd: ICommand }
+  { type: 'snapshot'; json: Record<string, unknown> } | { type: 'command'; cmd: ICommand }
 
 export class HistoryManager implements IHistoryManager {
   private _undoStack: HistoryEntry[] = []
@@ -34,9 +33,8 @@ export class HistoryManager implements IHistoryManager {
   /**
    * 保存当前画布状态
    */
-  save(canvas: Canvas, beforeSave?: () => void, afterSave?: () => void): void {
+  save(canvas: Canvas): void {
     if (!canvas) return
-    if (beforeSave) beforeSave()
     // Fabric 6: toJSON() 不再接受参数
     // 全量快照：作为复杂操作/初始锚点的兜底。
     // 记录快照时折叠栈顶已有的增量命令（其效果已包含在新快照中），
@@ -54,7 +52,6 @@ export class HistoryManager implements IHistoryManager {
     this._undoStack.push(snapshot)
     if (this._undoStack.length > MAX_STACK) this._undoStack.shift()
     this._redoStack = []
-    if (afterSave) afterSave()
     this._notify()
   }
 

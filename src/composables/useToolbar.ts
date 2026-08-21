@@ -10,7 +10,7 @@
  *   - useTextOps      → 字号 / 粗体 / 斜体 / 下划线 / 对齐 / 文字颜色
  *   - useStructureOps → 对齐 / 组合 / 图层 / 分布 / 全选
  *
- * 公共事务 withSave 由 useMutation 独立提供（本层不再定义），由 SvgEditor 注入。
+ * 公共事务 commit 由 useMutation 独立提供（本层不再定义），由 SvgEditor 注入。
  */
 
 import type { Canvas } from 'fabric'
@@ -20,9 +20,7 @@ import { useHistoryOps } from './useHistoryOps'
 import { useStyleOps } from './useStyleOps'
 import { useTextOps } from './useTextOps'
 import { useStructureOps } from './useStructureOps'
-import type { useSelection } from './useSelection'
-
-type SelectionState = ReturnType<typeof useSelection>
+import type { SelectionState } from './useSelection'
 
 export interface UseToolbarDeps {
   canvasMgr: CanvasManager
@@ -31,19 +29,29 @@ export interface UseToolbarDeps {
   refreshLayerList: () => void
   /** 获取当前 SVG 逻辑尺寸（undo/redo 重建 workspace 用） */
   getSvgSize: () => { w: number; h: number }
-  /** 选中对象属性状态（来自 useSelection） */
+  /** 选中对象属性状态（来自 useSelection 的 reactive state） */
   selection: SelectionState
+  /** 选中对象属性同步回调（来自 useSelection） */
+  updateSelectionInfo: () => void
   /** 变更事务（来自 useMutation） */
-  withSave: (fn: (fc: Canvas) => void) => void
+  commit: (fn: (fc: Canvas) => void) => void
 }
 
 export function useToolbar(deps: UseToolbarDeps) {
-  const { canvasMgr, historyMgr, refreshLayerList, getSvgSize, selection, withSave } = deps
+  const {
+    canvasMgr,
+    historyMgr,
+    refreshLayerList,
+    getSvgSize,
+    selection,
+    updateSelectionInfo,
+    commit,
+  } = deps
 
-  const history = useHistoryOps({ canvasMgr, historyMgr, getSvgSize, refreshLayerList, withSave })
-  const style = useStyleOps({ canvasMgr, selection, withSave })
-  const text = useTextOps({ selection, withSave })
-  const structure = useStructureOps({ canvasMgr, selection, withSave })
+  const history = useHistoryOps({ canvasMgr, historyMgr, getSvgSize, refreshLayerList, commit })
+  const style = useStyleOps({ canvasMgr, selection, commit })
+  const text = useTextOps({ selection, commit })
+  const structure = useStructureOps({ canvasMgr, updateSelectionInfo, commit })
 
   return {
     ...history,

@@ -35,12 +35,16 @@ describe('工具栏结构操作集成测试', () => {
     })
     history = new HistoryManager()
     selection = useSelection(canvasMgr)
-    const withSave = (fn: (fc: fabric.Canvas) => void) => {
+    const commit = (fn: (fc: fabric.Canvas) => void) => {
       const fc = canvasMgr.canvas!
       fn(fc)
-      history.save(fc, () => {}, () => {})
+      history.save(fc)
     }
-    structure = useStructureOps({ canvasMgr, selection, withSave })
+    structure = useStructureOps({
+      canvasMgr,
+      updateSelectionInfo: selection.updateSelectionInfo,
+      commit,
+    })
   })
 
   afterEach(() => {

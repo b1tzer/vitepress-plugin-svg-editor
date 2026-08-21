@@ -61,7 +61,7 @@ export interface IEventBus {
 
 /** 历史管理器抽象接口 */
 export interface IHistoryManager {
-  save(canvas: Canvas, beforeSave?: () => void, afterSave?: () => void): void
+  save(canvas: Canvas): void
   undo(canvas: Canvas, afterLoad?: () => void): void
   redo(canvas: Canvas, afterLoad?: () => void): void
   canUndo(): boolean

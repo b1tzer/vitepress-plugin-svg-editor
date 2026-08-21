@@ -109,4 +109,32 @@ describe('useTheme', () => {
     syncUiTheme()
     expect(uiTheme.value).toBe('light')
   })
+
+  it('mountUiThemeSync 后，网页 .dark class 变化应自动同步 uiTheme', async () => {
+    const { uiTheme, mountUiThemeSync, unmountUiThemeSync } = useTheme(canvasMgr as any)
+    mountUiThemeSync()
+
+    document.documentElement.classList.add('dark')
+    await vi.waitFor(() => {
+      expect(uiTheme.value).toBe('dark')
+    })
+
+    document.documentElement.classList.remove('dark')
+    await vi.waitFor(() => {
+      expect(uiTheme.value).toBe('light')
+    })
+
+    unmountUiThemeSync()
+  })
+
+  it('unmountUiThemeSync 后，class 变化不再触发 uiTheme 同步', async () => {
+    const { uiTheme, mountUiThemeSync, unmountUiThemeSync } = useTheme(canvasMgr as any)
+    mountUiThemeSync()
+    unmountUiThemeSync()
+
+    document.documentElement.classList.add('dark')
+    // 等待足够的异步周期，确保即便有残留 observer 也已触发完毕
+    await new Promise((r) => setTimeout(r, 20))
+    expect(uiTheme.value).toBe('light')
+  })
 })
